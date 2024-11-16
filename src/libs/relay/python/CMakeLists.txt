@@ -14,10 +14,10 @@ PYTHON_ADD_COMPILED_MODULE(NAME          conduit_relay_python
                            FOLDER        libs/python)
 
 # compiled modules depend on output dir structure created by main module setup
-add_dependencies( conduit_relay_python conduit_python_py_setup)
+target_link_libraries(conduit_relay_python PRIVATE conduit_python_py_setup)
 
 # link with the proper libs
-target_link_libraries(conduit_relay_python conduit conduit_relay conduit_python_build)
+target_link_libraries(conduit_relay_python PRIVATE conduit conduit_relay conduit_python_build)
 
 # add relay io submodule
 PYTHON_ADD_COMPILED_MODULE(NAME          conduit_relay_io_python
@@ -28,10 +28,10 @@ PYTHON_ADD_COMPILED_MODULE(NAME          conduit_relay_io_python
                            FOLDER        libs/python)
 
 # compiled modules depend on output dir structure created by main module setup
-add_dependencies( conduit_relay_io_python conduit_python_py_setup)
+target_link_libraries(conduit_relay_io_python PRIVATE conduit_python_py_setup)
 
 # link with the proper libs (beyond python)
-target_link_libraries(conduit_relay_io_python conduit conduit_relay conduit_python_build)
+target_link_libraries(conduit_relay_io_python PRIVATE conduit conduit_relay conduit_python_build)
 
 # add relay io blueprint submodule
 PYTHON_ADD_COMPILED_MODULE(NAME          conduit_relay_io_blueprint_python
@@ -42,10 +42,10 @@ PYTHON_ADD_COMPILED_MODULE(NAME          conduit_relay_io_blueprint_python
                            FOLDER        libs/python)
 
 # compiled modules depend on output dir structure created by main module setup
-add_dependencies( conduit_relay_io_blueprint_python conduit_python_py_setup)
+target_link_libraries(conduit_relay_io_blueprint_python PRIVATE conduit_python_py_setup)
 
 # link with the proper libs (beyond python)
-target_link_libraries(conduit_relay_io_blueprint_python conduit conduit_relay conduit_blueprint conduit_python_build)
+target_link_libraries(conduit_relay_io_blueprint_python PRIVATE conduit conduit_relay conduit_blueprint conduit_python_build)
 
 if(SILO_FOUND)
 
@@ -58,10 +58,10 @@ if(SILO_FOUND)
                                FOLDER        libs/python)
 
     # compiled modules depend on output dir structure created by main module setup
-    add_dependencies( conduit_relay_io_silo_python conduit_python_py_setup)
+    target_link_libraries(conduit_relay_io_silo_python PRIVATE conduit_python_py_setup)
 
     # link with the proper libs (beyond python)
-    target_link_libraries(conduit_relay_io_silo_python conduit conduit_relay conduit_blueprint conduit_python_build)
+    target_link_libraries(conduit_relay_io_silo_python PRIVATE conduit conduit_relay conduit_blueprint conduit_python_build)
 
 endif()
 
@@ -75,10 +75,10 @@ if(ENABLE_RELAY_WEBSERVER)
                                FOLDER        libs/python)
 
     # compiled modules depend on output dir structure created by main module setup
-    add_dependencies( conduit_relay_web_python conduit_python_py_setup)
+    target_link_libraries(conduit_relay_web_python PRIVATE conduit_python_py_setup)
 
     # link with the proper libs (beyond python)
-    target_link_libraries(conduit_relay_web_python conduit conduit_relay conduit_python_build)
+    target_link_libraries(conduit_relay_web_python PRIVATE conduit conduit_relay conduit_python_build)
 endif()
 
 ################################################################
@@ -96,10 +96,10 @@ if(MPI_FOUND)
                                FOLDER        libs/python)
 
     # compiled modules depend on output dir structure created by main module setup
-    add_dependencies( conduit_relay_mpi_python conduit_python_py_setup)
+    target_link_libraries(conduit_relay_mpi_python PRIVATE conduit_python_py_setup)
 
     # link with the proper libs (beyond python)
-    target_link_libraries(conduit_relay_mpi_python conduit conduit_relay_mpi conduit_python_build)
+    target_link_libraries(conduit_relay_mpi_python PRIVATE conduit conduit_relay_mpi conduit_python_build)
 
 endif()
 
