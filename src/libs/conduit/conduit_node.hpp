@@ -4765,25 +4765,25 @@ private:
                                                const std::string &pad=" ",
                                                const std::string &eoe="\n") const;
 
-    // //-------------------------------------------------------------------------
-    // // transforms the node to yaml with data payload encoded using base64
-    // //-------------------------------------------------------------------------
-    // std::string      to_base64_yaml(index_t indent=2,
-    //                                 index_t depth=0,
-    //                                 const std::string &pad=" ",
-    //                                 const std::string &eoe="\n") const;
+    //-------------------------------------------------------------------------
+    // transforms the node to yaml with data payload encoded using base64
+    //-------------------------------------------------------------------------
+    std::string      to_base64_yaml(index_t indent=2,
+                                    index_t depth=0,
+                                    const std::string &pad=" ",
+                                    const std::string &eoe="\n") const;
 
-    // void             to_base64_yaml(const std::string &stream_path,
-    //                                 index_t indent=2,
-    //                                 index_t depth=0,
-    //                                 const std::string &pad=" ",
-    //                                 const std::string &eoe="\n") const;
+    void             to_base64_yaml(const std::string &stream_path,
+                                    index_t indent=2,
+                                    index_t depth=0,
+                                    const std::string &pad=" ",
+                                    const std::string &eoe="\n") const;
 
-    // void             to_base64_yaml(std::ostream &os,
-    //                                 index_t indent=2,
-    //                                 index_t depth=0,
-    //                                 const std::string &pad=" ",
-    //                                 const std::string &eoe="\n") const;
+    void             to_base64_yaml(std::ostream &os,
+                                    index_t indent=2,
+                                    index_t depth=0,
+                                    const std::string &pad=" ",
+                                    const std::string &eoe="\n") const;
 
     //-------------------------------------------------------------------------
     // private summary string helper
