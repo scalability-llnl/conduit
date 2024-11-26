@@ -13913,7 +13913,13 @@ Node::to_yaml_generic(bool detailed,
                       const std::string &eoe) const
 {
     std::ostringstream oss;
-    to_yaml_generic(oss,detailed,address,indent,depth,pad,eoe);
+    to_yaml_generic(oss,      // out stream
+                    detailed, // detailed
+                    address,  // address
+                    indent,   // indent
+                    depth,    // depth
+                    pad,      // padding string (default is " ")
+                    eoe);     // end-of-entry suffix (default is "\n")
     return oss.str();
 }
 
@@ -13935,7 +13941,13 @@ Node::to_yaml_generic(const std::string &stream_path,
         CONDUIT_ERROR("<Node::to_yaml_generic> failed to open file: "
                      << "\"" << stream_path << "\"");
     }
-    to_yaml_generic(ofs,detailed,address,indent,depth,pad,eoe);
+    to_yaml_generic(ofs,      // out stream
+                    detailed, // detailed
+                    address,  // address
+                    indent,   // indent
+                    depth,    // depth
+                    pad,      // padding string (default is " ")
+                    eoe);     // end-of-entry suffix (default is "\n")
     ofs.close();
 }
 
