@@ -17701,7 +17701,7 @@ Node::init_defaults()
 
 //-------------------------------------------------------------------------
 // This method is for Node::load() and Node::save()
-// Since conudit does not link to relay, only basic (non-tpl dependent)
+// Since conduit does not link to relay, only basic (non-tpl dependent)
 // cases are supported here
 void
 Node::identify_protocol(const std::string &path,
@@ -17742,6 +17742,14 @@ Node::identify_protocol(const std::string &path,
     else if(file_name_ext == "yaml")
     {
         io_type = "yaml";
+    }
+    else if(file_name_ext == "conduit_yaml")
+    {
+        io_type = "conduit_yaml";
+    }
+    else if(file_name_ext == "conduit_base64_yaml")
+    {
+        io_type = "conduit_base64_yaml";
     }
 }
 
