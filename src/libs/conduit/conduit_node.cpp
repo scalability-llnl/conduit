@@ -13812,9 +13812,9 @@ Node::to_base64_json(index_t indent,
                      const std::string &pad,
                      const std::string &eoe) const
 {
-   std::ostringstream oss;
-   to_base64_json(oss,indent,depth,pad,eoe);
-   return oss.str();
+    std::ostringstream oss;
+    to_base64_json(oss,indent,depth,pad,eoe);
+    return oss.str();
 }
 
 //---------------------------------------------------------------------------//
@@ -13967,6 +13967,7 @@ Node::to_yaml_generic(std::ostream &os,
     if(dtype().id() == DataType::OBJECT_ID)
     {
         os << eoe;
+
         size_t nchildren = m_children.size();
         for(size_t i=0; i <  nchildren;i++)
         {
@@ -14250,6 +14251,101 @@ Node::to_detailed_yaml_external(std::ostream &os,
                     depth,  // depth
                     pad,    // padding string (default is " ")
                     eoe);   // end-of-entry suffix (default is "\n")
+}
+
+
+//---------------------------------------------------------------------------//
+std::string
+Node::to_base64_yaml(index_t indent,
+                     index_t depth,
+                     const std::string &pad,
+                     const std::string &eoe) const
+{
+    std::ostringstream oss;
+    to_base64_yaml(oss,    // out stream
+                   indent, // indent
+                   depth,  // depth
+                   pad,    // padding string (default is " ")
+                   eoe);   // end-of-entry suffix (default is "\n")
+    return oss.str();
+}
+
+//---------------------------------------------------------------------------//
+void
+Node::to_base64_yaml(const std::string &stream_path,
+                     index_t indent,
+                     index_t depth,
+                     const std::string &pad,
+                     const std::string &eoe) const
+{
+    std::ofstream ofs;
+    ofs.open(stream_path.c_str());
+    if(!ofs.is_open())
+    {
+        CONDUIT_ERROR("<Node::to_base64_yaml> failed to open file: "
+                     << "\"" << stream_path << "\"");
+    }
+    to_base64_yaml(ofs,    // out stream
+                   indent, // indent
+                   depth,  // depth
+                   pad,    // padding string (default is " ")
+                   eoe);   // end-of-entry suffix (default is "\n")
+    ofs.close();
+}
+
+
+//---------------------------------------------------------------------------//
+void
+Node::to_base64_yaml(std::ostream &os,
+                     index_t indent,
+                     index_t depth,
+                     const std::string &pad,
+                     const std::string &eoe) const
+{
+    // TODO refactor into shared helper for both json and yaml
+    std::ios_base::fmtflags prev_stream_flags(os.flags());
+    os.precision(15);
+
+    //
+    // we need compact data
+    //
+    // TODO check to support fast path if already
+    // compact + contig and host accessible?
+    Node n;
+    compact_to(n);
+
+    // use libb64 to encode the data
+    index_t nbytes = n.schema().spanned_bytes();
+    index_t enc_buff_size =  utils::base64_encode_buffer_size(nbytes);
+    Node bb64_data;
+    bb64_data.set(DataType::char8_str(enc_buff_size));
+
+    // since we use compact_to(n) above, the data will always compact
+    // and on the host, so we can use it directly in utils::base64_encode
+    const char *src_ptr = (const char*)n.data_ptr();
+    char *dest_ptr       = (char*)bb64_data.data_ptr();
+    utils::conduit_memset(dest_ptr,0,(size_t)enc_buff_size);
+
+    utils::base64_encode(src_ptr,nbytes,dest_ptr);
+
+    // create the resulting yaml
+
+    os << eoe;
+    utils::indent(os,indent,depth,pad);
+    os << "schema: ";
+
+    n.schema().to_yaml_stream(os,indent,depth+1,pad,eoe);
+
+    os << eoe;
+
+    utils::indent(os,indent,depth,pad);
+    os << "data: " << eoe;
+    utils::indent(os,indent,depth+1,pad);
+    os << "base64: ";
+    bb64_data.to_pure_yaml(os,0,0,"","");
+    os << eoe;
+
+    os.flags(prev_stream_flags);
 }
 
 
