@@ -14072,7 +14072,12 @@ Node::to_pure_yaml(index_t indent,
                    const std::string &pad,
                    const std::string &eoe) const
 {
-    return to_yaml_generic(false,false,indent,depth,pad,eoe);
+    return to_yaml_generic(false,  // detailed
+                           false,  // address
+                           indent, // indent
+                           depth,  // depth
+                           pad,    // padding string (default is " ")
+                           eoe);   // end-of-entry suffix (default is "\n")
 }
 
 //---------------------------------------------------------------------------//
@@ -14090,7 +14095,13 @@ Node::to_pure_yaml(const std::string &stream_path,
         CONDUIT_ERROR("<Node::to_pure_yaml> failed to open file: "
                      << "\"" << stream_path << "\"");
     }
-    to_yaml_generic(ofs,false,false,indent,depth,pad,eoe);
+    to_yaml_generic(ofs,    // out stream
+                    false,  // detailed
+                    false,  // address
+                    indent, // indent
+                    depth,  // depth
+                    pad,    // padding string (default is " ")
+                    eoe);   // end-of-entry suffix (default is "\n")
     ofs.close();
 }
 
@@ -14102,7 +14113,13 @@ Node::to_pure_yaml(std::ostream &os,
                    const std::string &pad,
                    const std::string &eoe) const
 {
-    to_yaml_generic(os,false,false,indent,depth,pad,eoe);
+    to_yaml_generic(os,     // out stream
+                    false,  // detailed
+                    false,  // address
+                    indent, // indent
+                    depth,  // depth
+                    pad,    // padding string (default is " ")
+                    eoe);   // end-of-entry suffix (default is "\n")
 }
 
 
@@ -14113,7 +14130,12 @@ Node::to_detailed_yaml(index_t indent,
                        const std::string &pad,
                        const std::string &eoe) const
 {
-    return to_yaml_generic(true,false,indent,depth,pad,eoe);
+    return to_yaml_generic(true,   // detailed
+                           false,  // address
+                           indent, // indent
+                           depth,  // depth
+                           pad,    // padding string (default is " ")
+                           eoe);   // end-of-entry suffix (default is "\n")
 }
 
 //---------------------------------------------------------------------------//
@@ -14131,7 +14153,13 @@ Node::to_detailed_yaml(const std::string &stream_path,
         CONDUIT_ERROR("<Node::to_detailed_yaml> failed to open file: "
                      << "\"" << stream_path << "\"");
     }
-    to_yaml_generic(ofs,true,false,indent,depth,pad,eoe);
+    to_yaml_generic(ofs,    // out stream
+                    true,   // detailed
+                    false,  // address
+                    indent, // indent
+                    depth,  // depth
+                    pad,    // padding string (default is " ")
+                    eoe);   // end-of-entry suffix (default is "\n")
     ofs.close();
 }
 
@@ -14144,7 +14172,13 @@ Node::to_detailed_yaml(std::ostream &os,
                        const std::string &pad,
                        const std::string &eoe) const
 {
-    to_yaml_generic(os,true,false,indent,depth,pad,eoe);
+    to_yaml_generic(os,     // out stream
+                    true,   // detailed
+                    false,  // address
+                    indent, // indent
+                    depth,  // depth
+                    pad,    // padding string (default is " ")
+                    eoe);   // end-of-entry suffix (default is "\n")
 }
 
 
@@ -14155,7 +14189,12 @@ Node::to_detailed_yaml_external(index_t indent,
                                 const std::string &pad,
                                 const std::string &eoe) const
 {
-    return to_yaml_generic(true,true,indent,depth,pad,eoe);
+    return to_yaml_generic(true,   // detailed
+                           true,   // address
+                           indent, // indent
+                           depth,  // depth
+                           pad,    // padding string (default is " ")
+                           eoe);   // end-of-entry suffix (default is "\n")
 }
 
 //---------------------------------------------------------------------------//
@@ -14173,7 +14212,13 @@ Node::to_detailed_yaml_external(const std::string &stream_path,
         CONDUIT_ERROR("<Node::to_detailed_yaml> failed to open file: "
                      << "\"" << stream_path << "\"");
     }
-    to_yaml_generic(ofs,true,true,indent,depth,pad,eoe);
+    to_yaml_generic(ofs,    // out stream
+                    true,   // detailed
+                    true,   // address
+                    indent, // indent
+                    depth,  // depth
+                    pad,    // padding string (default is " ")
+                    eoe);   // end-of-entry suffix (default is "\n")
     ofs.close();
 }
 
@@ -14186,7 +14231,13 @@ Node::to_detailed_yaml_external(std::ostream &os,
                                 const std::string &pad,
                                 const std::string &eoe) const
 {
-    to_yaml_generic(os,true,true,indent,depth,pad,eoe);
+    to_yaml_generic(os,     // out stream
+                    true,   // detailed
+                    true,   // address
+                    indent, // indent
+                    depth,  // depth
+                    pad,    // padding string (default is " ")
+                    eoe);   // end-of-entry suffix (default is "\n")
 }
 
 
