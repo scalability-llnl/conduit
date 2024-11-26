@@ -4691,8 +4691,8 @@ private:
                                         const std::string &eoe="\n") const;
 
     void                to_yaml_generic(const std::string &stream_path,
-                                        bool address,
                                         bool detailed,
+                                        bool address,
                                         index_t indent=2,
                                         index_t depth=0,
                                         const std::string &pad=" ",
