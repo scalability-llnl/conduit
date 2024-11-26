@@ -13184,19 +13184,35 @@ Node::to_json_stream(std::ostream &os,
 {
     if(protocol == "json")
     {
-        return to_pure_json(os,indent,depth,pad,eoe);
+        return to_pure_json(os,     // stream_path
+                            indent, // indent
+                            depth,  // depth
+                            pad,    // padding string (default is " ")
+                            eoe);   // end-of-entry suffix (default is "\n")
     }
     else if(protocol == "conduit_json")
     {
-        return to_detailed_json(os,indent,depth,pad,eoe);
+        return to_detailed_json(os,     // stream_path
+                                indent, // indent
+                                depth,  // depth
+                                pad,    // padding string (default is " ")
+                                eoe);   // end-of-entry suffix (default is "\n")
     }
     else if(protocol == "conduit_json_external")
     {
-        return to_detailed_json_external(os,indent,depth,pad,eoe);
+        return to_detailed_json_external(os,     // stream_path
+                                         indent, // indent
+                                         depth,  // depth
+                                         pad,    // padding string (default is " ")
+                                         eoe);   // end-of-entry suffix (default is "\n")
     }
     else if(protocol == "conduit_base64_json")
     {
-        return to_base64_json(os,indent,depth,pad,eoe);
+        return to_base64_json(os,     // stream_path
+                              indent, // indent
+                              depth,  // depth
+                              pad,    // padding string (default is " ")
+                              eoe);   // end-of-entry suffix (default is "\n")
     }
     else
     {
@@ -13204,6 +13220,7 @@ Node::to_json_stream(std::ostream &os,
                       << "\nSupported protocols:\n"
                       << " json\n"
                       << " conduit_json\n"
+                      << " conduit_json_external\n"
                       << " conduit_base64_json\n");
     }
 }
@@ -13334,7 +13351,6 @@ Node::to_yaml_stream(const std::string &stream_path,
 }
 
 //-----------------------------------------------------------------------------
-// TODO add conduit_yaml conduit_yaml_external conduit_base64_yaml
 void
 Node::to_yaml_stream(std::ostream &os,
                      const std::string &protocol,
@@ -13345,27 +13361,43 @@ Node::to_yaml_stream(std::ostream &os,
 {
     if(protocol == "yaml")
     {
-        return to_pure_yaml(os,indent,depth,pad,eoe);
+        return to_pure_yaml(os,     // stream_path
+                            indent, // indent
+                            depth,  // depth
+                            pad,    // padding string (default is " ")
+                            eoe);   // end-of-entry suffix (default is "\n")
     }
     else if(protocol == "conduit_yaml")
     {
-        return to_detailed_yaml(os,indent,depth,pad,eoe);
+        return to_detailed_yaml(os,     // stream_path
+                                indent, // indent
+                                depth,  // depth
+                                pad,    // padding string (default is " ")
+                                eoe);   // end-of-entry suffix (default is "\n")
     }
     else if(protocol == "conduit_yaml_external")
     {
-        return to_detailed_yaml_external(os,indent,depth,pad,eoe);
+        return to_detailed_yaml_external(os,     // stream_path
+                                         indent, // indent
+                                         depth,  // depth
+                                         pad,    // padding string (default is " ")
+                                         eoe);   // end-of-entry suffix (default is "\n")
     }
-    // TODO
-    // else if(protocol == "conduit_base64_yaml")
-    // {
-    //     return to_base64_yaml(os,indent,depth,pad,eoe);
-    // }
+    else if(protocol == "conduit_base64_yaml")
+    {
+        return to_base64_yaml(os,     // stream_path
+                              indent, // indent
+                              depth,  // depth
+                              pad,    // padding string (default is " ")
+                              eoe);   // end-of-entry suffix (default is "\n")
+    }
     else
     {
         CONDUIT_ERROR("Unknown Node::to_yaml protocol: " << protocol
                       << "\nSupported protocols:\n"
                       << " yaml\n"
                       << " conduit_yaml\n"
+                      << " conduit_yaml_external\n"
                       << " conduit_base64_yaml\n");
     }
 }
