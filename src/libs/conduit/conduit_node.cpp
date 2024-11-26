@@ -13848,27 +13848,8 @@ Node::to_base64_json(std::ostream &os,
     std::ios_base::fmtflags prev_stream_flags(os.flags());
     os.precision(15);
 
-    //
-    // we need compact data
-    //
-    // TODO check to support fast path if already
-    // compact + contig and host accessible?
-    Node n;
-    compact_to(n);
-
-    // use libb64 to encode the data
-    index_t nbytes = n.schema().spanned_bytes();
-    index_t enc_buff_size =  utils::base64_encode_buffer_size(nbytes);
-    Node bb64_data;
-    bb64_data.set(DataType::char8_str(enc_buff_size));
-
-    // since we use compact_to(n) above, the data will always compact
-    // and on the host, so we can use it directly in utils::base64_encode
-    const char *src_ptr = (const char*)n.data_ptr();
-    char *dest_ptr       = (char*)bb64_data.data_ptr();
-    utils::conduit_memset(dest_ptr,0,(size_t)enc_buff_size);
-
-    utils::base64_encode(src_ptr,nbytes,dest_ptr);
+    Node n, bb64_data;
+    to_base64(n, bb64_data);
 
     // create the resulting json
 
@@ -14302,31 +14283,11 @@ Node::to_base64_yaml(std::ostream &os,
                      const std::string &pad,
                      const std::string &eoe) const
 {
-    // TODO refactor into shared helper for both json and yaml
     std::ios_base::fmtflags prev_stream_flags(os.flags());
     os.precision(15);
 
-    //
-    // we need compact data
-    //
-    // TODO check to support fast path if already
-    // compact + contig and host accessible?
-    Node n;
-    compact_to(n);
-
-    // use libb64 to encode the data
-    index_t nbytes = n.schema().spanned_bytes();
-    index_t enc_buff_size =  utils::base64_encode_buffer_size(nbytes);
-    Node bb64_data;
-    bb64_data.set(DataType::char8_str(enc_buff_size));
-
-    // since we use compact_to(n) above, the data will always compact
-    // and on the host, so we can use it directly in utils::base64_encode
-    const char *src_ptr = (const char*)n.data_ptr();
-    char *dest_ptr       = (char*)bb64_data.data_ptr();
-    utils::conduit_memset(dest_ptr,0,(size_t)enc_buff_size);
-
-    utils::base64_encode(src_ptr,nbytes,dest_ptr);
+    Node n, bb64_data;
+    to_base64(n, bb64_data);
 
     // create the resulting yaml
 
@@ -14346,6 +14307,33 @@ Node::to_base64_yaml(std::ostream &os,
     os << eoe;
 
     os.flags(prev_stream_flags);
+}
+
+
+//---------------------------------------------------------------------------//
+void
+Node::to_base64(Node &n,
+                Node &bb64_data) const
+{
+    //
+    // we need compact data
+    //
+    // TODO check to support fast path if already
+    // compact + contig and host accessible?
+    compact_to(n);
+
+    // use libb64 to encode the data
+    const index_t nbytes = n.schema().spanned_bytes();
+    const index_t enc_buff_size =  utils::base64_encode_buffer_size(nbytes);
+    bb64_data.set(DataType::char8_str(enc_buff_size));
+
+    // since we use compact_to(n) above, the data will always compact
+    // and on the host, so we can use it directly in utils::base64_encode
+    const char *src_ptr = (const char*)n.data_ptr();
+    char *dest_ptr       = (char*)bb64_data.data_ptr();
+    utils::conduit_memset(dest_ptr,0,(size_t)enc_buff_size);
+
+    utils::base64_encode(src_ptr,nbytes,dest_ptr);
 }
 
 

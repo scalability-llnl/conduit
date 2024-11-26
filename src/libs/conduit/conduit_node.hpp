@@ -4785,10 +4785,16 @@ private:
                                     const std::string &pad=" ",
                                     const std::string &eoe="\n") const;
 
-    //-------------------------------------------------------------------------
-    // private summary string helper
-    // (public interface methods bundle options in a node)
-    //-------------------------------------------------------------------------
+//-------------------------------------------------------------------------
+// private base64 helper used by both yaml and json
+//-------------------------------------------------------------------------
+    void             to_base64(Node &n,
+                               Node &bb64_data) const;
+
+//-------------------------------------------------------------------------
+// private summary string helper
+// (public interface methods bundle options in a node)
+//-------------------------------------------------------------------------
     void             to_summary_string_stream(std::ostream &os,
                                               index_t num_children_threshold,
                                               index_t num_elements_threshold,

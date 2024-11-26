@@ -1264,7 +1264,7 @@ unescape_special_chars(const std::string &input)
 //-----------------------------------------------------------------------------
 void
 base64_encode(const void *src,
-              index_t src_nbytes,
+              const index_t src_nbytes,
               void *dest)
 {
     int nbytes = (int)src_nbytes;
@@ -1288,14 +1288,14 @@ base64_encode(const void *src,
 
 //-----------------------------------------------------------------------------
 index_t
-base64_encode_buffer_size(index_t src_nbytes)
+base64_encode_buffer_size(const index_t src_nbytes)
 {
      return  (4*src_nbytes) / 3 + 4 + 1;
 }
 
 //-----------------------------------------------------------------------------
 index_t
-base64_decode_buffer_size(index_t encoded_nbytes)
+base64_decode_buffer_size(const index_t encoded_nbytes)
 {
     return (encoded_nbytes / 4) * 3 + 1;
 }
