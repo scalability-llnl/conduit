@@ -3395,9 +3395,14 @@ Generator::walk(Node &node) const
             }
 
             Parser::JSON::parse_base64(&node,
-                                    document);
+                                       document);
         }
 
+        else if( m_protocol == "conduit_base64_yaml")
+        {
+            Parser::YAML::parse_base64(&node,
+                                       document);
+        }
         else if( m_protocol == "conduit_json" || m_protocol == "conduit_json_external")
         {
             // Note: conduit_json_external if case here for symmetry with gen / read options
@@ -3417,12 +3422,6 @@ Generator::walk(Node &node) const
                                            document,
                                            curr_offset);
         }
-        // TODO
-        // else if( m_protocol == "conduit_base64_yaml")
-        // {
-        //     Parser::YAML::parse_base64(&node,
-        //                                document);
-        // }
         else if( m_protocol == "conduit_yaml" || m_protocol == "conduit_yaml_external")
         {
             index_t curr_offset = 0;
@@ -3492,6 +3491,11 @@ Generator::walk_external(Node &node) const
             Parser::JSON::parse_base64(&node,
                                     document);
         }
+        else if( m_protocol == "conduit_base64_yaml")
+        {
+            Parser::YAML::parse_base64(&node,
+                                       document);
+        }
         else if( m_protocol == "conduit_json" || m_protocol == "conduit_json_external")
         {
             // Note: conduit_json_external if case here for symmetry with gen / read options
@@ -3511,12 +3515,6 @@ Generator::walk_external(Node &node) const
                                                     document,
                                                     curr_offset);
         }
-        // TODO
-        // else if( m_protocol == "conduit_base64_yaml")
-        // {
-        //     Parser::YAML::parse_base64(&node,
-        //                                document);
-        // }
         else if( m_protocol == "conduit_yaml" || m_protocol == "conduit_yaml_external")
         {
             index_t curr_offset = 0;
