@@ -12677,7 +12677,10 @@ Node::to_string_stream(std::ostream &os,
                        const std::string &pad,
                        const std::string &eoe) const
 {
-    if(protocol == "yaml")
+    if (protocol == "yaml" || 
+        protocol == "conduit_yaml" ||
+        protocol == "conduit_yaml_external" || 
+        protocol == "conduit_base64_yaml")
     {
         to_yaml_stream(os,protocol,indent,depth,pad,eoe);
     }
