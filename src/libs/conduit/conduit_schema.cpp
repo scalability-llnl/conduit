@@ -702,6 +702,7 @@ Schema::to_yaml_default() const
 //---------------------------------------------------------------------------//
 void
 Schema::save(const std::string &ofname,
+             const std::string &protocol,
              index_t indent,
              index_t depth,
              const std::string &pad,
@@ -709,7 +710,19 @@ Schema::save(const std::string &ofname,
 {
     // TODO: this is ineff, get base class rep correct?
     std::ostringstream oss;
-    to_json_stream(oss,indent,depth,pad,eoe);
+    if ("json" == protocol)
+    {
+        to_json_stream(oss,indent,depth,pad,eoe);
+    }
+    else if ("yaml" == protocol)
+    {
+        to_yaml_stream(oss,indent,depth,pad,eoe);
+    }
+    else
+    {
+        CONDUIT_ERROR("<Schema::save> unknown protocol: "
+                      << "\"" << protocol << "\"");
+    }
 
     std::ofstream ofile;
     ofile.open(ofname.c_str());
