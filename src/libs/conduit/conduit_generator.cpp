@@ -3186,7 +3186,6 @@ Generator::Parser::YAML::walk_pure_yaml_schema(Node *node,
 //---------------------------------------------------------------------------//
 void 
 Generator::Parser::YAML::parse_base64(Node *node,
-                                      Schema *schema,
                                       const char *yaml_txt)
 {
     // TODO every function has this same entry point can we fix it

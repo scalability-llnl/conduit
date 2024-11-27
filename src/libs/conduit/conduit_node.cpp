@@ -13962,7 +13962,13 @@ Node::to_yaml_generic(std::ostream &os,
                                            pad,
                                            eoe);
 
-            // if the child is a leaf, we need eoe
+            // If the child is a leaf, we need eoe
+            // Why do we need these here but not in the
+            // same case but for Schema::to_yaml_stream()?
+            // It's because the yaml streams of leaves
+            // need eoe at the end. Schema::to_yaml_stream()
+            // leaves end with the dtype turned into yaml,
+            // which comes with an eoe at the end already.
             if(m_children[i]->number_of_children() == 0)
                 os << eoe;
         }
@@ -14296,8 +14302,6 @@ Node::to_base64_yaml(std::ostream &os,
     os << "schema: ";
 
     n.schema().to_yaml_stream(os,indent,depth+1,pad,eoe);
-
-    os << eoe;
 
     utils::indent(os,indent,depth,pad);
     os << "data: " << eoe;

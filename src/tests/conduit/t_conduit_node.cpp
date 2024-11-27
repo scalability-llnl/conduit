@@ -1071,7 +1071,7 @@ TEST(conduit_node, test_parse_all_protos)
         std::make_pair("yaml",                  n.to_yaml("yaml")),
         std::make_pair("conduit_yaml",          n.to_yaml("conduit_yaml")),
         std::make_pair("conduit_yaml_external", n.to_yaml("conduit_yaml_external")),
-        // std::make_pair("conduit_base64_yaml",   n.to_yaml("conduit_base64_yaml")),
+        std::make_pair("conduit_base64_yaml",   n.to_yaml("conduit_base64_yaml")),
     };
 
     for (const auto &parse_me : txt_cases)

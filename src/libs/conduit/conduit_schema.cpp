@@ -632,16 +632,12 @@ Schema::to_yaml_stream(std::ostream &os,
         for(size_t i=0; i <  nchildren;i++)
         {
             utils::indent(os,indent,depth,pad);
-            // we always need eoe
-            os << object_order()[i] << ": " << eoe;
+            os << object_order()[i] << ": ";
             children()[i]->to_yaml_stream(os,
                                           indent,
                                           depth+1,
                                           pad,
                                           eoe);
-
-
-
         }
     }
     else if(m_dtype.id() == DataType::LIST_ID)
@@ -661,9 +657,10 @@ Schema::to_yaml_stream(std::ostream &os,
     }
     else // assume leaf data type
     {
+        os << eoe;
         m_dtype.to_yaml_stream(os,
                                indent,
-                               depth+1,
+                               depth,
                                pad,
                                eoe);
     }
