@@ -880,28 +880,27 @@ TEST(conduit_generator, json_external_gen)
 
 }
 
-// TODO get this working; add conduit_yaml_external protocol where needed
-// //-----------------------------------------------------------------------------
-// TEST(conduit_generator, yaml_external_gen)
-// {
-//     Node n;
-//     n["a"] = 42;
-//     n["b"] = 144;
-//     n["c/d"] = 3.1415;
-//     n.print();
+//-----------------------------------------------------------------------------
+TEST(conduit_generator, yaml_external_gen)
+{
+    Node n;
+    n["a"] = 42;
+    n["b"] = 144;
+    n["c/d"] = 3.1415;
+    n.print();
 
-//     std::string yaml_ext = n.to_yaml("conduit_yaml_external");
-//     std::cout << yaml_ext << std::endl;
+    std::string yaml_ext = n.to_yaml("conduit_yaml_external");
+    std::cout << yaml_ext << std::endl;
 
-//     Node n2;
-//     Generator g(yaml_ext,"conduit_yaml");
-//     g.walk(n2);
-//     n2.print();
+    Node n2;
+    Generator g(yaml_ext,"conduit_yaml");
+    g.walk(n2);
+    n2.print();
 
-//     // n2 should be full external, refing data owned by n
-//     EXPECT_EQ(n["a"].data_ptr(),n2["a"].data_ptr());
-//     EXPECT_EQ(n["b"].data_ptr(),n2["b"].data_ptr());
-//     EXPECT_EQ(n["c"].data_ptr(),n2["c"].data_ptr());
+    // n2 should be full external, refing data owned by n
+    EXPECT_EQ(n["a"].data_ptr(),n2["a"].data_ptr());
+    EXPECT_EQ(n["b"].data_ptr(),n2["b"].data_ptr());
+    EXPECT_EQ(n["c"].data_ptr(),n2["c"].data_ptr());
 
-// }
+}
 
