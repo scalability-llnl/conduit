@@ -368,6 +368,13 @@ public:
                                          Schema *schema,
                                          yaml_document_t *yaml_doc,
                                          yaml_node_t *yaml_node);
+
+    static void    parse_base64(Node *node,
+                                const char *yaml_txt);
+
+    static void    parse_base64(Node *node,
+                                yaml_document_t *yaml_doc,
+                                yaml_node_t *yaml_node);
     
     // extract human readable parser errors
     static void    parse_error_details(yaml_parser_t *yaml_parser,
@@ -2615,11 +2622,7 @@ Generator::Parser::YAML::walk_yaml_schema(Node *node,
     yaml_document_t *yaml_doc  = parser.yaml_doc_ptr();
     yaml_node_t     *yaml_node = parser.yaml_doc_root_ptr();
 
-
-    if (!yaml_doc || !yaml_node)
-    {
-        CONDUIT_ERROR("failed to fetch yaml document root");
-    }
+    CONDUIT_ASSERT(yaml_doc && yaml_node,"failed to fetch yaml document root");
 
     walk_yaml_schema(node,
                      schema,
@@ -2889,11 +2892,7 @@ Generator::Parser::YAML::walk_yaml_schema(Schema *schema,
     yaml_document_t *yaml_doc  = parser.yaml_doc_ptr();
     yaml_node_t     *yaml_node = parser.yaml_doc_root_ptr();
 
-
-    if (!yaml_doc || !yaml_node)
-    {
-        CONDUIT_ERROR("failed to fetch yaml document root");
-    }
+    CONDUIT_ASSERT(yaml_doc && yaml_node,"failed to fetch yaml document root");
 
     walk_yaml_schema(schema,
                      yaml_doc,
@@ -3055,11 +3054,7 @@ Generator::Parser::YAML::walk_pure_yaml_schema(Node *node,
     yaml_document_t *yaml_doc  = parser.yaml_doc_ptr();
     yaml_node_t     *yaml_node = parser.yaml_doc_root_ptr();
 
-
-    if(yaml_doc == NULL || yaml_node == NULL)
-    {
-        CONDUIT_ERROR("failed to fetch yaml document root");
-    }
+    CONDUIT_ASSERT(yaml_doc && yaml_node,"failed to fetch yaml document root");
 
     walk_pure_yaml_schema(node,
                           schema,
@@ -3081,7 +3076,7 @@ Generator::Parser::YAML::walk_pure_yaml_schema(Node *node,
     // object cases
     if (check_yaml_is_mapping_node(yaml_node))
     {
-        // if we make it here and have an empty json object
+        // if we make it here and have an empty yaml object
         // we still want the conduit node to take on the
         // object role
         schema->set(DataType::object());
@@ -3184,6 +3179,98 @@ Generator::Parser::YAML::walk_pure_yaml_schema(Node *node,
                       << "Invalid YAML type for parsing Node from pure YAML."
                       << " Expected: YAML Map, Sequence, String, Null,"
                       << " Boolean, or Number");
+    }
+}
+
+
+//---------------------------------------------------------------------------//
+void 
+Generator::Parser::YAML::parse_base64(Node *node,
+                                      Schema *schema,
+                                      const char *yaml_txt)
+{
+    // TODO every function has this same entry point can we fix it
+
+    YAMLParserWrapper parser;
+    parser.parse(yaml_txt);
+
+    yaml_document_t *yaml_doc  = parser.yaml_doc_ptr();
+    yaml_node_t     *yaml_node = parser.yaml_doc_root_ptr();
+
+    CONDUIT_ASSERT(yaml_doc && yaml_node,"failed to fetch yaml document root");
+
+    parse_base64(node,
+                 yaml_doc,
+                 yaml_node);
+
+    // YAMLParserWrapper cleans up for us
+}
+
+
+//---------------------------------------------------------------------------//
+void 
+Generator::Parser::YAML::parse_base64(Node *node,
+                                      yaml_document_t *yaml_doc,
+                                      yaml_node_t *yaml_node)
+{
+    // object case
+
+    std::string base64_str = "";
+    
+    if(check_yaml_is_mapping_node(yaml_node))
+    {
+        Schema s;
+
+        const yaml_node_t *data_value = fetch_yaml_node_from_object_by_name(yaml_doc, yaml_node, "data");
+        if (data_value) // if yaml has data
+        {
+            const yaml_node_t *base64_value = fetch_yaml_node_from_object_by_name(yaml_doc, data_value, "base64");
+            if (base64_value) // if yaml has base64
+            {
+                base64_str = get_yaml_string(base64_value);
+            }
+            else
+            {
+                CONDUIT_ERROR("conduit_base64_yaml protocol error: missing data/base64");
+            }
+        }
+        else
+        {
+            CONDUIT_ERROR("conduit_base64_yaml protocol error: missing data/base64");
+        }
+
+        const yaml_node_t *schema_value = fetch_yaml_node_from_object_by_name(yaml_doc, yaml_node, "schema");
+        if (schema_value) // if yaml has schema
+        {
+            // parse schema
+            index_t curr_offset = 0;
+            walk_yaml_schema(&s, yaml_doc, schema_value, curr_offset);
+        }
+        else
+        {
+            CONDUIT_ERROR("conduit_base64_yaml protocol error: missing schema");
+        }
+        
+        const char *src_ptr = base64_str.c_str();
+        index_t encoded_len = (index_t) base64_str.length();
+        index_t dec_buff_size = utils::base64_decode_buffer_size(encoded_len);
+
+        // decode buffer
+        Node bb64_decode;
+        bb64_decode.set(DataType::char8_str(dec_buff_size));
+        char *decode_ptr = (char*)bb64_decode.data_ptr();
+        memset(decode_ptr,0,dec_buff_size);
+
+        utils::base64_decode(src_ptr,
+                             encoded_len,
+                             decode_ptr);
+
+        node->set(s,decode_ptr);
+
+    }
+    else
+    {
+        CONDUIT_ERROR("conduit_base64_yaml protocol error: missing schema and data/base64");
     }
 }
 
@@ -3401,7 +3488,7 @@ Generator::walk(Node &node) const
         else if( m_protocol == "conduit_base64_yaml")
         {
             Parser::YAML::parse_base64(&node,
-                                       document);
+                                       m_schema.c_str());
         }
         else if( m_protocol == "conduit_json" || m_protocol == "conduit_json_external")
         {
@@ -3489,12 +3576,12 @@ Generator::walk_external(Node &node) const
             }
 
             Parser::JSON::parse_base64(&node,
-                                    document);
+                                       document);
         }
         else if( m_protocol == "conduit_base64_yaml")
         {
             Parser::YAML::parse_base64(&node,
-                                       document);
+                                       m_schema.c_str());
         }
         else if( m_protocol == "conduit_json" || m_protocol == "conduit_json_external")
         {
