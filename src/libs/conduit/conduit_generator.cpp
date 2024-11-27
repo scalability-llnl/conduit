@@ -3424,7 +3424,7 @@ Generator::walk(Node &node) const
         else if( m_protocol == "conduit_yaml" || m_protocol == "conduit_yaml_external")
         {
             index_t curr_offset = 0;
-            const bool external = true;
+            const bool external = false;
 
             Parser::YAML::YAMLParserWrapper parser;
             parser.parse(m_schema.c_str());
