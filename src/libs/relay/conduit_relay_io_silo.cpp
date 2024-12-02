@@ -597,6 +597,20 @@ void convert_to_double_array(const Node &n_src,
 }
 
 //-----------------------------------------------------------------------------
+void convert_to_c_int_array(const Node &n_src,
+                            Node &n_dest)
+{
+    if (n_src.dtype().is_int())
+    {
+        n_dest.set_external(n_src);
+    }
+    else
+    {
+        n_src.to_int_array(n_dest);
+    }
+}
+
+//-----------------------------------------------------------------------------
 bool
 check_using_whole_coordset(const int *dims,
                            const int *min_index,
@@ -723,6 +737,7 @@ add_sizes_and_offsets(DBzonelist *zones,
             offset += size;
         }
     }
+    // TODO use vector set instead
     n_elements["sizes"].set(sizes.data(), sizes.size());
     n_elements["offsets"].set(offsets.data(), offsets.size());
 }
@@ -2016,7 +2031,7 @@ read_matset_domain(DBfile* matset_domain_file_to_use,
             int mix_id = -1 * (matlist_entry + 1);
             int curr_size = 0;
 
-            // when mix_id is 0, we are on the last one
+            // when matset_ptr->mix_next[mix_id] is 0, we are on the last one
             while (mix_id >= 0)
             {
                 material_ids.push_back(matset_ptr->mix_mat[mix_id]);
@@ -4898,22 +4913,10 @@ void silo_write_matset(DBfile *dbfile,
                                          matname_ptrs.data()),
                              "error adding matnames option");
 
-    auto convert_to_c_int_array = [](const Node &n_src, Node &n_dest)
-    {
-        if (n_src.dtype().is_int())
-        {
-            n_dest.set_external(n_src);
-        }
-        else
-        {
-            n_src.to_int_array(n_dest);
-        }
-    };
-
     Node int_arrays;
-    convert_to_c_int_array(silo_matset_compact["mix_mat"], int_arrays["mix_mat"]);
-    convert_to_c_int_array(silo_matset_compact["mix_next"], int_arrays["mix_next"]);
-    convert_to_c_int_array(silo_matset_compact["matlist"], int_arrays["matlist"]);
+    detail::convert_to_c_int_array(silo_matset_compact["mix_mat"], int_arrays["mix_mat"]);
+    detail::convert_to_c_int_array(silo_matset_compact["mix_next"], int_arrays["mix_next"]);
+    detail::convert_to_c_int_array(silo_matset_compact["matlist"], int_arrays["matlist"]);
 
     const std::string safe_matset_name = (write_overlink ? "MATERIAL" : detail::sanitize_silo_varname(matset_name));
 
