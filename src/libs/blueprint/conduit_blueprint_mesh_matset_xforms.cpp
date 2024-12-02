@@ -1446,7 +1446,6 @@ to_silo(const conduit::Node &specset,
         CONDUIT_ERROR("blueprint::mesh::specset::to_silo passed matset node "
                       "must be a valid matset tree or a valid intermediate silo "
                       "representation of a matset.");
-        // TODO well, not entirely true...
     }
 
     // need to check if passed matset is already in the silo rep
