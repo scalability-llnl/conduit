@@ -1530,6 +1530,9 @@ to_silo(const conduit::Node &specset,
     // to avoid writing unneeded data
     // that could be expensive though
 
+    // The function silo_write_specset() in conduit_relay_io_silo.cpp
+    // depends on this being a float64. If we change this here,
+    // we must also change it there.
     std::vector<float64> species_mf;
     
     // need to iterate across all species for all materials at once
