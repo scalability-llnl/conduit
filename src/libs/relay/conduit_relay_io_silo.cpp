@@ -1022,8 +1022,8 @@ generate_silo_material_or_species_names(const Node &n_mesh_state,
 // options Node:
 // 
 // comp_info:
-//   comp:                "meshes", "vars", or "matsets"
-//   comp_name:           meshname, varname, or matsetname
+//   comp:                "meshes", "vars", "matsets" or "specsets"
+//   comp_name:           meshname, varname, matsetname, or specsetname
 // domain_info:
 //   local_num_domains: 
 //   local_domain_index: 
@@ -1031,12 +1031,12 @@ generate_silo_material_or_species_names(const Node &n_mesh_state,
 // write_overlink:      "yes" or "no"
 // (only one version of the following is included, depending on what the comp is)
 // specific_info: // for meshes
-//   comp_type:           only used for meshes and vars (not matsets)
+//   comp_type:           only used for meshes and vars (not matsets nor species)
 // specific_info: // for vars
-//   comp_type:           only used for meshes and vars (not matsets)
+//   comp_type:           only used for meshes and vars (not matsets nor species)
 //   var_data_type:       only used for vars
 //   var_parent:          optionally used for vars
-// specific_info: // omitted for matsets
+// specific_info: // omitted for matsets and specsets
 // 
 void
 track_local_type_domain_info(const Node &options,
@@ -1058,8 +1058,8 @@ track_local_type_domain_info(const Node &options,
         index_t_array domain_ids = local_type_domain_info_comp[comp_name]["domain_ids"].value();
         domain_ids.fill(-1); // we want missing domains to have -1 and not 0 to avoid confusion
         
-        // matsets do not have type information that must be tracked
-        if (comp != "matsets")
+        // meshes and vars have type information that must be tracked
+        if (comp == "meshes" || comp == "vars")
         {
             local_type_domain_info_comp[comp_name]["types"].set(DataType::index_t(local_num_domains));
         }
@@ -1068,7 +1068,7 @@ track_local_type_domain_info(const Node &options,
         // this is used later when writing out the var attributes
         if (write_overlink && comp == "vars")
         {
-            index_t var_data_type = options["specific_info"]["var_data_type"].to_index_t();
+            const index_t var_data_type = options["specific_info"]["var_data_type"].to_index_t();
 
             // we only need to do this once since overlink assumes all domains have
             // the same data type.
@@ -1084,7 +1084,7 @@ track_local_type_domain_info(const Node &options,
     index_t_array domain_ids = local_type_domain_info_comp[comp_name]["domain_ids"].value();
     domain_ids[local_domain_index] = global_domain_id;
     // for vars and meshes we want to store the var and mesh type, respectively
-    if (comp != "matsets")
+    if (comp == "meshes" || comp == "vars")
     {
         index_t comp_type = options["specific_info"]["comp_type"].to_index_t();
 
@@ -5072,16 +5072,16 @@ void silo_write_specset(DBfile *dbfile,
 
     CONDUIT_CHECK_SILO_ERROR(silo_error, " DBPutMatspecies");
 
-    // Node bookkeeping_info;
-    // bookkeeping_info["comp_info"]["comp"] = "matsets";
-    // bookkeeping_info["comp_info"]["comp_name"] = matset_name;
-    // bookkeeping_info["domain_info"]["local_num_domains"] = local_num_domains;
-    // bookkeeping_info["domain_info"]["local_domain_index"] = local_domain_index;
-    // bookkeeping_info["domain_info"]["global_domain_id"] = global_domain_id;
-    // bookkeeping_info["write_overlink"] = (write_overlink ? "yes" : "no");
+    Node bookkeeping_info;
+    bookkeeping_info["comp_info"]["comp"] = "specsets";
+    bookkeeping_info["comp_info"]["comp_name"] = specset_name;
+    bookkeeping_info["domain_info"]["local_num_domains"] = local_num_domains;
+    bookkeeping_info["domain_info"]["local_domain_index"] = local_domain_index;
+    bookkeeping_info["domain_info"]["global_domain_id"] = global_domain_id;
+    bookkeeping_info["write_overlink"] = (write_overlink ? "yes" : "no");
 
-    // // bookkeeping
-    // detail::track_local_type_domain_info(bookkeeping_info, local_type_domain_info);
+    // bookkeeping
+    detail::track_local_type_domain_info(bookkeeping_info, local_type_domain_info);
 }
 
 //---------------------------------------------------------------------------//
@@ -5571,9 +5571,9 @@ write_multimats(DBfile *dbfile,
             // the correct topology.
             if (! write_overlink || linked_topo_name == ovl_topo_name)
             {
-                std::string safe_matset_name = (write_overlink ? "MATERIAL" : detail::sanitize_silo_varname(matset_name));
-                std::string safe_linked_topo_name = detail::sanitize_silo_varname(linked_topo_name);
-                std::string silo_path = root["silo_path"].as_string();
+                const std::string safe_matset_name = (write_overlink ? "MATERIAL" : detail::sanitize_silo_varname(matset_name));
+                const std::string safe_linked_topo_name = detail::sanitize_silo_varname(linked_topo_name);
+                const std::string silo_path = root["silo_path"].as_string();
 
                 std::vector<std::string> matset_name_strings;
                 detail::generate_silo_material_or_species_names(n_mesh["state"],
@@ -6552,18 +6552,30 @@ void CONDUIT_RELAY_API write_mesh(const Node &mesh,
     //   mesh2:
     //     domain_ids: [5, 53, 74, ...]
     //     types: [pointmesh, pointmesh, pointmesh, ...]
+    //   ...
     // vars:
     //   var1:
     //     domain_ids: [5, 53, 74, ...]
     //     types: [quadvar, ucdvar, quadvar, ...]
+    //     ovl_datatype: [1, 1, 0, -1, ...]
     //   var2:
     //     domain_ids: [5, 53, 74, ...]
     //     types: [pointvar, pointvar, pointvar, ...]
+    //     ovl_datatype: [1, 0, -1, 1, ...]
+    //     var_parent: var1
+    //   ...
     // matsets:
     //   matset1:
     //     domain_ids: [5, 53, 74, ...]
     //   matset2:
     //     domain_ids: [5, 53, 74, ...]
+    //   ...
+    // specsets:
+    //   specset1:
+    //     domain_ids: [5, 53, 74, ...]
+    //   specset2:
+    //     domain_ids: [5, 53, 74, ...]
+    //   ...
     // each array is local_num_domains long
 
     // at this point for file_style,
@@ -7076,19 +7088,30 @@ void CONDUIT_RELAY_API write_mesh(const Node &mesh,
         // (one entry in each list for each domain)
         // 
         // meshes:
-        //   mesh1: ucdmesh, ucdmesh, ...
-        //   mesh2: ucdmesh, pointmesh, ...
-        //   mesh3: quadmesh, quadmesh, ...
+        //   mesh1: [ucdmesh, ucdmesh, ...]
+        //   mesh2: [ucdmesh, pointmesh, ...]
+        //   mesh3: [quadmesh, quadmesh, ...]
         //   ...
         // vars:
-        //   var1: ucdvar, ucdvar, ...
-        //   var2: ucdvar, pointvar, ...
-        //   var3: quadvar, quadvar, ...
+        //   var1: [ucdvar, ucdvar, ...]
+        //   var2: [ucdvar, pointvar, ...]
+        //   var3: [quadvar, quadvar, ...]
         //   ...
         // matsets:
-        //   matset1: 1, 1, -1, ...
-        //   matset2: 1, -1, 1, ...
-
+        //   matset1: [1, 1, -1, ...]
+        //   matset2: [1, -1, 1, ...]
+        //   ...
+        // specsets:
+        //   specset1: [1, 1, -1, ...]
+        //   specset2: [1, -1, 1, ...]
+        //   ...
+        // ovl_var_datatypes:              (used for overlink only)
+        //   var1: [1, 1, 0, -1, ...]
+        //   var2: [1, 0, -1, 1, ...]
+        // ovl_var_parents:                (used for overlink only)
+        //   var1:
+        //     var2: 
+        //   ...
         Node root_type_domain_info;
 
         auto type_domain_info_itr = global_type_domain_info.children();
@@ -7096,23 +7119,44 @@ void CONDUIT_RELAY_API write_mesh(const Node &mesh,
         {
             // type info from a particular MPI rank
             const Node &type_domain_info_from_rank = type_domain_info_itr.next();
-            
+
+            //
+            // workhorse lambda to put together the root_type_domain_info object
+            //
             auto assemble_root_type_dom_info = [&](std::string comp)
             {
+                // comp is "meshes", "vars", "matsets", or "specsets"
                 Node &root_type_domain_info_comp = root_type_domain_info[comp];
+                
+                // do we have any information for this kind of object?
                 if (type_domain_info_from_rank.has_child(comp))
                 {
+                    // if we do have this kind of object, we will read information
+                    // from all of the objects of this kind
                     auto read_comp_itr = type_domain_info_from_rank[comp].children();
                     while (read_comp_itr.has_next())
                     {
+                        // We are one level from the bottom of the tree now.
+                        // This is information for a single mesh/var/matset/specset 
+                        // on some domain.
                         const Node &read_comp_type_domain_info = read_comp_itr.next();
+                        // mesh/var/matset/specset name
                         const std::string read_comp_name = read_comp_itr.name();
 
+                        // if this object has never been seen before on any domain
                         if (!root_type_domain_info_comp.has_child(read_comp_name)) 
                         {
+                            // For this object, we allocate an array that is num domains long.
+                            // Into this array we will put relevant information for this object,
+                            // like the meshtype or vartype or just if this object exists for a
+                            // particular domain.
                             root_type_domain_info_comp[read_comp_name].set(DataType::index_t(global_num_domains));
+                            // get a pointer to our new array
                             index_t_array root_comp_types = root_type_domain_info_comp[read_comp_name].value();
-                            root_comp_types.fill(-1); // empty domains get -1
+                            // -1 is our special flag that indicates that a domain does not 
+                            // contain our object. We initialize our array to contain all
+                            // -1 to start and then fill in domains that we have information for.
+                            root_comp_types.fill(-1);
 
                             // for overlink, we need the overlink data type for each var
                             // to save out in the var attributes
@@ -7137,7 +7181,7 @@ void CONDUIT_RELAY_API write_mesh(const Node &mesh,
                         // local domain ids index into it to read global domain ids out
                         index_t_accessor global_domain_ids = read_comp_type_domain_info["domain_ids"].value();
                         
-                        if (comp == "matsets")
+                        if (comp == "matsets" || comp == "specsets")
                         {
                             for (index_t local_domain_id = 0; 
                                  local_domain_id < global_domain_ids.number_of_elements(); 
@@ -7171,6 +7215,7 @@ void CONDUIT_RELAY_API write_mesh(const Node &mesh,
             assemble_root_type_dom_info("meshes");
             assemble_root_type_dom_info("vars");
             assemble_root_type_dom_info("matsets");
+            assemble_root_type_dom_info("specsets");
         }
 
         std::string output_silo_path;
