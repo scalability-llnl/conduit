@@ -579,6 +579,74 @@ TEST(conduit_relay_io_silo, round_trip_grid_adjset)
     }
 }
 
+// //-----------------------------------------------------------------------------
+// TEST(conduit_relay_io_silo, round_trip_specsets)
+// {
+//     Node save_mesh, load_mesh, info;
+//     // TODO do 10 x 10 ... why? I guess that would be good
+//     blueprint::mesh::examples::misc("specsets", 4, 4, 1, save_mesh);
+
+//     std::cout << save_mesh.to_yaml() << std::endl;
+
+//     const std::string basename = "silo_round_trip_specsets";
+//     const std::string filename = basename + ".cycle_000100.root";;
+
+//     remove_path_if_exists(filename);
+//     io::silo::save_mesh(save_mesh, basename);
+
+//     // TODO why isn't the multimesh being written? need to investigate
+// }
+
+// // matsets: 
+// //   mesh: 
+// //     topology: "mesh"
+// //     volume_fractions: 
+// //       mat1: [0.0, 0.5, 1.0, 0.0, 0.5, 1.0, 0.0, 0.5, 1.0]
+// //       mat2: [1.0, 0.5, 0.0, 1.0, 0.5, 0.0, 1.0, 0.5, 0.0]
+// // specsets: 
+// //   mesh: 
+// //     matset: "mesh"
+// //     matset_values: 
+// //       mat1: 
+// //         spec1: [0.0, 0.5, 1.0, 0.0, 0.5, 1.0, 0.0, 0.5, 1.0]
+// //         spec2: [1.0, 0.5, 0.0, 1.0, 0.5, 0.0, 1.0, 0.5, 0.0]
+// //       mat2: 
+// //         spec1: [0.0, 0.5, 1.0, 0.0, 0.5, 1.0, 0.0, 0.5, 1.0]
+// //         spec2: [1.0, 0.5, 0.0, 1.0, 0.5, 0.0, 1.0, 0.5, 0.0]
+
+// // n_mesh_info
+
+// // mesh: 
+// //   type: "unstructured"
+// //   coordset: "coords"
+// //   ndims: 2
+// //   num_elems: 9
+// //   zonelist_name: "mesh_connectivity"
+// //   num_pts: 16
+// // matsets: 
+// //   mesh: 
+// //     silo_matset: 
+// //       topology: "mesh"
+// //       material_map: 
+// //         mat1: 0
+// //         mat2: 1
+// //       matlist: [1, -1, 0, 1, -3, 0, 1, -5, 0]
+// //       mix_next: [2, 0, 4, 0, 6, 0]
+// //       mix_mat: [0, 1, 0, 1, 0, 1]
+// //       mix_vf: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5]
+// //     silo_matset_compact: 
+// //       topology: "mesh"
+// //       material_map: 
+// //         mat1: 0
+// //         mat2: 1
+// //       matlist: [1, -1, 0, 1, -3, 0, 1, -5, 0]
+// //       mix_next: [2, 0, 4, 0, 6, 0]
+// //       mix_mat: [0, 1, 0, 1, 0, 1]
+// //       mix_vf: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5]
+// //     silo_mix_vfs_final: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5]
+// //     nmat: 2
+// //     topo_name: "mesh"
+
 //-----------------------------------------------------------------------------
 TEST(conduit_relay_io_silo, round_trip_units_and_labels)
 {
@@ -2187,3 +2255,6 @@ TEST(conduit_relay_io_silo, read_overlink_directly)
 // TODO add tetra8 and c36_m5 to all the overlink i/o tests
 
 // TODO somewhere I need to error on overlink when there are different var or mesh types across domains
+
+// TODO add tests for cube20b and hl18spec (new valid overlink files with species)
+// TODO make sure all overlink files are being used in tests

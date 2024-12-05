@@ -1131,7 +1131,7 @@ read_dims_from_mesh_info(const Node &mesh_info_for_topo, int *dims)
     }
     else
     {
-        dims[0] = num_elems;
+        dims[0] = mesh_info_for_topo["num_elems"].to_value();
         return 1; // ndims == 1
     }
 }
@@ -4909,7 +4909,7 @@ void silo_write_matset(DBfile *dbfile,
         "matset " << matset_name << " must have the same number of elements as its associated topology.");
 
     int dims[] = {0,0,0};
-    const int ndims = read_dims_from_mesh_info(n_mesh_info[topo_name], dims);
+    const int ndims = detail::read_dims_from_mesh_info(n_mesh_info[topo_name], dims);
 
     // get the length of the mixed data arrays
     const int mixlen = silo_matset_compact["mix_mat"].dtype().number_of_elements();
@@ -4938,21 +4938,21 @@ void silo_write_matset(DBfile *dbfile,
     const std::string safe_matset_name = (write_overlink ? "MATERIAL" : detail::sanitize_silo_varname(matset_name));
 
     int silo_error = 
-        DBPutMaterial(dbfile, // Database file pointer
-                      safe_matset_name.c_str(), // matset name
-                      safe_meshname.c_str(), // mesh name
-                      nmat, // number of materials
-                      matnos.data(), // material numbers
+        DBPutMaterial(dbfile,                         // Database file pointer
+                      safe_matset_name.c_str(),       // matset name
+                      safe_meshname.c_str(),          // mesh name
+                      nmat,                           // number of materials
+                      matnos.data(),                  // material numbers
                       int_arrays["matlist"].value(),
-                      dims, // number of elements in each dimension in matlist
-                      ndims, // number of dimensions in dims
+                      dims,                           // number of elements in each dimension in matlist
+                      ndims,                          // number of dimensions in dims
                       int_arrays["mix_next"].value(),
                       int_arrays["mix_mat"].value(),
-                      NULL, // mix zone is optional
-                      silo_mix_vfs_final.data_ptr(), // volume fractions
-                      mixlen, // length of mixed data arrays
-                      mat_type, // data type of volume fractions
-                      optlist.getSiloObject()); // optlist
+                      NULL,                           // mix zone is optional
+                      silo_mix_vfs_final.data_ptr(),  // volume fractions
+                      mixlen,                         // length of mixed data arrays
+                      mat_type,                       // data type of volume fractions
+                      optlist.getSiloObject());       // optlist
 
     CONDUIT_CHECK_SILO_ERROR(silo_error, " DBPutMaterial");
 
@@ -5004,10 +5004,6 @@ void silo_write_specset(DBfile *dbfile,
     Node silo_specset;
     conduit::blueprint::mesh::specset::to_silo(n_specset, silo_matset, silo_specset);
 
-    // first we need number of zones
-    const std::string topo_name = n_mesh_info["matsets"][matset_name]["topo_name"].as_string();
-    const int nzones = n_mesh_info[topo_name]["num_elems"].to_value();
-
     // get the datatype of the species_mf
     const int datatype = DB_DOUBLE; // to_silo produces species_mf data using float64s
 
@@ -5049,26 +5045,27 @@ void silo_write_specset(DBfile *dbfile,
     detail::convert_to_c_int_array(silo_specset["speclist"], int_arrays["speclist"]);
     detail::convert_to_c_int_array(silo_specset["mix_spec"], int_arrays["mix_spec"]);
 
+    const std::string topo_name = n_mesh_info["matsets"][matset_name]["topo_name"].as_string();
     int dims[] = {0,0,0};
-    const int ndims = read_dims_from_mesh_info(n_mesh_info[topo_name], dims);
+    const int ndims = detail::read_dims_from_mesh_info(n_mesh_info[topo_name], dims);
 
     const int nspecies_mf = silo_specset["nspecies_mf"].to_value();
 
     int silo_error =
-        DBPutMatspecies(dbfile,                             // Database file pointer
-                        safe_specset_name.c_str(),          // specset name
-                        safe_matset_name.c_str(),           // matset name
-                        nmat,                               // number of materials
-                        int_arrays["nmatspec"].value(),     // number of species associated with each material
-                        int_arrays["speclist"].value(),     // indices into species_mf and mix_spec
-                        dims,                               // array of length ndims that defines the shape of the speclist array
-                        ndims,                              // number of dimensions in the speclist array
-                        nspecies_mf,                        // length of the species_mf array
-                        silo_specset["species_mf"].value(), // mass fractions of the matspecies in an array of length nspecies_mf
-                        int_arrays["mix_spec"].value(),     // array of length mixlen containing indices into the species_mf array
-                        mixlen,                             // length of mix_spec array
-                        datatype,                           // datatype of mass fraction data in species_mf
-                        optlist.getSiloObject());           // optlist
+        DBPutMatspecies(dbfile,                                // Database file pointer
+                        safe_specset_name.c_str(),             // specset name
+                        safe_matset_name.c_str(),              // matset name
+                        nmat,                                  // number of materials
+                        int_arrays["nmatspec"].value(),        // number of species associated with each material
+                        int_arrays["speclist"].value(),        // indices into species_mf and mix_spec
+                        dims,                                  // array of length ndims that defines the shape of the speclist array
+                        ndims,                                 // number of dimensions in the speclist array
+                        nspecies_mf,                           // length of the species_mf array
+                        silo_specset["species_mf"].data_ptr(), // mass fractions of the matspecies in an array of length nspecies_mf
+                        int_arrays["mix_spec"].value(),        // array of length mixlen containing indices into the species_mf array
+                        mixlen,                                // length of mix_spec array
+                        datatype,                              // datatype of mass fraction data in species_mf
+                        optlist.getSiloObject());              // optlist
 
     CONDUIT_CHECK_SILO_ERROR(silo_error, " DBPutMatspecies");
 
@@ -5700,7 +5697,7 @@ write_multimatspecs(DBfile *dbfile,
             // the correct topology.
             if (! write_overlink || linked_topo_name == ovl_topo_name)
             {
-                const std::string safe_specset_name = [&]()
+                const std::string safe_specset_name = [&]() -> std::string
                 {
                     if (write_overlink)
                     {
@@ -5794,7 +5791,7 @@ write_multimatspecs(DBfile *dbfile,
                 //                          "Error adding matnames db option.");
 
                 CONDUIT_CHECK_SILO_ERROR(
-                    DBPutMultimat(
+                    DBPutMultimatspecies(
                         dbfile,
                         multimatspec_name.c_str(),
                         global_num_domains,
