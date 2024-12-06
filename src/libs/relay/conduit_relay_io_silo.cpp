@@ -5111,6 +5111,12 @@ void silo_mesh_write(const Node &mesh_domain,
                                  << silo_obj_path);
     }
 
+    // In blueprint, you can have a topo, field, matset, and specset that all have the
+    // same name. In silo, that will break things. They will overwrite each other.
+    // So we need to keep track of the names we have used.
+    // We only care about tracking this in the non-Overlink case as in Overlink,
+    // naming conventions are rigid and do not allow for this case.
+    std::set<std::string> used_names;
     Node n_mesh_info;
 
     if (write_overlink)
@@ -5136,7 +5142,8 @@ void silo_mesh_write(const Node &mesh_domain,
         while (topo_itr.has_next())
         {
             topo_itr.next();
-            std::string topo_name = topo_itr.name();
+            const std::string topo_name = topo_itr.name();
+            used_names.insert(topo_name);
             silo_write_topo(mesh_domain,
                             topo_name,
                             n_mesh_info,
@@ -5164,11 +5171,11 @@ void silo_mesh_write(const Node &mesh_domain,
 
         // the names of the topos the matsets are associated with
         std::set<std::string> topo_names;
-        auto itr = mesh_domain["matsets"].children();
-        while (itr.has_next())
+        auto matset_itr = mesh_domain["matsets"].children();
+        while (matset_itr.has_next())
         {
-            const Node &n_matset = itr.next();
-            const std::string matset_name = itr.name();
+            const Node &n_matset = matset_itr.next();
+            const std::string matset_name = matset_itr.name();
             
             const std::string topo_name = n_matset["topology"].as_string();
             CONDUIT_ASSERT(topo_names.find(topo_name) == topo_names.end(),
@@ -5191,13 +5198,37 @@ void silo_mesh_write(const Node &mesh_domain,
         }
     }
 
+    if (mesh_domain.has_path("specsets")) 
+    {
+        auto specset_itr = mesh_domain["specsets"].children();
+        while (specset_itr.has_next())
+        {
+            const Node &n_specset = specset_itr.next();
+            const std::string specset_name = specset_itr.name();
+            const std::string matset_name = n_specset["matset"].as_string();
+            const std::string topo_name = n_mesh_info["matsets"][matset_name]["topo_name"].as_string();
+            if (! write_overlink || topo_name == ovl_topo_name)
+            {
+                silo_write_specset(dbfile,
+                                   specset_name,
+                                   n_specset,
+                                   write_overlink,
+                                   local_num_domains,
+                                   local_domain_index,
+                                   global_domain_id,
+                                   local_type_domain_info,
+                                   n_mesh_info);
+            }
+        }
+    }
+
     if (mesh_domain.has_path("fields")) 
     {
-        auto itr = mesh_domain["fields"].children();
-        while (itr.has_next())
+        auto field_itr = mesh_domain["fields"].children();
+        while (field_itr.has_next())
         {
-            const Node &n_var = itr.next();
-            const std::string var_name = itr.name();
+            const Node &n_var = field_itr.next();
+            const std::string var_name = field_itr.name();
             if (! write_overlink || n_var["topology"].as_string() == ovl_topo_name)
             {
                 silo_write_field(dbfile,
@@ -5689,8 +5720,13 @@ write_multimatspecs(DBfile *dbfile,
                 continue;
             }
 
-            // TODO I doubt this is how we actually get the topo name
-            const std::string linked_topo_name = n_specset["topology"].as_string();
+            const std::string linked_matset_name = n_specset["matset"].as_string();
+            if (! n_mesh.has_path("matsets/" + linked_matset_name + "topology"))
+            {
+                // either matset doesn't exist or it has no linked topo
+                continue;
+            }
+            const std::string linked_topo_name = n_mesh["matsets"][linked_matset_name]["topology"].as_string();
 
             // if we are not writing overlink, we can go ahead
             // if we are writing overlink, we must ensure we are dealing with
