@@ -313,15 +313,20 @@ public:
 };
 
 //-----------------------------------------------------------------------------
-std::string sanitize_silo_varname(const std::string &varname)
+// silo likes alphanumeric names
+std::string make_alphanumeric(const std::string &varname)
 {
     std::stringstream newvarname;
     for (size_t i = 0; i < varname.size(); i ++)
     {
         if (std::isalnum(varname[i]))
+        {
             newvarname << varname[i];
+        }
         else
+        {
             newvarname << "_";
+        }
     }
     return newvarname.str();
 }
@@ -3767,7 +3772,7 @@ void silo_write_field(DBfile *dbfile,
                                  "error adding label option");
     }
 
-    const std::string safe_meshname = (write_overlink ? "MESH" : detail::sanitize_silo_varname(topo_name));
+    const std::string safe_meshname = (write_overlink ? "MESH" : detail::make_alphanumeric(topo_name));
     int var_type = DB_INVALID_OBJECT;
     int silo_error = 0;
     if (mesh_type == "unstructured")
@@ -3792,7 +3797,7 @@ void silo_write_field(DBfile *dbfile,
             }
 
             silo_error = DBPutUcdvar1(dbfile, // Database file pointer
-                                      detail::sanitize_silo_varname(var_name).c_str(), // variable name
+                                      detail::make_alphanumeric(var_name).c_str(), // variable name
                                       safe_meshname.c_str(), // mesh name
                                       vals_ptr, // the data values
                                       num_values, // number of elements
@@ -3814,7 +3819,7 @@ void silo_write_field(DBfile *dbfile,
                     void *mixvar_ptr = mixvars_ptrs[comp_id];
                     const std::string comp_var_name = var_name + "_" + comp_name_strings[comp_id];
                     silo_error = DBPutUcdvar1(dbfile, // Database file pointer
-                                              detail::sanitize_silo_varname(comp_var_name).c_str(), // variable name
+                                              detail::make_alphanumeric(comp_var_name).c_str(), // variable name
                                               safe_meshname.c_str(), // mesh name
                                               vals_ptr, // the data values
                                               num_values, // number of elements
@@ -3828,7 +3833,7 @@ void silo_write_field(DBfile *dbfile,
             else
             {
                 silo_error = DBPutUcdvar(dbfile, // Database file pointer
-                                         detail::sanitize_silo_varname(var_name).c_str(), // variable name
+                                         detail::make_alphanumeric(var_name).c_str(), // variable name
                                          safe_meshname.c_str(), // mesh name
                                          nvars, // number of variable components
                                          comp_name_ptrs.data(), // variable component names
@@ -3885,7 +3890,7 @@ void silo_write_field(DBfile *dbfile,
             }
 
             silo_error = DBPutQuadvar1(dbfile, // Database file pointer
-                                       detail::sanitize_silo_varname(var_name).c_str(), // variable name
+                                       detail::make_alphanumeric(var_name).c_str(), // variable name
                                        safe_meshname.c_str(), // mesh name
                                        vals_ptr, // the data values
                                        dims, // the dimensions of the data
@@ -3908,7 +3913,7 @@ void silo_write_field(DBfile *dbfile,
                     void *mixvar_ptr = mixvars_ptrs[comp_id];
                     const std::string comp_var_name = var_name + "_" + comp_name_strings[comp_id];
                     silo_error = DBPutQuadvar1(dbfile, // Database file pointer
-                                               detail::sanitize_silo_varname(comp_var_name).c_str(), // variable name
+                                               detail::make_alphanumeric(comp_var_name).c_str(), // variable name
                                                safe_meshname.c_str(), // mesh name
                                                vals_ptr, // the data values
                                                dims, // the dimensions of the data
@@ -3923,7 +3928,7 @@ void silo_write_field(DBfile *dbfile,
             else
             {
                 silo_error = DBPutQuadvar(dbfile, // Database file pointer
-                                          detail::sanitize_silo_varname(var_name).c_str(), // variable name
+                                          detail::make_alphanumeric(var_name).c_str(), // variable name
                                           safe_meshname.c_str(), // mesh name
                                           nvars, // number of variable components
                                           comp_name_ptrs.data(), // variable component names
@@ -3949,7 +3954,7 @@ void silo_write_field(DBfile *dbfile,
         var_type = DB_POINTVAR;
 
         silo_error = DBPutPointvar(dbfile, // Database file pointer.
-                                   detail::sanitize_silo_varname(var_name).c_str(),  // variable name
+                                   detail::make_alphanumeric(var_name).c_str(),  // variable name
                                    safe_meshname.c_str(), // mesh name
                                    nvars, // number of variable components
                                    comp_vals_ptrs.data(), // data values
@@ -4325,7 +4330,7 @@ void silo_write_ucd_zonelist(DBfile *dbfile,
 
     n_mesh_info[topo_name]["num_elems"] = total_num_elems;
 
-    const std::string zlist_name = detail::sanitize_silo_varname(write_overlink ? "zonelist" : topo_name + "_connectivity");
+    const std::string zlist_name = detail::make_alphanumeric(write_overlink ? "zonelist" : topo_name + "_connectivity");
     n_mesh_info[topo_name]["zonelist_name"] = zlist_name;
 
     const int ndims = n_mesh_info[topo_name]["ndims"].as_int();
@@ -4402,7 +4407,7 @@ void silo_write_quad_rect_mesh(DBfile *dbfile,
                                   "Error adding option");
     }
 
-    const std::string safe_meshname = (write_overlink ? "MESH" : detail::sanitize_silo_varname(topo_name));
+    const std::string safe_meshname = (write_overlink ? "MESH" : detail::make_alphanumeric(topo_name));
 
     int silo_error =
         DBPutQuadmesh(dbfile,                      // silo file ptr
@@ -4433,8 +4438,8 @@ void silo_write_ucd_mesh(DBfile *dbfile,
     const int num_elems = n_mesh_info[topo_name]["num_elems"].value();
 
     // TODO polyhedral zone lists are named differently
-    const std::string zlist_name = detail::sanitize_silo_varname(n_mesh_info[topo_name]["zonelist_name"].as_string());
-    const std::string safe_meshname = (write_overlink ? "MESH" : detail::sanitize_silo_varname(topo_name));
+    const std::string zlist_name = n_mesh_info[topo_name]["zonelist_name"].as_string();
+    const std::string safe_meshname = (write_overlink ? "MESH" : detail::make_alphanumeric(topo_name));
 
     int silo_error = DBPutUcdmesh(dbfile,                // silo file ptr
                                   safe_meshname.c_str(), // mesh name
@@ -4519,7 +4524,7 @@ void silo_write_structured_mesh(DBfile *dbfile,
                                  "Error adding option");
     }
 
-    const std::string safe_meshname = (write_overlink ? "MESH" : detail::sanitize_silo_varname(topo_name));
+    const std::string safe_meshname = (write_overlink ? "MESH" : detail::make_alphanumeric(topo_name));
 
     int silo_error =
         DBPutQuadmesh(dbfile,                // silo file ptr
@@ -4546,7 +4551,7 @@ void silo_write_pointmesh(DBfile *dbfile,
                           Node &n_mesh_info)
 {
     n_mesh_info[topo_name]["num_elems"].set(num_pts);
-    const std::string safe_meshname = detail::sanitize_silo_varname(topo_name);
+    const std::string safe_meshname = detail::make_alphanumeric(topo_name);
 
     int silo_error = DBPutPointmesh(dbfile,                // silo file ptr
                                     safe_meshname.c_str(), // mesh name
@@ -4847,6 +4852,7 @@ void silo_write_matset(DBfile *dbfile,
                        const int local_num_domains,
                        const int local_domain_index,
                        const uint64 global_domain_id,
+                       std::set<std::string> &used_names,
                        Node &local_type_domain_info,
                        Node &n_mesh_info)
 {
@@ -4886,7 +4892,7 @@ void silo_write_matset(DBfile *dbfile,
                       << "/topology: " << topo_name);
         return;
     }
-    const std::string safe_meshname = (write_overlink ? "MESH" : detail::sanitize_silo_varname(topo_name));
+    const std::string safe_meshname = (write_overlink ? "MESH" : detail::make_alphanumeric(topo_name));
 
     // extract data from material map
     int nmat;
@@ -4899,9 +4905,7 @@ void silo_write_matset(DBfile *dbfile,
                               matname_ptrs,
                               matnos);
 
-    // TODO put matset into mesh info so specset can use it...
-    // but what info do we need to save?
-    n_mesh_info["matsets"][matset_name]["nmat"] = nmat;
+    // save topo name in case we are saving species as well
     n_mesh_info["matsets"][matset_name]["topo_name"] = topo_name;
 
     const int num_elems = n_mesh_info[topo_name]["num_elems"].to_value();
@@ -4935,7 +4939,9 @@ void silo_write_matset(DBfile *dbfile,
     detail::convert_to_c_int_array(silo_matset_compact["mix_next"], int_arrays["mix_next"]);
     detail::convert_to_c_int_array(silo_matset_compact["matlist"], int_arrays["matlist"]);
 
-    const std::string safe_matset_name = (write_overlink ? "MATERIAL" : detail::sanitize_silo_varname(matset_name));
+    const std::string safe_matset_name = (write_overlink ? 
+                                          "MATERIAL" : 
+                                          detail::make_alphanumeric(matset_name));
 
     int silo_error = 
         DBPutMaterial(dbfile,                         // Database file pointer
@@ -4958,7 +4964,7 @@ void silo_write_matset(DBfile *dbfile,
 
     Node bookkeeping_info;
     bookkeeping_info["comp_info"]["comp"] = "matsets";
-    bookkeeping_info["comp_info"]["comp_name"] = matset_name;
+    bookkeeping_info["comp_info"]["comp_name"] = safe_matset_name;
     bookkeeping_info["domain_info"]["local_num_domains"] = local_num_domains;
     bookkeeping_info["domain_info"]["local_domain_index"] = local_domain_index;
     bookkeeping_info["domain_info"]["global_domain_id"] = global_domain_id;
@@ -5032,11 +5038,11 @@ void silo_write_specset(DBfile *dbfile,
 
     // TODO different approach needed for overlink?
     // TODO this name collision prevention is a bandaid.
-    const std::string safe_specset_name = detail::sanitize_silo_varname(
+    const std::string safe_specset_name = detail::make_alphanumeric(
         matset_name == specset_name ? specset_name + "_spec" : specset_name);
 
     // TODO different option needed for overlink?
-    const std::string safe_matset_name = detail::sanitize_silo_varname(matset_name);
+    const std::string safe_matset_name = detail::make_alphanumeric(matset_name);
 
     const int nmat = silo_specset["nmat"].to_value();
 
@@ -5071,7 +5077,7 @@ void silo_write_specset(DBfile *dbfile,
 
     Node bookkeeping_info;
     bookkeeping_info["comp_info"]["comp"] = "specsets";
-    bookkeeping_info["comp_info"]["comp_name"] = specset_name;
+    bookkeeping_info["comp_info"]["comp_name"] = safe_specset_name;
     bookkeeping_info["domain_info"]["local_num_domains"] = local_num_domains;
     bookkeeping_info["domain_info"]["local_domain_index"] = local_domain_index;
     bookkeeping_info["domain_info"]["global_domain_id"] = global_domain_id;
@@ -5289,7 +5295,7 @@ void write_multimesh(DBfile *dbfile,
 {
     const int num_files = root["number_of_files"].as_int();
     const bool root_only = root["file_style"].as_string() == "root_only";
-    const std::string safe_meshname = (overlink ? "MESH" : detail::sanitize_silo_varname(topo_name));
+    const std::string safe_meshname = (overlink ? "MESH" : detail::make_alphanumeric(topo_name));
     const std::string silo_path = root["silo_path"].as_string();
     std::vector<std::string> domain_name_strings;
     std::vector<int> mesh_types;
@@ -5351,7 +5357,7 @@ void write_multimesh(DBfile *dbfile,
     CONDUIT_CHECK_SILO_ERROR(
         DBPutMultimesh(
             dbfile,
-            detail::sanitize_silo_varname(multimesh_name).c_str(),
+            detail::make_alphanumeric(multimesh_name).c_str(),
             global_num_domains,
             domain_name_ptrs.data(),
             mesh_types.data(),
@@ -5480,8 +5486,8 @@ write_multivars(DBfile *dbfile,
                 // the correct topology.
                 if (! write_overlink || linked_topo_name == ovl_topo_name)
                 {
-                    std::string safe_varname = detail::sanitize_silo_varname(var_name);
-                    std::string safe_linked_topo_name = detail::sanitize_silo_varname(linked_topo_name);
+                    std::string safe_varname = detail::make_alphanumeric(var_name);
+                    std::string safe_linked_topo_name = detail::make_alphanumeric(linked_topo_name);
                     std::string silo_path = root["silo_path"].as_string();
 
                     std::vector<std::string> var_name_strings;
@@ -5599,8 +5605,8 @@ write_multimats(DBfile *dbfile,
             // the correct topology.
             if (! write_overlink || linked_topo_name == ovl_topo_name)
             {
-                const std::string safe_matset_name = (write_overlink ? "MATERIAL" : detail::sanitize_silo_varname(matset_name));
-                const std::string safe_linked_topo_name = detail::sanitize_silo_varname(linked_topo_name);
+                const std::string safe_matset_name = (write_overlink ? "MATERIAL" : detail::make_alphanumeric(matset_name));
+                const std::string safe_linked_topo_name = detail::make_alphanumeric(linked_topo_name);
                 const std::string silo_path = root["silo_path"].as_string();
 
                 std::vector<std::string> matset_name_strings;
@@ -5748,10 +5754,10 @@ write_multimatspecs(DBfile *dbfile,
                     }
                     else
                     {
-                        return detail::sanitize_silo_varname(specset_name);
+                        return detail::make_alphanumeric(specset_name);
                     }
                 }();
-                const std::string safe_linked_topo_name = detail::sanitize_silo_varname(linked_topo_name);
+                const std::string safe_linked_topo_name = detail::make_alphanumeric(linked_topo_name);
                 const std::string silo_path = root["silo_path"].as_string();
 
                 std::vector<std::string> specset_name_strings;
@@ -5924,7 +5930,7 @@ write_var_attributes(DBfile *dbfile,
 
             auto write_var_attr_for_field = [&](const std::string var_name)
             {
-                std::string safe_varname = detail::sanitize_silo_varname(var_name);
+                std::string safe_varname = detail::make_alphanumeric(var_name);
                 multivar_name_strings.push_back(safe_varname);
 
                 const int num_attr = 5; // we are writing 5 var attributes for now
