@@ -12677,7 +12677,10 @@ Node::to_string_stream(std::ostream &os,
                        const std::string &pad,
                        const std::string &eoe) const
 {
-    if(protocol == "yaml")
+    if (protocol == "yaml" || 
+        protocol == "conduit_yaml" ||
+        protocol == "conduit_yaml_external" || 
+        protocol == "conduit_base64_yaml")
     {
         to_yaml_stream(os,protocol,indent,depth,pad,eoe);
     }
@@ -13184,19 +13187,35 @@ Node::to_json_stream(std::ostream &os,
 {
     if(protocol == "json")
     {
-        return to_pure_json(os,indent,depth,pad,eoe);
+        return to_pure_json(os,     // stream_path
+                            indent, // indent
+                            depth,  // depth
+                            pad,    // padding string (default is " ")
+                            eoe);   // end-of-entry suffix (default is "\n")
     }
     else if(protocol == "conduit_json")
     {
-        return to_detailed_json(os,indent,depth,pad,eoe);
+        return to_detailed_json(os,     // stream_path
+                                indent, // indent
+                                depth,  // depth
+                                pad,    // padding string (default is " ")
+                                eoe);   // end-of-entry suffix (default is "\n")
     }
     else if(protocol == "conduit_json_external")
     {
-        return to_detailed_json_external(os,indent,depth,pad,eoe);
+        return to_detailed_json_external(os,     // stream_path
+                                         indent, // indent
+                                         depth,  // depth
+                                         pad,    // padding string (default is " ")
+                                         eoe);   // end-of-entry suffix (default is "\n")
     }
     else if(protocol == "conduit_base64_json")
     {
-        return to_base64_json(os,indent,depth,pad,eoe);
+        return to_base64_json(os,     // stream_path
+                              indent, // indent
+                              depth,  // depth
+                              pad,    // padding string (default is " ")
+                              eoe);   // end-of-entry suffix (default is "\n")
     }
     else
     {
@@ -13204,6 +13223,7 @@ Node::to_json_stream(std::ostream &os,
                       << "\nSupported protocols:\n"
                       << " json\n"
                       << " conduit_json\n"
+                      << " conduit_json_external\n"
                       << " conduit_base64_json\n");
     }
 }
@@ -13334,7 +13354,6 @@ Node::to_yaml_stream(const std::string &stream_path,
 }
 
 //-----------------------------------------------------------------------------
-// TODO add conduit_yaml conduit_yaml_external conduit_base64_yaml
 void
 Node::to_yaml_stream(std::ostream &os,
                      const std::string &protocol,
@@ -13345,13 +13364,44 @@ Node::to_yaml_stream(std::ostream &os,
 {
     if(protocol == "yaml")
     {
-        return to_pure_yaml(os,indent,depth,pad,eoe);
+        return to_pure_yaml(os,     // stream_path
+                            indent, // indent
+                            depth,  // depth
+                            pad,    // padding string (default is " ")
+                            eoe);   // end-of-entry suffix (default is "\n")
+    }
+    else if(protocol == "conduit_yaml")
+    {
+        return to_detailed_yaml(os,     // stream_path
+                                indent, // indent
+                                depth,  // depth
+                                pad,    // padding string (default is " ")
+                                eoe);   // end-of-entry suffix (default is "\n")
+    }
+    else if(protocol == "conduit_yaml_external")
+    {
+        return to_detailed_yaml_external(os,     // stream_path
+                                         indent, // indent
+                                         depth,  // depth
+                                         pad,    // padding string (default is " ")
+                                         eoe);   // end-of-entry suffix (default is "\n")
+    }
+    else if(protocol == "conduit_base64_yaml")
+    {
+        return to_base64_yaml(os,     // stream_path
+                              indent, // indent
+                              depth,  // depth
+                              pad,    // padding string (default is " ")
+                              eoe);   // end-of-entry suffix (default is "\n")
     }
     else
     {
         CONDUIT_ERROR("Unknown Node::to_yaml protocol: " << protocol
                       << "\nSupported protocols:\n"
-                      << " yaml\n");
+                      << " yaml\n"
+                      << " conduit_yaml\n"
+                      << " conduit_yaml_external\n"
+                      << " conduit_base64_yaml\n");
     }
 }
 
@@ -13765,9 +13815,9 @@ Node::to_base64_json(index_t indent,
                      const std::string &pad,
                      const std::string &eoe) const
 {
-   std::ostringstream oss;
-   to_base64_json(oss,indent,depth,pad,eoe);
-   return oss.str();
+    std::ostringstream oss;
+    to_base64_json(oss,indent,depth,pad,eoe);
+    return oss.str();
 }
 
 //---------------------------------------------------------------------------//
@@ -13801,27 +13851,8 @@ Node::to_base64_json(std::ostream &os,
     std::ios_base::fmtflags prev_stream_flags(os.flags());
     os.precision(15);
 
-    //
-    // we need compact data
-    //
-    // TODO check to support fast path if already
-    // compact + contig and host accessible?
-    Node n;
-    compact_to(n);
-
-    // use libb64 to encode the data
-    index_t nbytes = n.schema().spanned_bytes();
-    index_t enc_buff_size =  utils::base64_encode_buffer_size(nbytes);
-    Node bb64_data;
-    bb64_data.set(DataType::char8_str(enc_buff_size));
-
-    // since we use compact_to(n) above, the data will always compact
-    // and on the host, so we can use it directly in utils::base64_encode
-    const char *src_ptr = (const char*)n.data_ptr();
-    char *dest_ptr       = (char*)bb64_data.data_ptr();
-    utils::conduit_memset(dest_ptr,0,(size_t)enc_buff_size);
-
-    utils::base64_encode(src_ptr,nbytes,dest_ptr);
+    Node n, bb64_data;
+    to_base64(n, bb64_data);
 
     // create the resulting json
 
@@ -13859,13 +13890,20 @@ Node::to_base64_json(std::ostream &os,
 //---------------------------------------------------------------------------//
 std::string
 Node::to_yaml_generic(bool detailed,
+                      bool address,
                       index_t indent,
                       index_t depth,
                       const std::string &pad,
                       const std::string &eoe) const
 {
     std::ostringstream oss;
-    to_yaml_generic(oss,detailed,indent,depth,pad,eoe);
+    to_yaml_generic(oss,      // out stream
+                    detailed, // detailed
+                    address,  // address
+                    indent,   // indent
+                    depth,    // depth
+                    pad,      // padding string (default is " ")
+                    eoe);     // end-of-entry suffix (default is "\n")
     return oss.str();
 }
 
@@ -13874,6 +13912,7 @@ Node::to_yaml_generic(bool detailed,
 void
 Node::to_yaml_generic(const std::string &stream_path,
                       bool detailed,
+                      bool address,
                       index_t indent,
                       index_t depth,
                       const std::string &pad,
@@ -13886,7 +13925,13 @@ Node::to_yaml_generic(const std::string &stream_path,
         CONDUIT_ERROR("<Node::to_yaml_generic> failed to open file: "
                      << "\"" << stream_path << "\"");
     }
-    to_yaml_generic(ofs,detailed,indent,depth,pad,eoe);
+    to_yaml_generic(ofs,      // out stream
+                    detailed, // detailed
+                    address,  // address
+                    indent,   // indent
+                    depth,    // depth
+                    pad,      // padding string (default is " ")
+                    eoe);     // end-of-entry suffix (default is "\n")
     ofs.close();
 }
 
@@ -13894,7 +13939,8 @@ Node::to_yaml_generic(const std::string &stream_path,
 //---------------------------------------------------------------------------//
 void
 Node::to_yaml_generic(std::ostream &os,
-                      bool  detailed,
+                      bool detailed,
+                      bool address,
                       index_t indent,
                       index_t depth,
                       const std::string &pad,
@@ -13905,6 +13951,7 @@ Node::to_yaml_generic(std::ostream &os,
     if(dtype().id() == DataType::OBJECT_ID)
     {
         os << eoe;
+
         size_t nchildren = m_children.size();
         for(size_t i=0; i <  nchildren;i++)
         {
@@ -13912,12 +13959,19 @@ Node::to_yaml_generic(std::ostream &os,
             os << m_schema->object_order()[i] << ": ";
             m_children[i]->to_yaml_generic(os,
                                            detailed,
+                                           address,
                                            indent,
                                            depth+1,
                                            pad,
                                            eoe);
 
-            // if the child is a leaf, we need eoe
+            // If the child is a leaf, we need eoe
+            // Why do we need these here but not in the
+            // same case but for Schema::to_yaml_stream()?
+            // It's because the yaml streams of leaves
+            // need eoe at the end. Schema::to_yaml_stream()
+            // leaves end with the dtype turned into yaml,
+            // which comes with an eoe at the end already.
             if(m_children[i]->number_of_children() == 0)
                 os << eoe;
         }
@@ -13932,6 +13986,7 @@ Node::to_yaml_generic(std::ostream &os,
             os << "- ";
             m_children[i]->to_yaml_generic(os,
                                            detailed,
+                                           address,
                                            indent,
                                            depth+1,
                                            pad,
@@ -13944,50 +13999,69 @@ Node::to_yaml_generic(std::ostream &os,
     }
     else // assume leaf data type
     {
-        switch(dtype().id())
+        if(detailed)
         {
-            // ints
-            case DataType::INT8_ID:
-                as_int8_array().to_json_stream(os);
-                break;
-            case DataType::INT16_ID:
-                as_int16_array().to_json_stream(os);
-                break;
-            case DataType::INT32_ID:
-                as_int32_array().to_json_stream(os);
-                break;
-            case DataType::INT64_ID:
-                as_int64_array().to_json_stream(os);
-                break;
-            // uints
-            case DataType::UINT8_ID:
-                as_uint8_array().to_json_stream(os);
-                break;
-            case DataType::UINT16_ID:
-                as_uint16_array().to_json_stream(os);
-                break;
-            case DataType::UINT32_ID:
-                as_uint32_array().to_json_stream(os);
-                break;
-            case DataType::UINT64_ID:
-                as_uint64_array().to_json_stream(os);
-                break;
-            // floats
-            case DataType::FLOAT32_ID:
-                as_float32_array().to_json_stream(os);
-                break;
-            case DataType::FLOAT64_ID:
-                as_float64_array().to_json_stream(os);
-                break;
-            // char8_str
-            case DataType::CHAR8_STR_ID:
-                os << "\""
-                   << utils::escape_special_chars(as_string())
-                   << "\"";
-                break;
-            // empty
-            case DataType::EMPTY_ID:
-                break;
+            std::string dtype_yaml = dtype().to_yaml(indent, depth, pad, eoe);
+            os << eoe;
+            os << dtype_yaml;
+            utils::indent(os,indent,depth,pad);
+            if(!address)
+            {
+                os << "value: ";
+            }
+        }
+
+        if(address)
+        {
+            os << "address: " << utils::to_hex_string(m_data);
+        }
+        else
+        {
+            switch(dtype().id())
+            {
+                // ints
+                case DataType::INT8_ID:
+                    as_int8_array().to_yaml_stream(os);
+                    break;
+                case DataType::INT16_ID:
+                    as_int16_array().to_yaml_stream(os);
+                    break;
+                case DataType::INT32_ID:
+                    as_int32_array().to_yaml_stream(os);
+                    break;
+                case DataType::INT64_ID:
+                    as_int64_array().to_yaml_stream(os);
+                    break;
+                // uints
+                case DataType::UINT8_ID:
+                    as_uint8_array().to_yaml_stream(os);
+                    break;
+                case DataType::UINT16_ID:
+                    as_uint16_array().to_yaml_stream(os);
+                    break;
+                case DataType::UINT32_ID:
+                    as_uint32_array().to_yaml_stream(os);
+                    break;
+                case DataType::UINT64_ID:
+                    as_uint64_array().to_yaml_stream(os);
+                    break;
+                // floats
+                case DataType::FLOAT32_ID:
+                    as_float32_array().to_yaml_stream(os);
+                    break;
+                case DataType::FLOAT64_ID:
+                    as_float64_array().to_yaml_stream(os);
+                    break;
+                // char8_str
+                case DataType::CHAR8_STR_ID:
+                    os << "\""
+                       << utils::escape_special_chars(as_string())
+                       << "\"";
+                    break;
+                // empty
+                case DataType::EMPTY_ID:
+                    break;
+            }
         }
     }
 
@@ -14001,7 +14075,12 @@ Node::to_pure_yaml(index_t indent,
                    const std::string &pad,
                    const std::string &eoe) const
 {
-    return to_yaml_generic(false,indent,depth,pad,eoe);
+    return to_yaml_generic(false,  // detailed
+                           false,  // address
+                           indent, // indent
+                           depth,  // depth
+                           pad,    // padding string (default is " ")
+                           eoe);   // end-of-entry suffix (default is "\n")
 }
 
 //---------------------------------------------------------------------------//
@@ -14019,7 +14098,13 @@ Node::to_pure_yaml(const std::string &stream_path,
         CONDUIT_ERROR("<Node::to_pure_yaml> failed to open file: "
                      << "\"" << stream_path << "\"");
     }
-    to_yaml_generic(ofs,false,indent,depth,pad,eoe);
+    to_yaml_generic(ofs,    // out stream
+                    false,  // detailed
+                    false,  // address
+                    indent, // indent
+                    depth,  // depth
+                    pad,    // padding string (default is " ")
+                    eoe);   // end-of-entry suffix (default is "\n")
     ofs.close();
 }
 
@@ -14031,7 +14116,231 @@ Node::to_pure_yaml(std::ostream &os,
                    const std::string &pad,
                    const std::string &eoe) const
 {
-    to_yaml_generic(os,false,indent,depth,pad,eoe);
+    to_yaml_generic(os,     // out stream
+                    false,  // detailed
+                    false,  // address
+                    indent, // indent
+                    depth,  // depth
+                    pad,    // padding string (default is " ")
+                    eoe);   // end-of-entry suffix (default is "\n")
+}
+
+
+//---------------------------------------------------------------------------//
+std::string
+Node::to_detailed_yaml(index_t indent,
+                       index_t depth,
+                       const std::string &pad,
+                       const std::string &eoe) const
+{
+    return to_yaml_generic(true,   // detailed
+                           false,  // address
+                           indent, // indent
+                           depth,  // depth
+                           pad,    // padding string (default is " ")
+                           eoe);   // end-of-entry suffix (default is "\n")
+}
+
+//---------------------------------------------------------------------------//
+void
+Node::to_detailed_yaml(const std::string &stream_path,
+                       index_t indent,
+                       index_t depth,
+                       const std::string &pad,
+                       const std::string &eoe) const
+{
+    std::ofstream ofs;
+    ofs.open(stream_path.c_str());
+    if(!ofs.is_open())
+    {
+        CONDUIT_ERROR("<Node::to_detailed_yaml> failed to open file: "
+                     << "\"" << stream_path << "\"");
+    }
+    to_yaml_generic(ofs,    // out stream
+                    true,   // detailed
+                    false,  // address
+                    indent, // indent
+                    depth,  // depth
+                    pad,    // padding string (default is " ")
+                    eoe);   // end-of-entry suffix (default is "\n")
+    ofs.close();
+}
+
+
+//---------------------------------------------------------------------------//
+void
+Node::to_detailed_yaml(std::ostream &os,
+                       index_t indent,
+                       index_t depth,
+                       const std::string &pad,
+                       const std::string &eoe) const
+{
+    to_yaml_generic(os,     // out stream
+                    true,   // detailed
+                    false,  // address
+                    indent, // indent
+                    depth,  // depth
+                    pad,    // padding string (default is " ")
+                    eoe);   // end-of-entry suffix (default is "\n")
+}
+
+
+//---------------------------------------------------------------------------//
+std::string
+Node::to_detailed_yaml_external(index_t indent,
+                                index_t depth,
+                                const std::string &pad,
+                                const std::string &eoe) const
+{
+    return to_yaml_generic(true,   // detailed
+                           true,   // address
+                           indent, // indent
+                           depth,  // depth
+                           pad,    // padding string (default is " ")
+                           eoe);   // end-of-entry suffix (default is "\n")
+}
+
+//---------------------------------------------------------------------------//
+void
+Node::to_detailed_yaml_external(const std::string &stream_path,
+                                index_t indent,
+                                index_t depth,
+                                const std::string &pad,
+                                const std::string &eoe) const
+{
+    std::ofstream ofs;
+    ofs.open(stream_path.c_str());
+    if(!ofs.is_open())
+    {
+        CONDUIT_ERROR("<Node::to_detailed_yaml> failed to open file: "
+                     << "\"" << stream_path << "\"");
+    }
+    to_yaml_generic(ofs,    // out stream
+                    true,   // detailed
+                    true,   // address
+                    indent, // indent
+                    depth,  // depth
+                    pad,    // padding string (default is " ")
+                    eoe);   // end-of-entry suffix (default is "\n")
+    ofs.close();
+}
+
+
+//---------------------------------------------------------------------------//
+void
+Node::to_detailed_yaml_external(std::ostream &os,
+                                index_t indent,
+                                index_t depth,
+                                const std::string &pad,
+                                const std::string &eoe) const
+{
+    to_yaml_generic(os,     // out stream
+                    true,   // detailed
+                    true,   // address
+                    indent, // indent
+                    depth,  // depth
+                    pad,    // padding string (default is " ")
+                    eoe);   // end-of-entry suffix (default is "\n")
+}
+
+
+//---------------------------------------------------------------------------//
+std::string
+Node::to_base64_yaml(index_t indent,
+                     index_t depth,
+                     const std::string &pad,
+                     const std::string &eoe) const
+{
+    std::ostringstream oss;
+    to_base64_yaml(oss,    // out stream
+                   indent, // indent
+                   depth,  // depth
+                   pad,    // padding string (default is " ")
+                   eoe);   // end-of-entry suffix (default is "\n")
+    return oss.str();
+}
+
+//---------------------------------------------------------------------------//
+void
+Node::to_base64_yaml(const std::string &stream_path,
+                     index_t indent,
+                     index_t depth,
+                     const std::string &pad,
+                     const std::string &eoe) const
+{
+    std::ofstream ofs;
+    ofs.open(stream_path.c_str());
+    if(!ofs.is_open())
+    {
+        CONDUIT_ERROR("<Node::to_base64_yaml> failed to open file: "
+                     << "\"" << stream_path << "\"");
+    }
+    to_base64_yaml(ofs,    // out stream
+                   indent, // indent
+                   depth,  // depth
+                   pad,    // padding string (default is " ")
+                   eoe);   // end-of-entry suffix (default is "\n")
+    ofs.close();
+}
+
+
+//---------------------------------------------------------------------------//
+void
+Node::to_base64_yaml(std::ostream &os,
+                     index_t indent,
+                     index_t depth,
+                     const std::string &pad,
+                     const std::string &eoe) const
+{
+    std::ios_base::fmtflags prev_stream_flags(os.flags());
+    os.precision(15);
+
+    Node n, bb64_data;
+    to_base64(n, bb64_data);
+
+    // create the resulting yaml
+
+    os << eoe;
+    utils::indent(os,indent,depth,pad);
+    os << "schema: ";
+
+    n.schema().to_yaml_stream(os,indent,depth+1,pad,eoe);
+
+    utils::indent(os,indent,depth,pad);
+    os << "data: " << eoe;
+    utils::indent(os,indent,depth+1,pad);
+    os << "base64: ";
+    bb64_data.to_pure_yaml(os,0,0,"","");
+    os << eoe;
+
+    os.flags(prev_stream_flags);
+}
+
+
+//---------------------------------------------------------------------------//
+void
+Node::to_base64(Node &n,
+                Node &bb64_data) const
+{
+    //
+    // we need compact data
+    //
+    // TODO check to support fast path if already
+    // compact + contig and host accessible?
+    compact_to(n);
+
+    // use libb64 to encode the data
+    const index_t nbytes = n.schema().spanned_bytes();
+    const index_t enc_buff_size =  utils::base64_encode_buffer_size(nbytes);
+    bb64_data.set(DataType::char8_str(enc_buff_size));
+
+    // since we use compact_to(n) above, the data will always compact
+    // and on the host, so we can use it directly in utils::base64_encode
+    const char *src_ptr = (const char*)n.data_ptr();
+    char *dest_ptr       = (char*)bb64_data.data_ptr();
+    utils::conduit_memset(dest_ptr,0,(size_t)enc_buff_size);
+
+    utils::base64_encode(src_ptr,nbytes,dest_ptr);
 }
 
 
@@ -17399,7 +17708,7 @@ Node::init_defaults()
 
 //-------------------------------------------------------------------------
 // This method is for Node::load() and Node::save()
-// Since conudit does not link to relay, only basic (non-tpl dependent)
+// Since conduit does not link to relay, only basic (non-tpl dependent)
 // cases are supported here
 void
 Node::identify_protocol(const std::string &path,
@@ -17440,6 +17749,14 @@ Node::identify_protocol(const std::string &path,
     else if(file_name_ext == "yaml")
     {
         io_type = "yaml";
+    }
+    else if(file_name_ext == "conduit_yaml")
+    {
+        io_type = "conduit_yaml";
+    }
+    else if(file_name_ext == "conduit_base64_yaml")
+    {
+        io_type = "conduit_base64_yaml";
     }
 }
 
