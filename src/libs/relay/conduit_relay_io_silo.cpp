@@ -863,12 +863,11 @@ generate_silo_names(const Node &n_mesh_state,
                     const int num_files,
                     const int global_num_domains,
                     const bool root_only,
-                    const Node *types_for_mesh_or_var,
-                    const Node *matset_domain_flags,
+                    const Node &dom_flags_or_types,
                     const int default_type,
                     const bool mat_or_spec_names, // are we doing material or specset names
                     std::vector<std::string> &name_strings,
-                    std::vector<int> &types)
+                    std::vector<int> *types)
 {
     // a little helper to determine the domain or file
     auto determine_domain_or_file = [&](const std::string domain_or_file) -> index_t
@@ -917,11 +916,13 @@ generate_silo_names(const Node &n_mesh_state,
         }
     };
 
+    // now we go ahead and use the lambdas we created
+
     // simplified route for matsets and specsets, as they do not have type info
     // to take into account
     if (mat_or_spec_names)
     {
-        int_accessor domain_flags = matset_domain_flags.value();
+        int_accessor domain_flags = dom_flags_or_types.value();
         for (index_t global_domain_id = 0; global_domain_id < global_num_domains; global_domain_id ++)
         {
             // determine which domain
@@ -942,7 +943,7 @@ generate_silo_names(const Node &n_mesh_state,
     }
     else
     {
-        int_accessor stored_types = types_for_mesh_or_var.value();
+        int_accessor stored_types = dom_flags_or_types.value();
         for (index_t global_domain_id = 0; global_domain_id < global_num_domains; global_domain_id ++)
         {
             // determine which domain
@@ -953,13 +954,13 @@ generate_silo_names(const Node &n_mesh_state,
             {
                 // we create the silo names
                 name_strings.push_back("EMPTY");
-                types.push_back(default_type);
+                types->push_back(default_type);
             }
             else
             {
                 // we create the silo names
                 name_strings.push_back(generate_cases());
-                types.push_back(stored_types[domain_index]);
+                types->push_back(stored_types[domain_index]);
             }
         }
     }
@@ -5130,8 +5131,9 @@ void write_multimesh(DBfile *dbfile,
                                 root_only,
                                 root["type_domain_info"]["meshes"][topo_name],
                                 DB_QUADMESH, // the default if we have an empty domain
+                                false, // we are not doing matset or specset names
                                 domain_name_strings,
-                                mesh_types);
+                                &mesh_types);
 
     // package up char ptrs for silo
     std::vector<const char *> domain_name_ptrs;
@@ -5320,8 +5322,9 @@ write_multivars(DBfile *dbfile,
                                                 root_only,
                                                 root["type_domain_info"]["vars"][var_name],
                                                 DB_QUADVAR, // the default if we have an empty domain
+                                                false, // we are not doing matset or specset names
                                                 var_name_strings,
-                                                var_types);
+                                                &var_types);
 
                     // package up char ptrs for silo
                     std::vector<const char *> var_name_ptrs;
@@ -5422,19 +5425,22 @@ write_multimats(DBfile *dbfile,
 
             if (! write_overlink || linked_topo_name == ovl_topo_name)
             {
-                std::string safe_matset_name = (write_overlink ? "MATERIAL" : detail::make_alphanumeric(matset_name));
-                std::string safe_linked_topo_name = detail::make_alphanumeric(linked_topo_name);
-                std::string silo_path = root["silo_path"].as_string();
+                const std::string safe_matset_name = (write_overlink ? "MATERIAL" : detail::make_alphanumeric(matset_name));
+                const std::string safe_linked_topo_name = detail::make_alphanumeric(linked_topo_name);
+                const std::string silo_path = root["silo_path"].as_string();
 
                 std::vector<std::string> matset_name_strings;
-                detail::generate_silo_material_names(n_mesh["state"],
-                                                     silo_path,
-                                                     safe_matset_name,
-                                                     num_files,
-                                                     global_num_domains,
-                                                     root_only,
-                                                     root["type_domain_info"]["matsets"][matset_name],
-                                                     matset_name_strings);
+                detail::generate_silo_names(n_mesh["state"],
+                                            silo_path,
+                                            safe_matset_name,
+                                            num_files,
+                                            global_num_domains,
+                                            root_only,
+                                            root["type_domain_info"]["matsets"][matset_name],
+                                            -1 // default type. Not needed for matsets and specsets
+                                            true, // we are doing matset or specset names
+                                            matset_name_strings,
+                                            nullptr); // no need to pass a vector for types for matsets or specsets
 
                 // package up char ptrs for silo
                 std::vector<const char *> matset_name_ptrs;
