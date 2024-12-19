@@ -5135,11 +5135,10 @@ void write_multimesh(DBfile *dbfile,
     const int num_files = root["number_of_files"].as_int();
     const bool root_only = root["file_style"].as_string() == "root_only";
     const std::string silo_meshname = overlink ? "MESH": topo_name;
-    const std::string silo_path = root["silo_path"].as_string();
     std::vector<std::string> domain_name_strings;
     std::vector<int> mesh_types;
     detail::generate_silo_names(n_mesh["state"],
-                                silo_path,
+                                root["silo_path"].as_string(),
                                 silo_meshname,
                                 num_files,
                                 global_num_domains,
@@ -5323,15 +5322,11 @@ write_multivars(DBfile *dbfile,
                 // TODO do we need this check? Did we already check this before when writing fields?
                 if (! write_overlink || linked_topo_name == ovl_topo_name)
                 {
-                    std::string safe_varname = detail::make_alphanumeric(var_name);
-                    std::string safe_linked_topo_name = detail::make_alphanumeric(linked_topo_name);
-                    std::string silo_path = root["silo_path"].as_string();
-
                     std::vector<std::string> var_name_strings;
                     std::vector<int> var_types;
                     detail::generate_silo_names(n_mesh["state"],
-                                                silo_path,
-                                                safe_varname,
+                                                root["silo_path"].as_string(),
+                                                var_name,
                                                 num_files,
                                                 global_num_domains,
                                                 root_only,
@@ -5358,12 +5353,12 @@ write_multivars(DBfile *dbfile,
                     if (write_overlink)
                     {
                         multimesh_name = opts_mesh_name;
-                        multivar_name = safe_varname;
+                        multivar_name = var_name;
                     }
                     else
                     {
-                        multimesh_name = opts_mesh_name + "_" + safe_linked_topo_name;
-                        multivar_name = opts_mesh_name + "_" + safe_varname;
+                        multimesh_name = opts_mesh_name + "_" + linked_topo_name;
+                        multivar_name = opts_mesh_name + "_" + var_name;
                     }
 
                     // have to const_cast because converting to void *
@@ -5436,18 +5431,16 @@ write_multimats(DBfile *dbfile,
                 continue;
             }
 
-            std::string linked_topo_name = n_matset["topology"].as_string();
+            const std::string linked_topo_name = n_matset["topology"].as_string();
 
             if (! write_overlink || linked_topo_name == ovl_topo_name)
             {
-                const std::string safe_matset_name = (write_overlink ? "MATERIAL" : detail::make_alphanumeric(matset_name));
-                const std::string safe_linked_topo_name = detail::make_alphanumeric(linked_topo_name);
-                const std::string silo_path = root["silo_path"].as_string();
+                const std::string silo_matset_name = (write_overlink ? "MATERIAL" : matset_name);
 
                 std::vector<std::string> matset_name_strings;
                 detail::generate_silo_names(n_mesh["state"],
-                                            silo_path,
-                                            safe_matset_name,
+                                            root["silo_path"].as_string(),
+                                            silo_matset_name,
                                             num_files,
                                             global_num_domains,
                                             root_only,
@@ -5478,8 +5471,8 @@ write_multimats(DBfile *dbfile,
                 }
                 else
                 {
-                    multimesh_name = opts_mesh_name + "_" + safe_linked_topo_name;
-                    multimat_name = opts_mesh_name + "_" + safe_matset_name;
+                    multimesh_name = opts_mesh_name + "_" + linked_topo_name;
+                    multimat_name = opts_mesh_name + "_" + silo_matset_name;
                 }
 
                 // extract info from the material map to save to dbopts
@@ -5546,14 +5539,8 @@ write_pad_dims(DBfile *dbfile,
         const int nvalues = 6;
 
         // we do not have a way to record ghost nodes in blueprint
-        // so we just write out all zeroes to make overlink happy
-        std::vector<int> paddim_vals;
-        paddim_vals.push_back(0);
-        paddim_vals.push_back(0);
-        paddim_vals.push_back(0);
-        paddim_vals.push_back(0);
-        paddim_vals.push_back(0);
-        paddim_vals.push_back(0);
+        // so we just write out six zeroes to make overlink happy
+        std::vector<int> paddim_vals(6, 0);
 
         DBPutCompoundarray(dbfile, // dbfile
                            "PAD_DIMS", // name
@@ -5609,8 +5596,7 @@ write_var_attributes(DBfile *dbfile,
 
             auto write_var_attr_for_field = [&](const std::string var_name)
             {
-                std::string safe_varname = detail::make_alphanumeric(var_name);
-                multivar_name_strings.push_back(safe_varname);
+                multivar_name_strings.push_back(var_name);
 
                 const int num_attr = 5; // we are writing 5 var attributes for now
 
@@ -5662,7 +5648,7 @@ write_var_attributes(DBfile *dbfile,
                 // data type: ATTR_INTEGER, ATTR_FLOAT
                 // 
                 // we cached this info earlier, just need to retrieve it
-                var_attr_values.push_back(n_type_dom_info["ovl_var_datatypes"][safe_varname].to_index_t());
+                var_attr_values.push_back(n_type_dom_info["ovl_var_datatypes"][var_name].to_index_t());
             };
 
             if (n_var["number_of_components"].to_int64() != 1)
