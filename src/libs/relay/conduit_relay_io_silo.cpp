@@ -856,150 +856,112 @@ assign_values(int datatype,
 }
 
 //-----------------------------------------------------------------------------
-index_t
-generate_silo_names_determine_domain_or_file(const Node &n_mesh_state,
-                                             const std::string domain_or_file,
-                                             index_t global_domain_id)
-{
-    if (n_mesh_state.has_path("partition_map/" + domain_or_file))
-    {
-        index_t_accessor part_map_domain_or_file_vals = n_mesh_state["partition_map"][domain_or_file].value();
-        return part_map_domain_or_file_vals[global_domain_id];
-    }
-    else
-    {
-        return global_domain_id;
-    }
-}
-
-//-----------------------------------------------------------------------------
-std::string
-generate_silo_names_cases(const Node &n_mesh_state,
-                          const std::string &silo_path,
-                          const std::string &safe_name,
-                          const bool root_only,
-                          const int global_num_domains,
-                          const int num_files,
-                          const index_t domain_index,
-                          const index_t global_domain_id)
-{
-    std::string silo_name;
-    // we have three cases, just as we had in write_mesh
-    // we don't want to be making any choices here, just using 
-    // what was already decided in write_mesh
-
-    // single file case
-    if (root_only)
-    {
-        if (global_num_domains == 1)
-        {
-            silo_name = conduit_fmt::format(silo_path, safe_name);
-        }
-        else
-        {
-            silo_name = conduit_fmt::format(silo_path, domain_index, safe_name);
-        }
-    }
-    // num domains == num files case
-    else if (global_num_domains == num_files)
-    {
-        silo_name = conduit_fmt::format(silo_path, domain_index, safe_name);
-    }
-    // m to n case
-    else
-    {
-        // determine which file
-        index_t f = generate_silo_names_determine_domain_or_file(n_mesh_state, "file", global_domain_id);;
-        silo_name = conduit_fmt::format(silo_path, f, domain_index, safe_name);
-    }
-
-    return silo_name;
-}
-
-//-----------------------------------------------------------------------------
 void
 generate_silo_names(const Node &n_mesh_state,
                     const std::string &silo_path,
-                    const std::string &safe_name,
+                    const std::string &silo_name,
                     const int num_files,
                     const int global_num_domains,
                     const bool root_only,
-                    const Node &types_for_mesh_or_var,
+                    const Node *types_for_mesh_or_var,
+                    const Node *matset_domain_flags,
                     const int default_type,
+                    const bool mat_or_spec_names, // are we doing material or specset names
                     std::vector<std::string> &name_strings,
                     std::vector<int> &types)
 {
-    int_accessor stored_types = types_for_mesh_or_var.value();
-    for (index_t i = 0; i < global_num_domains; i ++)
+    // a little helper to determine the domain or file
+    auto determine_domain_or_file = [&](const std::string domain_or_file) -> index_t
     {
-        std::string silo_name;
-
-        // determine which domain
-        index_t d = generate_silo_names_determine_domain_or_file(n_mesh_state, "domain", i);
-
-        // we are missing a domain
-        if (stored_types[d] == -1)
+        if (n_mesh_state.has_path("partition_map/" + domain_or_file))
         {
-            silo_name = "EMPTY";
-
-            types.push_back(default_type);
+            index_t_accessor part_map_domain_or_file_vals = n_mesh_state["partition_map"][domain_or_file].value();
+            return part_map_domain_or_file_vals[global_domain_id];
         }
         else
         {
-            silo_name = generate_silo_names_cases(n_mesh_state,
-                                                  silo_path,
-                                                  safe_name,
-                                                  root_only,
-                                                  global_num_domains,
-                                                  num_files,
-                                                  d,
-                                                  i);
-            types.push_back(stored_types[d]);
+            return global_domain_id;
         }
+    };
 
-        // we create the silo names
-        name_strings.push_back(silo_name);
+    // these are the three shared cases for determining silo names
+    auto generate_cases = [&]() -> std::string
+    {
+        // we have three cases, just as we had in write_mesh
+        // we don't want to be making any choices here, just using 
+        // what was already decided in write_mesh
+
+        // single file case
+        if (root_only)
+        {
+            if (global_num_domains == 1)
+            {
+                return conduit_fmt::format(silo_path, silo_name);
+            }
+            else
+            {
+                return conduit_fmt::format(silo_path, domain_index, silo_name);
+            }
+        }
+        // num domains == num files case
+        else if (global_num_domains == num_files)
+        {
+            return conduit_fmt::format(silo_path, domain_index, silo_name);
+        }
+        // m to n case
+        else
+        {
+            // determine which file
+            index_t f = determine_domain_or_file("file");
+            return conduit_fmt::format(silo_path, f, domain_index, silo_name);
+        }
+    };
+
+    // simplified route for matsets and specsets, as they do not have type info
+    // to take into account
+    if (mat_or_spec_names)
+    {
+        int_accessor domain_flags = matset_domain_flags.value();
+        for (index_t global_domain_id = 0; global_domain_id < global_num_domains; global_domain_id ++)
+        {
+            // determine which domain
+            const index_t domain_index = determine_domain_or_file("domain");
+
+            // we are missing a domain
+            if (domain_flags[domain_index] == -1)
+            {
+                // we create the silo names
+                name_strings.push_back("EMPTY");
+            }
+            else
+            {
+                // we create the silo names
+                name_strings.push_back(generate_cases());
+            }
+        }
     }
-}
-
-//-----------------------------------------------------------------------------
-void
-generate_silo_material_names(const Node &n_mesh_state,
-                             const std::string &silo_path,
-                             const std::string &safe_name,
-                             const int num_files,
-                             const int global_num_domains,
-                             const bool root_only,
-                             const Node &matset_domain_flags,
-                             std::vector<std::string> &name_strings)
-{
-    int_accessor domain_flags = matset_domain_flags.value();
-    for (index_t i = 0; i < global_num_domains; i ++)
+    else
     {
-        std::string silo_name;
-
-        // determine which domain
-        index_t d = generate_silo_names_determine_domain_or_file(n_mesh_state, "domain", i);
-
-        // we are missing a domain
-        if (domain_flags[d] == -1)
+        int_accessor stored_types = types_for_mesh_or_var.value();
+        for (index_t global_domain_id = 0; global_domain_id < global_num_domains; global_domain_id ++)
         {
-            silo_name = "EMPTY";
-        }
-        else
-        {
-            silo_name = generate_silo_names_cases(n_mesh_state,
-                                                  silo_path,
-                                                  safe_name,
-                                                  root_only,
-                                                  global_num_domains,
-                                                  num_files,
-                                                  d,
-                                                  i);
-        }
+            // determine which domain
+            const index_t domain_index = determine_domain_or_file("domain");
 
-        // we create the silo names
-        name_strings.push_back(silo_name);
+            // we are missing a domain
+            if (stored_types[domain_index] == -1)
+            {
+                // we create the silo names
+                name_strings.push_back("EMPTY");
+                types.push_back(default_type);
+            }
+            else
+            {
+                // we create the silo names
+                name_strings.push_back(generate_cases());
+                types.push_back(stored_types[domain_index]);
+            }
+        }
     }
 }
 
