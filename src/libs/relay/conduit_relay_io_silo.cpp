@@ -316,7 +316,7 @@ public:
 // silo likes alphanumeric names
 bool check_alphanumeric(const std::string &str)
 {
-    for (char ch : str)
+    for (const char &ch : str)
     {
         if (!std::isalnum(ch) && ch != '_')
         {
