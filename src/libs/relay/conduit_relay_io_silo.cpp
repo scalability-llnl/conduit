@@ -314,11 +314,11 @@ public:
 
 //-----------------------------------------------------------------------------
 // silo likes alphanumeric names
-bool check_alphanumeric(const std::string &varname)
+bool check_alphanumeric(const std::string &str)
 {
-    for (size_t i = 0; i < varname.size(); i ++)
+    for (char ch : str)
     {
-        if (! (std::isalnum(varname[i]) || varname[i] == "_"))
+        if (!std::isalnum(ch) && ch != '_')
         {
             return false;
         }
@@ -870,7 +870,8 @@ generate_silo_names(const Node &n_mesh_state,
                     std::vector<int> *types)
 {
     // a little helper to determine the domain or file
-    auto determine_domain_or_file = [&](const std::string domain_or_file) -> index_t
+    auto determine_domain_or_file = [&](const std::string domain_or_file,
+                                        const index_t global_domain_id) -> index_t
     {
         if (n_mesh_state.has_path("partition_map/" + domain_or_file))
         {
@@ -884,7 +885,8 @@ generate_silo_names(const Node &n_mesh_state,
     };
 
     // these are the three shared cases for determining silo names
-    auto generate_cases = [&]() -> std::string
+    auto generate_cases = [&](const index_t domain_index,
+                              const index_t global_domain_id) -> std::string
     {
         // we have three cases, just as we had in write_mesh
         // we don't want to be making any choices here, just using 
@@ -911,7 +913,7 @@ generate_silo_names(const Node &n_mesh_state,
         else
         {
             // determine which file
-            index_t f = determine_domain_or_file("file");
+            index_t f = determine_domain_or_file("file", global_domain_id);
             return conduit_fmt::format(silo_path, f, domain_index, silo_name);
         }
     };
@@ -926,7 +928,7 @@ generate_silo_names(const Node &n_mesh_state,
         for (index_t global_domain_id = 0; global_domain_id < global_num_domains; global_domain_id ++)
         {
             // determine which domain
-            const index_t domain_index = determine_domain_or_file("domain");
+            const index_t domain_index = determine_domain_or_file("domain", global_domain_id);
 
             // we are missing a domain
             if (domain_flags[domain_index] == -1)
@@ -937,7 +939,7 @@ generate_silo_names(const Node &n_mesh_state,
             else
             {
                 // we create the silo names
-                name_strings.push_back(generate_cases());
+                name_strings.push_back(generate_cases(domain_index, global_domain_id));
             }
         }
     }
@@ -947,7 +949,7 @@ generate_silo_names(const Node &n_mesh_state,
         for (index_t global_domain_id = 0; global_domain_id < global_num_domains; global_domain_id ++)
         {
             // determine which domain
-            const index_t domain_index = determine_domain_or_file("domain");
+            const index_t domain_index = determine_domain_or_file("domain", global_domain_id);
 
             // we are missing a domain
             if (stored_types[domain_index] == -1)
@@ -959,7 +961,7 @@ generate_silo_names(const Node &n_mesh_state,
             else
             {
                 // we create the silo names
-                name_strings.push_back(generate_cases());
+                name_strings.push_back(generate_cases(domain_index, global_domain_id));
                 types->push_back(stored_types[domain_index]);
             }
         }
@@ -5445,7 +5447,7 @@ write_multimats(DBfile *dbfile,
                                             global_num_domains,
                                             root_only,
                                             root["type_domain_info"]["matsets"][matset_name],
-                                            -1 // default type. Not needed for matsets and specsets
+                                            -1, // default type. Not needed for matsets and specsets
                                             true, // we are doing matset or specset names
                                             matset_name_strings,
                                             nullptr); // no need to pass a vector for types for matsets or specsets
