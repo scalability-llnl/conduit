@@ -4938,8 +4938,6 @@ void silo_write_matset(DBfile *dbfile,
 
     Node bookkeeping_info;
     bookkeeping_info["comp_info"]["comp"] = "matsets";
-    // TODO I may want to save overlink names here instead as things will get crazy
-    // when we start doing this for specsets - think about this
     bookkeeping_info["comp_info"]["comp_name"] = matset_name;
     bookkeeping_info["domain_info"]["local_num_domains"] = local_num_domains;
     bookkeeping_info["domain_info"]["local_domain_index"] = local_domain_index;
