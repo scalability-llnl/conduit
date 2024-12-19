@@ -318,7 +318,7 @@ bool check_alphanumeric(const std::string &varname)
 {
     for (size_t i = 0; i < varname.size(); i ++)
     {
-        if (! std::isalnum(varname[i]))
+        if (! (std::isalnum(varname[i]) || varname[i] == "_"))
         {
             return false;
         }
@@ -3949,8 +3949,7 @@ void silo_write_field(DBfile *dbfile,
 //---------------------------------------------------------------------------//
 // overlink only
 void silo_write_adjset(DBfile *dbfile,
-                       const Node &n_adjset,
-                       const bool empty)
+                       const Node *n_adjset)
 {
     auto write_dom_neighbor_nums = [&](const int num_neighboring_doms,
                                        const std::vector<int> &dom_neighbor_nums)
@@ -3991,7 +3990,7 @@ void silo_write_adjset(DBfile *dbfile,
     // DOMAIN NEIGHBOR NUMS
     // 
 
-    if (empty)
+    if (n_adjset == nullptr)
     {
         const int num_neighboring_doms = 0;
         
@@ -4007,12 +4006,12 @@ void silo_write_adjset(DBfile *dbfile,
         return;
     }
 
-    CONDUIT_ASSERT(n_adjset["association"].as_string() != "element",
+    CONDUIT_ASSERT((*n_adjset)["association"].as_string() != "element",
         "We do not support the element-associated adjset case. "
         "Please contact a Conduit developer.");
 
     Node pairwise_adjset;
-    conduit::blueprint::mesh::adjset::to_pairwise(n_adjset, pairwise_adjset);
+    conduit::blueprint::mesh::adjset::to_pairwise(*n_adjset, pairwise_adjset);
 
     const int num_neighboring_doms = pairwise_adjset["groups"].number_of_children();
     
@@ -4803,6 +4802,13 @@ void silo_write_matset(DBfile *dbfile,
                        Node &local_type_domain_info,
                        Node &n_mesh_info)
 {
+    if (! detail::check_alphanumeric(matset_name))
+    {
+        CONDUIT_INFO("Matset name " << matset_name << " contains " << 
+                     "non-alphanumeric characters. Skipping.");
+        return;
+    }
+
     // use to_silo utility to create the needed silo arrays
     Node silo_matset, silo_matset_compact, silo_mix_vfs_final;
     conduit::blueprint::mesh::matset::to_silo(n_matset, silo_matset);
@@ -5025,16 +5031,19 @@ void silo_mesh_write(const Node &mesh_domain,
 
         // the names of the topos the matsets are associated with
         std::set<std::string> topo_names;
-        auto itr = mesh_domain["matsets"].children();
-        while (itr.has_next())
+        auto matset_itr = mesh_domain["matsets"].children();
+        while (matset_itr.has_next())
         {
-            const Node &n_matset = itr.next();
-            const std::string matset_name = itr.name();
-            
+            const Node &n_matset = matset_itr.next();
+            const std::string matset_name = matset_itr.name();
             const std::string topo_name = n_matset["topology"].as_string();
-            CONDUIT_ASSERT(topo_names.find(topo_name) == topo_names.end(),
-                "There are multiple matsets that belong to the same topology. "
-                << "For topo " << topo_name << ". This is ambiguous in silo.");
+            if (topo_names.find(topo_name) != topo_names.end())
+            {
+                CONDUIT_INFO("There are multiple matsets that belong to the same topology "
+                             "for topo " << topo_name << ". This is ambiguous in silo."
+                             "Skipping matset " << matset_name << ".");
+                continue;
+            }
             topo_names.insert(topo_name);
             
             if (! write_overlink || topo_name == ovl_topo_name)
@@ -5054,11 +5063,11 @@ void silo_mesh_write(const Node &mesh_domain,
 
     if (mesh_domain.has_path("fields")) 
     {
-        auto itr = mesh_domain["fields"].children();
-        while (itr.has_next())
+        auto field_itr = mesh_domain["fields"].children();
+        while (field_itr.has_next())
         {
-            const Node &n_var = itr.next();
-            const std::string var_name = itr.name();
+            const Node &n_var = field_itr.next();
+            const std::string var_name = field_itr.name();
             if (! write_overlink || n_var["topology"].as_string() == ovl_topo_name)
             {
                 silo_write_field(dbfile,
@@ -5080,13 +5089,19 @@ void silo_mesh_write(const Node &mesh_domain,
     {
         if (mesh_domain.has_path("adjsets"))
         {
-            auto itr = mesh_domain["adjsets"].children();
-            while (itr.has_next())
+            if (mesh_domain["adjsets"].number_of_children() > 1)
             {
-                const Node &n_adjset = itr.next();
+                CONDUIT_INFO("Only one adjset belonging to topology "
+                             << ovl_topo_name << " will be saved as "
+                             "per the Overlink spec.");
+            }
+            auto adjset_itr = mesh_domain["adjsets"].children();
+            while (adjset_itr.has_next())
+            {
+                const Node &n_adjset = adjset_itr.next();
                 if (n_adjset["topology"].as_string() == ovl_topo_name)
                 {
-                    silo_write_adjset(dbfile, n_adjset, false);
+                    silo_write_adjset(dbfile, &n_adjset);
                 }
                 // we will give up after writing 1 because we can only have
                 // 1 adjset per topo
@@ -5095,8 +5110,8 @@ void silo_mesh_write(const Node &mesh_domain,
         }
         else
         {
-            Node temp; // we just need an empty argument
-            silo_write_adjset(dbfile, temp, true);
+            // we still need to write things even if there is no adjset
+            silo_write_adjset(dbfile, nullptr);
         }
     }
 
@@ -5305,7 +5320,7 @@ write_multivars(DBfile *dbfile,
             {
                 const std::string linked_topo_name = n_var["topology"].as_string();
 
-                // TODO do we need this check?
+                // TODO do we need this check? Did we already check this before when writing fields?
                 if (! write_overlink || linked_topo_name == ovl_topo_name)
                 {
                     std::string safe_varname = detail::make_alphanumeric(var_name);

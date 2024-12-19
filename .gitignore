@@ -16,3 +16,6 @@ Testing/
 .vscode/launch.json
 scripts/azemu/AZEMU-LAUNCH*.sh
 scripts/azemu/AZEMU-SCRIPT*.sh
+.gitignore_backup
+src/libs/conduit/python/build/
+src/libs/conduit/python/conduit.egg-info/
