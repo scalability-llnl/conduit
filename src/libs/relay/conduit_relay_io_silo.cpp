@@ -5059,11 +5059,31 @@ void silo_write_specset(DBfile *dbfile,
                         const int local_num_domains,
                         const int local_domain_index,
                         const uint64 global_domain_id,
+                        std::set<std::string> &used_names,
                         Node &local_type_domain_info,
                         Node &n_mesh_info)
 {
     // TODO we only handle the fully blown out case
     // what to do for the others?
+
+    if (! detail::check_alphanumeric(specset_name))
+    {
+        CONDUIT_INFO("Specset name " << specset_name << " contains " << 
+                     "non-alphanumeric characters. Skipping.");
+        return false;
+    }
+
+    const std::string silo_specset_name = [&]()
+    {
+        if (write_overlink)
+        {
+
+        }
+        else
+        {
+            return specset_name;
+        }
+    }();
 
     if (!n_specset.has_path("matset"))
     {
@@ -5317,6 +5337,7 @@ void silo_mesh_write(const Node &mesh_domain,
                                    local_num_domains,
                                    local_domain_index,
                                    global_domain_id,
+                                   used_names,
                                    local_type_domain_info,
                                    n_mesh_info);
             }
@@ -5697,6 +5718,7 @@ write_multimats(DBfile *dbfile,
                 continue;
             }
 
+            // TODO do we need to check if this topo was written?
             const std::string linked_topo_name = n_matset["topology"].as_string();
 
             // if we are not writing overlink, we can go ahead
@@ -5827,7 +5849,7 @@ write_multimatspecs(DBfile *dbfile,
             }
 
             const std::string linked_matset_name = n_specset["matset"].as_string();
-            if (! n_mesh.has_path("matsets/" + linked_matset_name + "topology"))
+            if (! n_mesh.has_path("matsets/" + linked_matset_name + "/topology"))
             {
                 // either matset doesn't exist or it has no linked topo
                 continue;
@@ -5839,7 +5861,7 @@ write_multimatspecs(DBfile *dbfile,
             // the correct topology.
             if (! write_overlink || linked_topo_name == ovl_topo_name)
             {
-                const std::string safe_specset_name = [&]() -> std::string
+                const std::string silo_specset_name = [&]() -> std::string
                 {
                     if (write_overlink)
                     {
@@ -5854,21 +5876,23 @@ write_multimatspecs(DBfile *dbfile,
                     }
                     else
                     {
-                        return detail::make_alphanumeric(specset_name);
+                        return specset_name;
                     }
                 }();
-                const std::string safe_linked_topo_name = detail::make_alphanumeric(linked_topo_name);
-                const std::string silo_path = root["silo_path"].as_string();
+                const std::string linked_topo_name = detail::make_alphanumeric(linked_topo_name);
 
                 std::vector<std::string> specset_name_strings;
-                detail::generate_silo_material_or_species_names(n_mesh["state"],
-                                                                silo_path,
-                                                                safe_specset_name,
-                                                                num_files,
-                                                                global_num_domains,
-                                                                root_only,
-                                                                root["type_domain_info"]["specsets"][specset_name],
-                                                                specset_name_strings);
+                detail::generate_silo_names(n_mesh["state"],
+                                            root["silo_path"].as_string(),
+                                            silo_specset_name,
+                                            num_files,
+                                            global_num_domains,
+                                            root_only,
+                                            root["type_domain_info"]["specsets"][specset_name],
+                                            -1, // default type. Not needed for matsets and specsets
+                                            true, // we are doing matset or specset names
+                                            specset_name_strings,
+                                            nullptr); // no need to pass a vector for types for matsets or specsets
 
                 // package up char ptrs for silo
                 std::vector<const char *> specset_name_ptrs;
@@ -5893,8 +5917,8 @@ write_multimatspecs(DBfile *dbfile,
                 }
                 else
                 {
-                    multimesh_name = opts_mesh_name + "_" + safe_linked_topo_name;
-                    multimatspec_name = opts_mesh_name + "_" + safe_specset_name;
+                    multimesh_name = opts_mesh_name + "_" + linked_topo_name;
+                    multimatspec_name = opts_mesh_name + "_" + silo_specset_name;
                 }
 
                 // // extract info from the material map to save to dbopts
@@ -5914,6 +5938,7 @@ write_multimatspecs(DBfile *dbfile,
                     "Error freeing optlist."};
                 CONDUIT_ASSERT(optlist.getSiloObject(), "Error creating options");
 
+                // TODO dbopts
                 // // have to const_cast because converting to void *
                 // CONDUIT_CHECK_SILO_ERROR(DBAddOption(optlist.getSiloObject(),
                 //                                      DBOPT_MMESH_NAME,
@@ -7184,7 +7209,7 @@ void CONDUIT_RELAY_API write_mesh(const Node &mesh,
     // it is duplicated here b/c we dont want a circular dep
     // between conduit_blueprint_mpi and conduit_relay_io_mpi
 #ifdef CONDUIT_RELAY_IO_MPI_ENABLED
-    // NOTE: do to save vs write cases, these updates should be
+    // NOTE: due to save vs write cases, these updates should be
     // single mesh only
     Node gather_bp_idx;
     relay::mpi::all_gather_using_schema(local_bp_idx,
@@ -7200,7 +7225,7 @@ void CONDUIT_RELAY_API write_mesh(const Node &mesh,
         bp_idx[opts_out_mesh_name].update(curr);
     }
 #else
-    // NOTE: do to save vs write cases, these updates should be
+    // NOTE: due to save vs write cases, these updates should be
     // single mesh only
     bp_idx[opts_out_mesh_name] = local_bp_idx;
 #endif
