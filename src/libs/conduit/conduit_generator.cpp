@@ -334,10 +334,6 @@ public:
                                                           index_t &seq_size);
 
     static void    walk_yaml_schema(Schema *schema,
-                                    const char *yaml_txt,
-                                    index_t curr_offset);
-
-    static void    walk_yaml_schema(Schema *schema,
                                     yaml_document_t *yaml_doc,
                                     const yaml_node_t *yaml_node,
                                     index_t curr_offset);
@@ -346,28 +342,20 @@ public:
     static void    walk_yaml_schema(Node   *node,
                                     Schema *schema,
                                     void   *data,
-                                    const char *yaml_txt,
-                                    index_t curr_offset,
-                                    const bool external = false);
-
-    static void    walk_yaml_schema(Node   *node,
-                                    Schema *schema,
-                                    void   *data,
                                     yaml_document_t *yaml_doc,
                                     const yaml_node_t *yaml_node,
                                     index_t curr_offset,
                                     const bool external = false);
-
-    // main entry point for parsing pure yaml
-    static void    walk_pure_yaml_schema(Node  *node,
-                                         Schema *schema,
-                                         const char *yaml_txt);
 
     // workhorse for parsing a pure yaml tree
     static void    walk_pure_yaml_schema(Node  *node,
                                          Schema *schema,
                                          yaml_document_t *yaml_doc,
                                          yaml_node_t *yaml_node);
+
+    static void    parse_base64(Node *node,
+                                yaml_document_t *yaml_doc,
+                                yaml_node_t *yaml_node);
     
     // extract human readable parser errors
     static void    parse_error_details(yaml_parser_t *yaml_parser,
@@ -2605,39 +2593,6 @@ void
 Generator::Parser::YAML::walk_yaml_schema(Node *node,
                                           Schema *schema,
                                           void *data,
-                                          const char *yaml_txt,
-                                          index_t curr_offset,
-                                          const bool external)
-{
-    YAMLParserWrapper parser;
-    parser.parse(yaml_txt);
-
-    yaml_document_t *yaml_doc  = parser.yaml_doc_ptr();
-    yaml_node_t     *yaml_node = parser.yaml_doc_root_ptr();
-
-
-    if (!yaml_doc || !yaml_node)
-    {
-        CONDUIT_ERROR("failed to fetch yaml document root");
-    }
-
-    walk_yaml_schema(node,
-                     schema,
-                     data,
-                     yaml_doc,
-                     yaml_node,
-                     curr_offset,
-                     external);
-
-    // YAMLParserWrapper cleans up for us
-}
-
-
-//---------------------------------------------------------------------------//
-void 
-Generator::Parser::YAML::walk_yaml_schema(Node *node,
-                                          Schema *schema,
-                                          void *data,
                                           yaml_document_t *yaml_doc,
                                           const yaml_node_t *yaml_node,
                                           index_t curr_offset,
@@ -2880,33 +2835,6 @@ Generator::Parser::YAML::walk_yaml_schema(Node *node,
 //---------------------------------------------------------------------------//
 void 
 Generator::Parser::YAML::walk_yaml_schema(Schema *schema,
-                                          const char *yaml_txt,
-                                          index_t curr_offset)
-{
-    YAMLParserWrapper parser;
-    parser.parse(yaml_txt);
-
-    yaml_document_t *yaml_doc  = parser.yaml_doc_ptr();
-    yaml_node_t     *yaml_node = parser.yaml_doc_root_ptr();
-
-
-    if (!yaml_doc || !yaml_node)
-    {
-        CONDUIT_ERROR("failed to fetch yaml document root");
-    }
-
-    walk_yaml_schema(schema,
-                     yaml_doc,
-                     yaml_node,
-                     curr_offset);
-
-    // YAMLParserWrapper cleans up for us
-}
-
-
-//---------------------------------------------------------------------------//
-void 
-Generator::Parser::YAML::walk_yaml_schema(Schema *schema,
                                           yaml_document_t *yaml_doc,
                                           const yaml_node_t *yaml_node,
                                           index_t curr_offset)
@@ -3047,33 +2975,6 @@ Generator::Parser::YAML::walk_yaml_schema(Schema *schema,
 void 
 Generator::Parser::YAML::walk_pure_yaml_schema(Node *node,
                                                Schema *schema,
-                                               const char *yaml_txt)
-{
-    YAMLParserWrapper parser;
-    parser.parse(yaml_txt);
-
-    yaml_document_t *yaml_doc  = parser.yaml_doc_ptr();
-    yaml_node_t     *yaml_node = parser.yaml_doc_root_ptr();
-
-
-    if(yaml_doc == NULL || yaml_node == NULL)
-    {
-        CONDUIT_ERROR("failed to fetch yaml document root");
-    }
-
-    walk_pure_yaml_schema(node,
-                          schema,
-                          yaml_doc,
-                          yaml_node);
-
-    // YAMLParserWrapper cleans up for us
-}
-
-
-//---------------------------------------------------------------------------//
-void 
-Generator::Parser::YAML::walk_pure_yaml_schema(Node *node,
-                                               Schema *schema,
                                                yaml_document_t *yaml_doc,
                                                yaml_node_t *yaml_node)
 {
@@ -3081,7 +2982,7 @@ Generator::Parser::YAML::walk_pure_yaml_schema(Node *node,
     // object cases
     if (check_yaml_is_mapping_node(yaml_node))
     {
-        // if we make it here and have an empty json object
+        // if we make it here and have an empty yaml object
         // we still want the conduit node to take on the
         // object role
         schema->set(DataType::object());
@@ -3184,6 +3085,74 @@ Generator::Parser::YAML::walk_pure_yaml_schema(Node *node,
                       << "Invalid YAML type for parsing Node from pure YAML."
                       << " Expected: YAML Map, Sequence, String, Null,"
                       << " Boolean, or Number");
+    }
+}
+
+
+//---------------------------------------------------------------------------//
+void 
+Generator::Parser::YAML::parse_base64(Node *node,
+                                      yaml_document_t *yaml_doc,
+                                      yaml_node_t *yaml_node)
+{
+    // object case
+
+    std::string base64_str = "";
+    
+    if(check_yaml_is_mapping_node(yaml_node))
+    {
+        Schema s;
+
+        const yaml_node_t *data_value = fetch_yaml_node_from_object_by_name(yaml_doc, yaml_node, "data");
+        if (data_value) // if yaml has data
+        {
+            const yaml_node_t *base64_value = fetch_yaml_node_from_object_by_name(yaml_doc, data_value, "base64");
+            if (base64_value) // if yaml has base64
+            {
+                base64_str = get_yaml_string(base64_value);
+            }
+            else
+            {
+                CONDUIT_ERROR("conduit_base64_yaml protocol error: missing data/base64");
+            }
+        }
+        else
+        {
+            CONDUIT_ERROR("conduit_base64_yaml protocol error: missing data/base64");
+        }
+
+        const yaml_node_t *schema_value = fetch_yaml_node_from_object_by_name(yaml_doc, yaml_node, "schema");
+        if (schema_value) // if yaml has schema
+        {
+            // parse schema
+            index_t curr_offset = 0;
+            walk_yaml_schema(&s, yaml_doc, schema_value, curr_offset);
+        }
+        else
+        {
+            CONDUIT_ERROR("conduit_base64_yaml protocol error: missing schema");
+        }
+        
+        const char *src_ptr = base64_str.c_str();
+        index_t encoded_len = (index_t) base64_str.length();
+        index_t dec_buff_size = utils::base64_decode_buffer_size(encoded_len);
+
+        // decode buffer
+        Node bb64_decode;
+        bb64_decode.set(DataType::char8_str(dec_buff_size));
+        char *decode_ptr = (char*)bb64_decode.data_ptr();
+        memset(decode_ptr,0,dec_buff_size);
+
+        utils::base64_decode(src_ptr,
+                             encoded_len,
+                             decode_ptr);
+
+        node->set(s,decode_ptr);
+
+    }
+    else
+    {
+        CONDUIT_ERROR("conduit_base64_yaml protocol error: missing schema and data/base64");
     }
 }
 
@@ -3341,9 +3310,20 @@ Generator::walk(Schema &schema) const
     }
     else if (m_protocol.find("yaml") != std::string::npos)
     {
+        Parser::YAML::YAMLParserWrapper parser;
+        parser.parse(m_schema.c_str());
+
+        yaml_document_t *yaml_doc  = parser.yaml_doc_ptr();
+        yaml_node_t     *yaml_node = parser.yaml_doc_root_ptr();
+
+        CONDUIT_ASSERT(yaml_doc && yaml_node,"failed to fetch yaml document root");
+
         Parser::YAML::walk_yaml_schema(&schema,
-                                       m_schema.c_str(),
+                                       yaml_doc,
+                                       yaml_node,
                                        curr_offset);
+
+        // YAMLParserWrapper cleans up for us
     }
     else
     {
@@ -3379,10 +3359,19 @@ Generator::walk(Node &node) const
         }
         else if(m_protocol == "yaml")
         {
-            // errors will flow up from this call 
+            Parser::YAML::YAMLParserWrapper parser;
+            parser.parse(m_schema.c_str());
+
+            yaml_document_t *yaml_doc  = parser.yaml_doc_ptr();
+            yaml_node_t     *yaml_node = parser.yaml_doc_root_ptr();
+
+            CONDUIT_ASSERT(yaml_doc && yaml_node,"failed to fetch yaml document root");
+
+            // errors will flow up from this call
             Parser::YAML::walk_pure_yaml_schema(&node,
                                                 node.schema_ptr(),
-                                                m_schema.c_str());
+                                                yaml_doc,
+                                                yaml_node);
         }
         else if( m_protocol == "conduit_base64_json")
         {
@@ -3395,9 +3384,24 @@ Generator::walk(Node &node) const
             }
 
             Parser::JSON::parse_base64(&node,
-                                    document);
+                                       document);
         }
 
+        else if( m_protocol == "conduit_base64_yaml")
+        {
+            // YAMLParserWrapper cleans up for us
+            Parser::YAML::YAMLParserWrapper parser;
+            parser.parse(m_schema.c_str());
+
+            yaml_document_t *yaml_doc  = parser.yaml_doc_ptr();
+            yaml_node_t     *yaml_node = parser.yaml_doc_root_ptr();
+
+            CONDUIT_ASSERT(yaml_doc && yaml_node,"failed to fetch yaml document root");
+
+            Parser::YAML::parse_base64(&node,
+                                       yaml_doc,
+                                       yaml_node);
+        }
         else if( m_protocol == "conduit_json" || m_protocol == "conduit_json_external")
         {
             // Note: conduit_json_external if case here for symmetry with gen / read options
@@ -3417,22 +3421,28 @@ Generator::walk(Node &node) const
                                            document,
                                            curr_offset);
         }
-        // TODO
-        // else if( m_protocol == "conduit_base64_yaml")
-        // {
-        //     Parser::YAML::parse_base64(&node,
-        //                                document);
-        // }
         else if( m_protocol == "conduit_yaml" || m_protocol == "conduit_yaml_external")
         {
             index_t curr_offset = 0;
             const bool external = false;
+
+            Parser::YAML::YAMLParserWrapper parser;
+            parser.parse(m_schema.c_str());
+
+            yaml_document_t *yaml_doc  = parser.yaml_doc_ptr();
+            yaml_node_t     *yaml_node = parser.yaml_doc_root_ptr();
+
+            CONDUIT_ASSERT(yaml_doc && yaml_node,"failed to fetch yaml document root");
+
             Parser::YAML::walk_yaml_schema(&node,
                                            node.schema_ptr(),
                                            m_data,
-                                           m_schema.c_str(),
+                                           yaml_doc,
+                                           yaml_node,
                                            curr_offset,
                                            external);
+
+            // YAMLParserWrapper cleans up for us
         }
         else
         {
@@ -3474,10 +3484,21 @@ Generator::walk_external(Node &node) const
         }
         else if(m_protocol == "yaml")
         {
-            // errors will flow up from this call 
+            Parser::YAML::YAMLParserWrapper parser;
+            parser.parse(m_schema.c_str());
+
+            yaml_document_t *yaml_doc  = parser.yaml_doc_ptr();
+            yaml_node_t     *yaml_node = parser.yaml_doc_root_ptr();
+
+            CONDUIT_ASSERT(yaml_doc && yaml_node,"failed to fetch yaml document root");
+
+            // errors will flow up from this call
             Parser::YAML::walk_pure_yaml_schema(&node,
                                                 node.schema_ptr(),
-                                                m_schema.c_str());
+                                                yaml_doc,
+                                                yaml_node);
+
+            // YAMLParserWrapper cleans up for us
         }
         else if( m_protocol == "conduit_base64_json")
         {
@@ -3490,7 +3511,22 @@ Generator::walk_external(Node &node) const
             }
 
             Parser::JSON::parse_base64(&node,
-                                    document);
+                                       document);
+        }
+        else if( m_protocol == "conduit_base64_yaml")
+        {
+            // YAMLParserWrapper cleans up for us
+            Parser::YAML::YAMLParserWrapper parser;
+            parser.parse(m_schema.c_str());
+
+            yaml_document_t *yaml_doc  = parser.yaml_doc_ptr();
+            yaml_node_t     *yaml_node = parser.yaml_doc_root_ptr();
+
+            CONDUIT_ASSERT(yaml_doc && yaml_node,"failed to fetch yaml document root");
+
+            Parser::YAML::parse_base64(&node,
+                                       yaml_doc,
+                                       yaml_node);
         }
         else if( m_protocol == "conduit_json" || m_protocol == "conduit_json_external")
         {
@@ -3511,22 +3547,28 @@ Generator::walk_external(Node &node) const
                                                     document,
                                                     curr_offset);
         }
-        // TODO
-        // else if( m_protocol == "conduit_base64_yaml")
-        // {
-        //     Parser::YAML::parse_base64(&node,
-        //                                document);
-        // }
         else if( m_protocol == "conduit_yaml" || m_protocol == "conduit_yaml_external")
         {
             index_t curr_offset = 0;
             const bool external = true;
+
+            Parser::YAML::YAMLParserWrapper parser;
+            parser.parse(m_schema.c_str());
+
+            yaml_document_t *yaml_doc  = parser.yaml_doc_ptr();
+            yaml_node_t     *yaml_node = parser.yaml_doc_root_ptr();
+
+            CONDUIT_ASSERT(yaml_doc && yaml_node,"failed to fetch yaml document root");
+
             Parser::YAML::walk_yaml_schema(&node,
                                            node.schema_ptr(),
                                            m_data,
-                                           m_schema.c_str(),
+                                           yaml_doc,
+                                           yaml_node,
                                            curr_offset,
                                            external);
+
+            // YAMLParserWrapper cleans up for us
         }
         else
         {
