@@ -3743,17 +3743,19 @@ void silo_write_field(DBfile *dbfile,
     
     if (!units.empty())
     {
-        CONDUIT_CHECK_SILO_ERROR(DBAddOption(optlist.getSiloObject(),
-                                             DBOPT_UNITS,
-                                             const_cast<char *>(units.c_str())),
-                                 "error adding units option");
+        CONDUIT_CHECK_SILO_ERROR(
+            DBAddOption(optlist.getSiloObject(),
+                        DBOPT_UNITS,
+                        const_cast<char *>(units.c_str())),
+            "error adding units option");
     }
     if (!label.empty())
     {
-        CONDUIT_CHECK_SILO_ERROR(DBAddOption(optlist.getSiloObject(),
-                                             DBOPT_LABEL,
-                                             const_cast<char *>(label.c_str())),
-                                 "error adding label option");
+        CONDUIT_CHECK_SILO_ERROR(
+            DBAddOption(optlist.getSiloObject(),
+                        DBOPT_LABEL,
+                        const_cast<char *>(label.c_str())),
+            "error adding label option");
     }
 
     const std::string silo_meshname = write_overlink ? "MESH" : topo_name;
@@ -4409,7 +4411,7 @@ void silo_write_ucd_zonelist(DBfile *dbfile,
                        shapecnt.data(),    // number of elements each shape id is used for
                        num_shapes,         // number of shapes ids
                        NULL),              // optlist
-        " after saving ucd " + topo_shape + " topology");
+        "after saving ucd " + topo_shape + " topology");
 }
 
 //---------------------------------------------------------------------------//
@@ -4459,10 +4461,11 @@ void silo_write_quad_rect_mesh(DBfile *dbfile,
         base_index[1] = n_topo["elements/origin/j"].as_int();
         base_index[2] = n_topo["elements/origin/k"].as_int();
 
-        CONDUIT_CHECK_SILO_ERROR( DBAddOption(state_optlist,
-                                              DBOPT_BASEINDEX,
-                                              base_index),
-                                  "Error adding option");
+        CONDUIT_CHECK_SILO_ERROR(
+            DBAddOption(state_optlist,
+                        DBOPT_BASEINDEX,
+                        base_index),
+            "Error adding option");
     }
 
     const std::string silo_meshname = write_overlink ? "MESH" : topo_name;
@@ -4477,7 +4480,7 @@ void silo_write_quad_rect_mesh(DBfile *dbfile,
                       coords_dtype,     // type of data array
                       DB_COLLINEAR,     // DB_COLLINEAR or DB_NONCOLLINEAR
                       state_optlist);   // opt list
-        " DBPutQuadmesh");
+        "DBPutQuadmesh");
 }
 
 //---------------------------------------------------------------------------//
@@ -4510,7 +4513,7 @@ void silo_write_ucd_mesh(DBfile *dbfile,
                      NULL,                  // face list names
                      coords_dtype,          // type of data array
                      optlist),              // opt list
-        " DBPutUcdmesh");
+        "DBPutUcdmesh");
 }
 
 //---------------------------------------------------------------------------//
@@ -4575,10 +4578,11 @@ void silo_write_structured_mesh(DBfile *dbfile,
         }
         
 
-        CONDUIT_CHECK_SILO_ERROR(DBAddOption(optlist,
-                                             DBOPT_BASEINDEX,
-                                             base_index),
-                                 "Error adding option");
+        CONDUIT_CHECK_SILO_ERROR(
+            DBAddOption(optlist,
+                        DBOPT_BASEINDEX,
+                        base_index),
+            "Error adding option");
     }
 
     const std::string silo_meshname = write_overlink ? "MESH" : topo_name;
@@ -4593,7 +4597,7 @@ void silo_write_structured_mesh(DBfile *dbfile,
                       coords_dtype,          // type of data array
                       DB_NONCOLLINEAR,       // DB_COLLINEAR (rectilinear grid) or DB_NONCOLLINEAR (structured grid)
                       optlist),              // opt list
-        " DBPutQuadmesh");
+        "DBPutQuadmesh");
 }
 
 //---------------------------------------------------------------------------//
@@ -4615,7 +4619,7 @@ void silo_write_pointmesh(DBfile *dbfile,
                        num_pts,           // num eles = num pts
                        coords_dtype,      // type of data array
                        optlist),          // opt list
-        " after saving DBPutPointmesh");
+        "after saving DBPutPointmesh");
 }
 
 //---------------------------------------------------------------------------//
@@ -4693,10 +4697,11 @@ bool silo_write_topo(const Node &mesh_domain,
         &DBFreeOptlist,
         "Error freeing state optlist."};
     CONDUIT_ASSERT(optlist.getSiloObject(), "Error creating optlist");
-    CONDUIT_CHECK_SILO_ERROR(DBAddOption(optlist.getSiloObject(),
-                                         DBOPT_COORDSYS,
-                                         &silo_coordsys_type),
-                             "error adding coordsys option");
+    CONDUIT_CHECK_SILO_ERROR(
+        DBAddOption(optlist.getSiloObject(),
+                    DBOPT_COORDSYS,
+                    &silo_coordsys_type),
+        "error adding coordsys option");
 
     //
     // handle units and labels, if they exist
@@ -4736,18 +4741,20 @@ bool silo_write_topo(const Node &mesh_domain,
     for (int i = 0; i < static_cast<int>(units_str.size()); i ++)
     {
         const int dbopt = (i == 0 ? DBOPT_XUNITS : (i == 1 ? DBOPT_YUNITS : DBOPT_ZUNITS));
-        CONDUIT_CHECK_SILO_ERROR(DBAddOption(optlist.getSiloObject(),
-                                             dbopt,
-                                             static_cast<void *>(const_cast<char *>(units_str[i]))),
-                                 "error adding units option");
+        CONDUIT_CHECK_SILO_ERROR(
+            DBAddOption(optlist.getSiloObject(),
+                        dbopt,
+                        static_cast<void *>(const_cast<char *>(units_str[i]))),
+            "error adding units option");
     }
     for (int i = 0; i < static_cast<int>(labels_str.size()); i ++)
     {
         const int dbopt = (i == 0 ? DBOPT_XLABEL : (i == 1 ? DBOPT_YLABEL : DBOPT_ZLABEL));
-        CONDUIT_CHECK_SILO_ERROR(DBAddOption(optlist.getSiloObject(),
-                                             dbopt,
-                                             static_cast<void *>(const_cast<char *>(labels_str[i]))),
-                                 "error adding labels option");
+        CONDUIT_CHECK_SILO_ERROR(
+            DBAddOption(optlist.getSiloObject(),
+                        dbopt,
+                        static_cast<void *>(const_cast<char *>(labels_str[i]))),
+            "error adding labels option");
     }
 
     int mesh_type = DB_INVALID_OBJECT;
@@ -5010,10 +5017,11 @@ bool silo_write_matset(DBfile *dbfile,
         &DBFreeOptlist,
         "Error freeing optlist."};
     CONDUIT_ASSERT(optlist.getSiloObject(), "Error creating optlist");
-    CONDUIT_CHECK_SILO_ERROR(DBAddOption(optlist.getSiloObject(),
-                                         DBOPT_MATNAMES,
-                                         matname_ptrs.data()),
-                             "error adding matnames option");
+    CONDUIT_CHECK_SILO_ERROR(
+        DBAddOption(optlist.getSiloObject(),
+                    DBOPT_MATNAMES,
+                    matname_ptrs.data()),
+        "error adding matnames option");
 
     Node int_arrays;
     detail::convert_to_c_int_array(silo_matset_compact["mix_mat"], int_arrays["mix_mat"]);
@@ -5036,7 +5044,7 @@ bool silo_write_matset(DBfile *dbfile,
                       mixlen,                         // length of mixed data arrays
                       mat_type,                       // data type of volume fractions
                       optlist.getSiloObject()),       // optlist
-        " DBPutMaterial");
+        "DBPutMaterial");
 
     Node bookkeeping_info;
     bookkeeping_info["comp_info"]["comp"] = "matsets";
@@ -5153,10 +5161,11 @@ void silo_write_specset(DBfile *dbfile,
         &DBFreeOptlist,
         "Error freeing optlist."};
     CONDUIT_ASSERT(optlist.getSiloObject(), "Error creating optlist");
-    CONDUIT_CHECK_SILO_ERROR(DBAddOption(optlist.getSiloObject(),
-                                         DBOPT_SPECNAMES,
-                                         specname_ptrs.data()),
-                             "error adding matnames option");
+    CONDUIT_CHECK_SILO_ERROR(
+        DBAddOption(optlist.getSiloObject(),
+                    DBOPT_SPECNAMES,
+                    specname_ptrs.data()),
+        "error adding matnames option");
 
     const std::string silo_matset_name = write_overlink ? "MATERIAL" : matset_name;
 
@@ -5188,7 +5197,7 @@ void silo_write_specset(DBfile *dbfile,
                         mixlen,                                // length of mix_spec array
                         datatype,                              // datatype of mass fraction data in species_mf
                         optlist.getSiloObject()),              // optlist
-        " DBPutMatspecies");
+        "DBPutMatspecies");
 
     Node bookkeeping_info;
     bookkeeping_info["comp_info"]["comp"] = "specsets";
@@ -5486,7 +5495,7 @@ void write_multimesh(DBfile *dbfile,
                                       &dtime);
         }
         CONDUIT_CHECK_SILO_ERROR(silo_error,
-                                 " creating state optlist (time, cycle) ");
+                                 "creating state optlist (time, cycle) ");
     }
 
     // TODO add dboptions for nameschemes
@@ -5662,10 +5671,11 @@ write_multivars(DBfile *dbfile,
                     }
 
                     // have to const_cast because converting to void *
-                    CONDUIT_CHECK_SILO_ERROR( DBAddOption(optlist.getSiloObject(),
-                                                          DBOPT_MMESH_NAME,
-                                                          const_cast<char *>(multimesh_name.c_str())),
-                                              "Error creating options for putting multivar");
+                    CONDUIT_CHECK_SILO_ERROR(
+                        DBAddOption(optlist.getSiloObject(),
+                                    DBOPT_MMESH_NAME,
+                                    const_cast<char *>(multimesh_name.c_str())),
+                        "Error creating options for putting multivar");
 
                     CONDUIT_CHECK_SILO_ERROR(
                         DBPutMultivar(
@@ -5791,22 +5801,26 @@ write_multimats(DBfile *dbfile,
                 CONDUIT_ASSERT(optlist.getSiloObject(), "Error creating options");
 
                 // have to const_cast because converting to void *
-                CONDUIT_CHECK_SILO_ERROR(DBAddOption(optlist.getSiloObject(),
-                                                     DBOPT_MMESH_NAME,
-                                                     const_cast<char *>(multimesh_name.c_str())),
-                                         "Error adding mmesh name db option.");
-                CONDUIT_CHECK_SILO_ERROR(DBAddOption(optlist.getSiloObject(),
-                                                     DBOPT_NMATNOS,
-                                                     &nmat),
-                                         "Error adding nmatnos db option.");
-                CONDUIT_CHECK_SILO_ERROR(DBAddOption(optlist.getSiloObject(),
-                                                     DBOPT_MATNOS,
-                                                     matnos.data()),
-                                         "Error adding matnos db option.");
-                CONDUIT_CHECK_SILO_ERROR(DBAddOption(optlist.getSiloObject(),
-                                                     DBOPT_MATNAMES,
-                                                     matname_ptrs.data()),
-                                         "Error adding matnames db option.");
+                CONDUIT_CHECK_SILO_ERROR(
+                    DBAddOption(optlist.getSiloObject(),
+                                DBOPT_MMESH_NAME,
+                                const_cast<char *>(multimesh_name.c_str())),
+                    "Error adding mmesh name db option.");
+                CONDUIT_CHECK_SILO_ERROR(
+                    DBAddOption(optlist.getSiloObject(),
+                                DBOPT_NMATNOS,
+                                &nmat),
+                    "Error adding nmatnos db option.");
+                CONDUIT_CHECK_SILO_ERROR(
+                    DBAddOption(optlist.getSiloObject(),
+                                DBOPT_MATNOS,
+                                matnos.data()),
+                    "Error adding matnos db option.");
+                CONDUIT_CHECK_SILO_ERROR(
+                    DBAddOption(optlist.getSiloObject(),
+                                DBOPT_MATNAMES,
+                                matname_ptrs.data()),
+                    "Error adding matnames db option.");
 
                 CONDUIT_CHECK_SILO_ERROR(
                     DBPutMultimat(
@@ -5941,22 +5955,26 @@ write_multimatspecs(DBfile *dbfile,
 
                 // TODO dbopts
                 // // have to const_cast because converting to void *
-                // CONDUIT_CHECK_SILO_ERROR(DBAddOption(optlist.getSiloObject(),
-                //                                      DBOPT_MMESH_NAME,
-                //                                      const_cast<char *>(multimesh_name.c_str())),
-                //                          "Error adding mmesh name db option.");
-                // CONDUIT_CHECK_SILO_ERROR(DBAddOption(optlist.getSiloObject(),
-                //                                      DBOPT_NMATNOS,
-                //                                      &nmat),
-                //                          "Error adding nmatnos db option.");
-                // CONDUIT_CHECK_SILO_ERROR(DBAddOption(optlist.getSiloObject(),
-                //                                      DBOPT_MATNOS,
-                //                                      matnos.data()),
-                //                          "Error adding matnos db option.");
-                // CONDUIT_CHECK_SILO_ERROR(DBAddOption(optlist.getSiloObject(),
-                //                                      DBOPT_MATNAMES,
-                //                                      matname_ptrs.data()),
-                //                          "Error adding matnames db option.");
+                // CONDUIT_CHECK_SILO_ERROR(
+                //     DBAddOption(optlist.getSiloObject(),
+                //                 DBOPT_MMESH_NAME,
+                //                 const_cast<char *>(multimesh_name.c_str())),
+                //     "Error adding mmesh name db option.");
+                // CONDUIT_CHECK_SILO_ERROR(
+                //     DBAddOption(optlist.getSiloObject(),
+                //                 DBOPT_NMATNOS,
+                //                 nmat),
+                //     "Error adding nmatnos db option.");
+                // CONDUIT_CHECK_SILO_ERROR(
+                //     DBAddOption(optlist.getSiloObject(),
+                //                 DBOPT_MATNOS,
+                //                 matnos.data()),
+                //     "Error adding matnos db option.");
+                // CONDUIT_CHECK_SILO_ERROR(
+                //     DBAddOption(optlist.getSiloObject(),
+                //                 DBOPT_MATNAMES,
+                //                 matname_ptrs.data()),
+                //     "Error adding matnames db option.");
 
                 CONDUIT_CHECK_SILO_ERROR(
                     DBPutMultimatspecies(
@@ -6150,21 +6168,20 @@ write_var_attributes(DBfile *dbfile,
 // only for overlink
 void
 write_num_species_sets(DBfile *dbfile,
-                       const int num_specsets_written,
+                       const int &num_specsets_written,
                        const std::string &opts_mesh_name,
                        const Node &root)
 {
+    const int data_length = 1;
+
     CONDUIT_CHECK_SILO_ERROR(
         DBWrite(dbfile, // dbfile
-                "num species sets", // name
-                ));
-
-    silo_error += DBWrite(dbfile,
-                          dest_data.c_str(),
-                          &data[0],
-                          &data_len,
-                          1,
-                          DB_CHAR);
+                "num_species_sets", // name
+                static_cast<void *>(&num_specsets_written), // address of single integer
+                &data_length, // data length of one
+                1, // dimension of the data
+                DB_INT), // data is an integer
+        "Error writing num_species_sets to Overlink.");
 }
 
 //-----------------------------------------------------------------------------
