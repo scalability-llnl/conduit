@@ -5063,8 +5063,8 @@ void silo_write_specset(DBfile *dbfile,
                         const int local_num_domains,
                         const int local_domain_index,
                         const uint64 global_domain_id,
+                        const std::map<std::string, std::pair<std::string, std::string>> &ovl_specset_names,
                         std::set<std::string> &used_names,
-                        std::map<std::string, std::pair<std::string, std::string>> ovl_specset_names,
                         Node &local_type_domain_info,
                         Node &n_mesh_info)
 {
@@ -5331,31 +5331,32 @@ void silo_mesh_write(const Node &mesh_domain,
         }
     }
 
-    // if (mesh_domain.has_path("specsets")) 
-    // {
-    //     auto specset_itr = mesh_domain["specsets"].children();
-    //     while (specset_itr.has_next())
-    //     {
-    //         // TODO do I need error checking for these paths?
-    //         const Node &n_specset = specset_itr.next();
-    //         const std::string specset_name = specset_itr.name();
-    //         const std::string matset_name = n_specset["matset"].as_string();
-    //         const std::string topo_name = n_mesh_info["matsets"][matset_name]["topo_name"].as_string();
-    //         if (! write_overlink || topo_name == ovl_topo_name)
-    //         {
-    //             silo_write_specset(dbfile,
-    //                                specset_name,
-    //                                n_specset,
-    //                                write_overlink,
-    //                                local_num_domains,
-    //                                local_domain_index,
-    //                                global_domain_id,
-    //                                used_names,
-    //                                local_type_domain_info,
-    //                                n_mesh_info);
-    //         }
-    //     }
-    // }
+    if (mesh_domain.has_path("specsets")) 
+    {
+        auto specset_itr = mesh_domain["specsets"].children();
+        while (specset_itr.has_next())
+        {
+            // TODO do I need error checking for these paths?
+            const Node &n_specset = specset_itr.next();
+            const std::string specset_name = specset_itr.name();
+            const std::string matset_name = n_specset["matset"].as_string();
+            const std::string topo_name = n_mesh_info["matsets"][matset_name]["topo_name"].as_string();
+            if (! write_overlink || topo_name == ovl_topo_name)
+            {
+                silo_write_specset(dbfile,
+                                   specset_name,
+                                   n_specset,
+                                   write_overlink,
+                                   local_num_domains,
+                                   local_domain_index,
+                                   global_domain_id,
+                                   ovl_specset_names,
+                                   used_names,
+                                   local_type_domain_info,
+                                   n_mesh_info);
+            }
+        }
+    }
 
     if (mesh_domain.has_path("fields")) 
     {
@@ -5827,7 +5828,8 @@ write_multimatspecs(DBfile *dbfile,
                     const std::string &opts_mesh_name,
                     const std::string &ovl_topo_name,
                     const Node &root,
-                    const bool write_overlink)
+                    const bool write_overlink,
+                    const std::map<std::string, std::pair<std::string, std::string>> &ovl_specset_names)
 {
     const int num_files = root["number_of_files"].to_index_t();
     const int global_num_domains = root["number_of_domains"].to_index_t();
@@ -5845,9 +5847,6 @@ write_multimatspecs(DBfile *dbfile,
         // Overlink asks that the first multimatspecies object is names MSPECIES
         // and ensuing multimatspecies objects are named MSPECIES1, MSPECIES2, etc.
         // so we track how many we have written to name them appropriately
-        // TODO TEST THIS
-        // TODO ensure name id is shared with domain species objects?
-        int ovl_mspecies_object_index = 0;
         auto specset_itr = n_mesh["specsets"].children();
         while (specset_itr.has_next())
         {
@@ -5874,24 +5873,26 @@ write_multimatspecs(DBfile *dbfile,
             // the correct topology.
             if (! write_overlink || linked_topo_name == ovl_topo_name)
             {
-                const std::string silo_specset_name = [&]() -> std::string
+                std::string silo_specset_name;
+                if (write_overlink)
                 {
-                    if (write_overlink)
+                    if (ovl_specset_names.find(specset_name) != ovl_specset_names.end())
                     {
-                        if (ovl_mspecies_object_index == 0)
+                        silo_specset_name = ovl_specset_names[specset_name].first;
+                        if ("ERROR" == silo_specset_name)
                         {
-                            return "SPECIES";
-                        }
-                        else
-                        {
-                            return "SPECIES" + std::to_string(ovl_mspecies_object_index);
+                            continue;
                         }
                     }
                     else
                     {
-                        return specset_name;
+                        continue;
                     }
-                }();
+                }
+                else
+                {
+                    silo_specset_name = specset_name;
+                }
 
                 std::vector<std::string> specset_name_strings;
                 detail::generate_silo_names(n_mesh["state"],
@@ -5913,25 +5914,12 @@ write_multimatspecs(DBfile *dbfile,
                     specset_name_ptrs.push_back(specset_name_strings[i].c_str());
                 }
 
-                std::string multimesh_name, multimatspec_name;
-                if (write_overlink)
-                {
-                    multimesh_name = opts_mesh_name;
-                    if (ovl_mspecies_object_index == 0)
-                    {
-                        multimatspec_name = "MSPECIES";
-                    }
-                    else
-                    {
-                        multimatspec_name = "MSPECIES" + std::to_string(ovl_mspecies_object_index);
-                    }
-                    ovl_mspecies_object_index ++;
-                }
-                else
-                {
-                    multimesh_name = opts_mesh_name + "_" + linked_topo_name;
-                    multimatspec_name = opts_mesh_name + "_" + silo_specset_name;
-                }
+                const std::string multimesh_name = (write_overlink ? 
+                                                    opts_mesh_name : 
+                                                    opts_mesh_name + "_" + linked_topo_name);
+                const std::string multimatspec_name = (write_overlink ?
+                                                       "M" + silo_specset_name :
+                                                       opts_mesh_name + "_" + silo_specset_name);
 
                 // // extract info from the material map to save to dbopts
                 // int nmat;
@@ -6746,8 +6734,11 @@ void CONDUIT_RELAY_API write_mesh(const Node &mesh,
 
     // I want the names of specsets that are associated with the first
     // matset associated with the chosen topology
-    // TODO USE THIS IN MULTIMATSPEC WRITE AND REGULAR SPEC WRITE
     std::map<std::string, std::pair<std::string, std::string>> ovl_specset_names;
+    // we need this to ensure that all species get assigned a unique name
+    // for overlink, independent of the order they appear for a particular domain.
+    // TODO test me, specset1 and specset2, specset1 appears first on one dom
+    // and second on the other dom.
     if (write_overlink)
     {
         int ovl_mspecies_object_index = 0;
@@ -7628,7 +7619,8 @@ void CONDUIT_RELAY_API write_mesh(const Node &mesh,
                             opts_out_mesh_name, 
                             opts_ovl_topo_name, 
                             root, 
-                            write_overlink);
+                            write_overlink,
+                            ovl_specset_names);
 
         if (write_overlink)
         {
