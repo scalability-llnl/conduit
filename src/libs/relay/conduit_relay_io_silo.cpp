@@ -4479,7 +4479,7 @@ void silo_write_quad_rect_mesh(DBfile *dbfile,
                       ndims,            // number of dims
                       coords_dtype,     // type of data array
                       DB_COLLINEAR,     // DB_COLLINEAR or DB_NONCOLLINEAR
-                      state_optlist);   // opt list
+                      state_optlist),   // opt list
         "DBPutQuadmesh");
 }
 
@@ -5066,6 +5066,7 @@ bool silo_write_matset(DBfile *dbfile,
 void silo_write_specset(DBfile *dbfile,
                         const std::string &specset_name,
                         const Node &n_specset,
+                        const std::string &matset_name,
                         const bool write_overlink,
                         const int local_num_domains,
                         const int local_domain_index,
@@ -5090,10 +5091,10 @@ void silo_write_specset(DBfile *dbfile,
     {
         if (ovl_specset_names.find(specset_name) != ovl_specset_names.end())
         {
-            silo_specset_name = ovl_specset_names[specset_name].first;
+            silo_specset_name = ovl_specset_names.at(specset_name).first;
             if ("ERROR" == silo_specset_name)
             {
-                CONDUIT_INFO(ovl_specset_names[specset_name].second);
+                CONDUIT_INFO(ovl_specset_names.at(specset_name).second);
                 return;
             }
         }
@@ -5109,30 +5110,12 @@ void silo_write_specset(DBfile *dbfile,
         silo_specset_name = specset_name;
     }
 
-    if (!n_specset.has_path("matset"))
-    {
-        CONDUIT_INFO("Skipping this specset because we are "
-                     "missing a linked matset: "
-                      << "specsets/" << specset_name << "/matset");
-        return;
-    }
-
     if (used_names.find(silo_specset_name) != used_names.end())
     {
         CONDUIT_INFO("The name " << silo_specset_name << " has already been saved to "
                      "Silo as the name for a different object. Saving this specset "
                      "will overwrite that previous object, so we will skip specset " 
                      << specset_name << ".");
-        return;
-    }
-
-    const std::string matset_name = n_specset["matset"].as_string();
-    if (!n_mesh_info.has_path("matsets/" + matset_name))
-    {
-        CONDUIT_INFO("Skipping this specset because the linked "
-                     "matset is invalid: "
-                      << "specsets/" << specset_name
-                      << "/matset: " << matset_name);
         return;
     }
 
@@ -5222,7 +5205,8 @@ void silo_mesh_write(const Node &mesh_domain,
                      const int local_domain_index,
                      const uint64 global_domain_id,
                      Node &local_type_domain_info,
-                     const bool write_overlink)
+                     const bool write_overlink,
+                     const std::map<std::string, std::pair<std::string, std::string>> &ovl_specset_names)
 {
     int silo_error = 0;
     char silo_prev_dir[256];
@@ -5344,16 +5328,32 @@ void silo_mesh_write(const Node &mesh_domain,
         auto specset_itr = mesh_domain["specsets"].children();
         while (specset_itr.has_next())
         {
-            // TODO do I need error checking for these paths?
+            // TODO pull error checking out of the write calls where appropriate
             const Node &n_specset = specset_itr.next();
             const std::string specset_name = specset_itr.name();
+            if (n_specset.has_child("matset"))
+            {
+                CONDUIT_INFO("Skipping this specset because we are "
+                             "missing a linked matset: "
+                              << "specsets/" << specset_name << "/matset");
+                continue;
+            }
             const std::string matset_name = n_specset["matset"].as_string();
+            if (!n_mesh_info.has_path("matsets/" + matset_name + "/topo_name"))
+            {
+                CONDUIT_INFO("Skipping this specset because the linked "
+                             "matset is invalid or was not written: "
+                              << "specsets/" << specset_name
+                              << "/matset: " << matset_name);
+                continue;
+            }
             const std::string topo_name = n_mesh_info["matsets"][matset_name]["topo_name"].as_string();
             if (! write_overlink || topo_name == ovl_topo_name)
             {
                 silo_write_specset(dbfile,
                                    specset_name,
                                    n_specset,
+                                   matset_name,
                                    write_overlink,
                                    local_num_domains,
                                    local_domain_index,
@@ -5771,17 +5771,12 @@ write_multimats(DBfile *dbfile,
                     matset_name_ptrs.push_back(matset_name_strings[i].c_str());
                 }
 
-                std::string multimesh_name, multimat_name;
-                if (write_overlink)
-                {
-                    multimesh_name = opts_mesh_name;
-                    multimat_name = "MMATERIAL";
-                }
-                else
-                {
-                    multimesh_name = opts_mesh_name + "_" + linked_topo_name;
-                    multimat_name = opts_mesh_name + "_" + silo_matset_name;
-                }
+                const std::string multimesh_name = (write_overlink ? 
+                                                    opts_mesh_name :
+                                                    opts_mesh_name + "_" + linked_topo_name);
+                const std::string multimat_name = (write_overlink ? 
+                                                   "MMATERIAL" :
+                                                   opts_mesh_name + "_" + silo_matset_name);
 
                 // extract info from the material map to save to dbopts
                 int nmat;
@@ -5881,6 +5876,9 @@ write_multimatspecs(DBfile *dbfile,
                 // either matset doesn't exist or it has no linked topo
                 continue;
             }
+
+            const Node &n_matset = n_mesh["matsets"][linked_matset_name];
+
             const std::string linked_topo_name = n_mesh["matsets"][linked_matset_name]["topology"].as_string();
 
             // if we are not writing overlink, we can go ahead
@@ -5893,7 +5891,7 @@ write_multimatspecs(DBfile *dbfile,
                 {
                     if (ovl_specset_names.find(specset_name) != ovl_specset_names.end())
                     {
-                        silo_specset_name = ovl_specset_names[specset_name].first;
+                        silo_specset_name = ovl_specset_names.at(specset_name).first;
                         if ("ERROR" == silo_specset_name)
                         {
                             continue;
@@ -5929,23 +5927,60 @@ write_multimatspecs(DBfile *dbfile,
                     specset_name_ptrs.push_back(specset_name_strings[i].c_str());
                 }
 
+                const std::string silo_matset_name = (write_overlink ? "MATERIAL" : linked_matset_name);
                 const std::string multimesh_name = (write_overlink ? 
                                                     opts_mesh_name : 
                                                     opts_mesh_name + "_" + linked_topo_name);
+                const std::string multimat_name = (write_overlink ? 
+                                                   "MMATERIAL" :
+                                                   opts_mesh_name + "_" + silo_matset_name);
                 const std::string multimatspec_name = (write_overlink ?
                                                        "M" + silo_specset_name :
                                                        opts_mesh_name + "_" + silo_specset_name);
 
-                // // extract info from the material map to save to dbopts
-                // int nmat;
-                // std::vector<std::string> matnames;
-                // std::vector<const char *> matname_ptrs;
-                // std::vector<int> matnos;
-                // detail::read_material_map(n_specset["material_map"],
-                //                           nmat,
-                //                           matnames,
-                //                           matname_ptrs,
-                //                           matnos);
+                // extract info from the material map to save to dbopts
+                int nmat;
+                std::vector<std::string> matnames;
+                std::vector<const char *> matname_ptrs;
+                std::vector<int> matnos;
+                detail::read_material_map(n_matset["material_map"],
+                                          nmat,
+                                          matnames,
+                                          matname_ptrs,
+                                          matnos);
+
+                std::vector<std::pair<int, std::string>> matno_to_matname;
+                for (size_t mat_idx = 0; mat_idx < matnames.size(); mat_idx ++)
+                {
+                    matno_to_matname.emplace_back(matnos[mat_idx], matnames[mat_idx]);
+                }
+                // this will sort by matno
+                std::sort(matno_to_matname.begin(), matno_to_matname.end());
+
+                std::vector<int> nmatspec;
+                std::vector<std::string> specnames;
+
+                for (const auto &matno_matname : matno_to_matname)
+                {
+                    const Node &curr_mat = n_specset["species"][matno_matname.second];
+                    nmatspec.push_back(curr_mat.number_of_children());
+
+                    // get the specie names for this material
+                    auto spec_name_itr = curr_mat.children();
+                    while (spec_name_itr.has_next())
+                    {
+                        spec_name_itr.next();
+                        const std::string specname = spec_name_itr.name();
+                        specnames.push_back(specname);
+                    }
+                }
+
+                // package up char ptrs for silo
+                std::vector<const char *> specname_ptrs;
+                for (size_t i = 0; i < specnames.size(); i ++)
+                {
+                    specname_ptrs.push_back(specnames[i].c_str());
+                }
 
                 detail::SiloObjectWrapperCheckError<DBoptlist, decltype(&DBFreeOptlist)> optlist{
                     DBMakeOptlist(4),
@@ -5953,28 +5988,27 @@ write_multimatspecs(DBfile *dbfile,
                     "Error freeing optlist."};
                 CONDUIT_ASSERT(optlist.getSiloObject(), "Error creating options");
 
-                // TODO dbopts
-                // // have to const_cast because converting to void *
-                // CONDUIT_CHECK_SILO_ERROR(
-                //     DBAddOption(optlist.getSiloObject(),
-                //                 DBOPT_MMESH_NAME,
-                //                 const_cast<char *>(multimesh_name.c_str())),
-                //     "Error adding mmesh name db option.");
-                // CONDUIT_CHECK_SILO_ERROR(
-                //     DBAddOption(optlist.getSiloObject(),
-                //                 DBOPT_NMATNOS,
-                //                 nmat),
-                //     "Error adding nmatnos db option.");
-                // CONDUIT_CHECK_SILO_ERROR(
-                //     DBAddOption(optlist.getSiloObject(),
-                //                 DBOPT_MATNOS,
-                //                 matnos.data()),
-                //     "Error adding matnos db option.");
-                // CONDUIT_CHECK_SILO_ERROR(
-                //     DBAddOption(optlist.getSiloObject(),
-                //                 DBOPT_MATNAMES,
-                //                 matname_ptrs.data()),
-                //     "Error adding matnames db option.");
+                // have to const_cast because converting to void *
+                CONDUIT_CHECK_SILO_ERROR(
+                    DBAddOption(optlist.getSiloObject(),
+                                DBOPT_MATNAME,
+                                const_cast<char *>(multimat_name.c_str())),
+                    "Error adding mmat name db option.");
+                CONDUIT_CHECK_SILO_ERROR(
+                    DBAddOption(optlist.getSiloObject(),
+                                DBOPT_NMAT,
+                                &nmat),
+                    "Error adding nmat db option.");
+                CONDUIT_CHECK_SILO_ERROR(
+                    DBAddOption(optlist.getSiloObject(),
+                                DBOPT_NMATSPEC,
+                                nmatspec.data()),
+                    "Error adding nmatspec db option.");
+                CONDUIT_CHECK_SILO_ERROR(
+                    DBAddOption(optlist.getSiloObject(),
+                                DBOPT_SPECNAMES,
+                                specname_ptrs.data()),
+                    "error adding matnames option");
 
                 CONDUIT_CHECK_SILO_ERROR(
                     DBPutMultimatspecies(
@@ -6168,16 +6202,16 @@ write_var_attributes(DBfile *dbfile,
 // only for overlink
 void
 write_num_species_sets(DBfile *dbfile,
-                       const int &num_specsets_written,
-                       const std::string &opts_mesh_name,
-                       const Node &root)
+                       const int &num_specsets_written)
 {
     const int data_length = 1;
 
     CONDUIT_CHECK_SILO_ERROR(
         DBWrite(dbfile, // dbfile
                 "num_species_sets", // name
-                static_cast<void *>(&num_specsets_written), // address of single integer
+                const_cast<void *>(
+                    static_cast<const void *>(
+                        &num_specsets_written)), // address of single integer
                 &data_length, // data length of one
                 1, // dimension of the data
                 DB_INT), // data is an integer
@@ -6971,7 +7005,8 @@ void CONDUIT_RELAY_API write_mesh(const Node &mesh,
                                     i, // local domain index
                                     domain, // global domain id
                                     local_type_domain_info,
-                                    write_overlink);
+                                    write_overlink,
+                                    ovl_specset_names);
                 }
             }
 
@@ -7037,7 +7072,8 @@ void CONDUIT_RELAY_API write_mesh(const Node &mesh,
                             i, // local domain index
                             domain, // global domain id
                             local_type_domain_info,
-                            write_overlink);
+                            write_overlink,
+                            ovl_specset_names);
         }
     }
     else // more complex case, N domains to M files
@@ -7253,7 +7289,8 @@ void CONDUIT_RELAY_API write_mesh(const Node &mesh,
                                                 d, // local domain index
                                                 domain_id, // global domain id
                                                 local_type_domain_info,
-                                                write_overlink);
+                                                write_overlink,
+                                                ovl_specset_names);
                                 
                                 // update status, we are done with this doman
                                 local_domain_status[d] = 0;
@@ -7684,9 +7721,7 @@ void CONDUIT_RELAY_API write_mesh(const Node &mesh,
         if (write_overlink)
         {
             write_num_species_sets(dbfile.getSiloObject(),
-                                   num_specsets_written,
-                                   opts_out_mesh_name,
-                                   root);
+                                   num_specsets_written);
 
             write_var_attributes(dbfile.getSiloObject(),
                                  opts_out_mesh_name,
