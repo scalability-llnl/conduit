@@ -737,7 +737,6 @@ add_sizes_and_offsets(DBzonelist *zones,
             offset += size;
         }
     }
-    // TODO use vector set instead
     n_elements["sizes"].set(sizes.data(), sizes.size());
     n_elements["offsets"].set(offsets.data(), offsets.size());
 }
@@ -4089,15 +4088,17 @@ void silo_write_adjset(DBfile *dbfile,
                                           const_cast<int *>(
                                               dom_neighbor_nums.data()));
 
-        DBPutCompoundarray(dbfile, // dbfile
-                           "DOMAIN_NEIGHBOR_NUMS", // name
-                           elem_name_ptrs.data(), // elemnames
-                           elemlengths.data(), // elemlengths
-                           nelems, // nelems
-                           dom_neighbor_nums_ptr, // values
-                           nvalues, // nvalues
-                           DB_INT, // datatype
-                           NULL); // optlist
+        CONDUIT_CHECK_SILO_ERROR(
+            DBPutCompoundarray(dbfile, // dbfile
+                               "DOMAIN_NEIGHBOR_NUMS", // name
+                               elem_name_ptrs.data(), // elemnames
+                               elemlengths.data(), // elemlengths
+                               nelems, // nelems
+                               dom_neighbor_nums_ptr, // values
+                               nvalues, // nvalues
+                               DB_INT, // datatype
+                               NULL), // optlist
+            "Error writing domain neighbor nums.");
     };
 
     // 
@@ -4178,15 +4179,17 @@ void silo_write_adjset(DBfile *dbfile,
             shared_nodes.push_back(group_values[i]);
         }
 
-        DBPutCompoundarray(dbfile, // dbfile
-                           arr_name.c_str(), // name
-                           &elemname, // elemnames
-                           &num_shared_nodes, // elemlengths
-                           nelems_comm, // nelems
-                           static_cast<void *>(shared_nodes.data()), // values
-                           num_shared_nodes, // nvalues
-                           DB_INT, // datatype
-                           NULL); // optlist
+        CONDUIT_CHECK_SILO_ERROR(
+            DBPutCompoundarray(dbfile, // dbfile
+                               arr_name.c_str(), // name
+                               &elemname, // elemnames
+                               &num_shared_nodes, // elemlengths
+                               nelems_comm, // nelems
+                               static_cast<void *>(shared_nodes.data()), // values
+                               num_shared_nodes, // nvalues
+                               DB_INT, // datatype
+                               NULL), // optlist
+            "Error writing " + arr_name);
 
         neighbor_index ++;
     }
@@ -4391,7 +4394,7 @@ void silo_write_ucd_zonelist(DBfile *dbfile,
 
     const int ndims = n_mesh_info[topo_name]["ndims"].as_int();
 
-    int silo_error =
+    CONDUIT_CHECK_SILO_ERROR(
         DBPutZonelist2(dbfile,             // silo file
                        zlist_name.c_str(), // silo obj name
                        total_num_elems,    // number of elements
@@ -4405,9 +4408,8 @@ void silo_write_ucd_zonelist(DBfile *dbfile,
                        shapesize.data(),   // number of points per shape id
                        shapecnt.data(),    // number of elements each shape id is used for
                        num_shapes,         // number of shapes ids
-                       NULL);              // optlist
-
-    CONDUIT_CHECK_SILO_ERROR(silo_error, " after saving ucd " + topo_shape + " topology");
+                       NULL),              // optlist
+        " after saving ucd " + topo_shape + " topology");
 }
 
 //---------------------------------------------------------------------------//
@@ -4465,7 +4467,7 @@ void silo_write_quad_rect_mesh(DBfile *dbfile,
 
     const std::string silo_meshname = write_overlink ? "MESH" : topo_name;
 
-    int silo_error =
+    CONDUIT_CHECK_SILO_ERROR(
         DBPutQuadmesh(dbfile,           // silo file ptr
                       silo_meshname.c_str(), // mesh name
                       coordnames,       // coord names
@@ -4475,8 +4477,7 @@ void silo_write_quad_rect_mesh(DBfile *dbfile,
                       coords_dtype,     // type of data array
                       DB_COLLINEAR,     // DB_COLLINEAR or DB_NONCOLLINEAR
                       state_optlist);   // opt list
-
-    CONDUIT_CHECK_SILO_ERROR(silo_error, " DBPutQuadmesh");
+        " DBPutQuadmesh");
 }
 
 //---------------------------------------------------------------------------//
@@ -4497,19 +4498,19 @@ void silo_write_ucd_mesh(DBfile *dbfile,
     const std::string zlist_name = n_mesh_info[topo_name]["zonelist_name"].as_string();
     const std::string silo_meshname = (write_overlink ? "MESH" : topo_name);
 
-    int silo_error = DBPutUcdmesh(dbfile,                // silo file ptr
-                                  silo_meshname.c_str(), // mesh name
-                                  ndims,                 // number of dims
-                                  coordnames,            // coord names
-                                  coords_ptrs,           // coords values
-                                  num_pts,               // number of points
-                                  num_elems,             // number of elements
-                                  zlist_name.c_str(),    // zone list name
-                                  NULL,                  // face list names
-                                  coords_dtype,          // type of data array
-                                  optlist);              // opt list
-
-    CONDUIT_CHECK_SILO_ERROR(silo_error, " DBPutUcdmesh");
+    CONDUIT_CHECK_SILO_ERROR(
+        DBPutUcdmesh(dbfile,                // silo file ptr
+                     silo_meshname.c_str(), // mesh name
+                     ndims,                 // number of dims
+                     coordnames,            // coord names
+                     coords_ptrs,           // coords values
+                     num_pts,               // number of points
+                     num_elems,             // number of elements
+                     zlist_name.c_str(),    // zone list name
+                     NULL,                  // face list names
+                     coords_dtype,          // type of data array
+                     optlist),              // opt list
+        " DBPutUcdmesh");
 }
 
 //---------------------------------------------------------------------------//
@@ -4582,7 +4583,7 @@ void silo_write_structured_mesh(DBfile *dbfile,
 
     const std::string silo_meshname = write_overlink ? "MESH" : topo_name;
 
-    int silo_error =
+    CONDUIT_CHECK_SILO_ERROR(
         DBPutQuadmesh(dbfile,                // silo file ptr
                       silo_meshname.c_str(), // mesh name
                       coordnames,            // coord names
@@ -4591,9 +4592,8 @@ void silo_write_structured_mesh(DBfile *dbfile,
                       ndims,                 // number of dims
                       coords_dtype,          // type of data array
                       DB_NONCOLLINEAR,       // DB_COLLINEAR (rectilinear grid) or DB_NONCOLLINEAR (structured grid)
-                      optlist);              // opt list
-
-    CONDUIT_CHECK_SILO_ERROR(silo_error, " DBPutQuadmesh");
+                      optlist),              // opt list
+        " DBPutQuadmesh");
 }
 
 //---------------------------------------------------------------------------//
@@ -4607,15 +4607,15 @@ void silo_write_pointmesh(DBfile *dbfile,
                           Node &n_mesh_info)
 {
     n_mesh_info[topo_name]["num_elems"].set(num_pts);
-    int silo_error = DBPutPointmesh(dbfile,            // silo file ptr
-                                    topo_name.c_str(), // mesh name
-                                    ndims,             // num_dims
-                                    coords_ptrs,       // coords values
-                                    num_pts,           // num eles = num pts
-                                    coords_dtype,      // type of data array
-                                    optlist);          // opt list
-
-    CONDUIT_CHECK_SILO_ERROR(silo_error, " after saving DBPutPointmesh");
+    CONDUIT_CHECK_SILO_ERROR(
+        DBPutPointmesh(dbfile,            // silo file ptr
+                       topo_name.c_str(), // mesh name
+                       ndims,             // num_dims
+                       coords_ptrs,       // coords values
+                       num_pts,           // num eles = num pts
+                       coords_dtype,      // type of data array
+                       optlist),          // opt list
+        " after saving DBPutPointmesh");
 }
 
 //---------------------------------------------------------------------------//
@@ -5020,7 +5020,7 @@ bool silo_write_matset(DBfile *dbfile,
     detail::convert_to_c_int_array(silo_matset_compact["mix_next"], int_arrays["mix_next"]);
     detail::convert_to_c_int_array(silo_matset_compact["matlist"], int_arrays["matlist"]);
 
-    int silo_error = 
+    CONDUIT_CHECK_SILO_ERROR(
         DBPutMaterial(dbfile, // Database file pointer
                       silo_matset_name.c_str(), // matset name
                       silo_meshname.c_str(), // mesh name
@@ -5035,9 +5035,8 @@ bool silo_write_matset(DBfile *dbfile,
                       silo_mix_vfs_final.data_ptr(),  // volume fractions
                       mixlen,                         // length of mixed data arrays
                       mat_type,                       // data type of volume fractions
-                      optlist.getSiloObject());       // optlist
-
-    CONDUIT_CHECK_SILO_ERROR(silo_error, " DBPutMaterial");
+                      optlist.getSiloObject()),       // optlist
+        " DBPutMaterial");
 
     Node bookkeeping_info;
     bookkeeping_info["comp_info"]["comp"] = "matsets";
@@ -5823,7 +5822,7 @@ write_multimats(DBfile *dbfile,
 }
 
 //-----------------------------------------------------------------------------
-void
+int
 write_multimatspecs(DBfile *dbfile,
                     const std::string &opts_mesh_name,
                     const std::string &ovl_topo_name,
@@ -5836,6 +5835,8 @@ write_multimatspecs(DBfile *dbfile,
     const Node &n_mesh = root["blueprint_index"][opts_mesh_name];
     const Node &n_type_dom_info = root["type_domain_info"];
     const bool root_only = root["file_style"].as_string() == "root_only";
+
+    int num_specsets_written = 0;
 
     // these should be the same b/c the num domains the bp index was given
     // was global_num_domains
@@ -5965,9 +5966,13 @@ write_multimatspecs(DBfile *dbfile,
                         specset_name_ptrs.data(),
                         optlist.getSiloObject()),
                     "Error putting multimaterial corresponding to specset: " << specset_name);
+
+                num_specsets_written ++;
             }        
         }
     }
+
+    return num_specsets_written;
 }
 
 //-----------------------------------------------------------------------------
@@ -5995,15 +6000,17 @@ write_pad_dims(DBfile *dbfile,
         // so we just write out six zeroes to make overlink happy
         std::vector<int> paddim_vals(6, 0);
 
-        DBPutCompoundarray(dbfile, // dbfile
-                           "PAD_DIMS", // name
-                           &elemname, // elemnames
-                           &elemlength, // elemlengths
-                           nelems, // nelems
-                           static_cast<void *>(paddim_vals.data()), // values
-                           nvalues, // nvalues
-                           DB_INT, // datatype
-                           NULL); // optlist
+        CONDUIT_CHECK_SILO_ERROR(
+            DBPutCompoundarray(dbfile, // dbfile
+                               "PAD_DIMS", // name
+                               &elemname, // elemnames
+                               &elemlength, // elemlengths
+                               nelems, // nelems
+                               static_cast<void *>(paddim_vals.data()), // values
+                               nvalues, // nvalues
+                               DB_INT, // datatype
+                               NULL), // optlist
+            "Error writing pad dims.");
     }
 }
 
@@ -6125,16 +6132,39 @@ write_var_attributes(DBfile *dbfile,
             multivar_name_ptrs.push_back(multivar_name_strings[i].c_str());
         }
 
-        DBPutCompoundarray(dbfile, // dbfile
-                           "VAR_ATTRIBUTES", // name
-                           multivar_name_ptrs.data(), // elemnames
-                           elemlengths.data(), // elemlengths
-                           multivar_name_ptrs.size(), // nelems
-                           static_cast<void *>(var_attr_values.data()), // values
-                           nvalues, // nvalues
-                           DB_INT, // datatype
-                           NULL); // optlist
+        CONDUIT_CHECK_SILO_ERROR(
+            DBPutCompoundarray(dbfile, // dbfile
+                               "VAR_ATTRIBUTES", // name
+                               multivar_name_ptrs.data(), // elemnames
+                               elemlengths.data(), // elemlengths
+                               multivar_name_ptrs.size(), // nelems
+                               static_cast<void *>(var_attr_values.data()), // values
+                               nvalues, // nvalues
+                               DB_INT, // datatype
+                               NULL), // optlist
+            "Error writing variable attributes.");
     }
+}
+
+//-----------------------------------------------------------------------------
+// only for overlink
+void
+write_num_species_sets(DBfile *dbfile,
+                       const int num_specsets_written,
+                       const std::string &opts_mesh_name,
+                       const Node &root)
+{
+    CONDUIT_CHECK_SILO_ERROR(
+        DBWrite(dbfile, // dbfile
+                "num species sets", // name
+                ));
+
+    silo_error += DBWrite(dbfile,
+                          dest_data.c_str(),
+                          &data[0],
+                          &data_len,
+                          1,
+                          DB_CHAR);
 }
 
 //-----------------------------------------------------------------------------
@@ -6799,6 +6829,10 @@ void CONDUIT_RELAY_API write_mesh(const Node &mesh,
             }
         }
     }
+
+    // TODO for overlink: Number of species per material within a set must agree
+    // across domains, and agree with that specified in the corresponding 
+    // DBPutMultimatspecies call.
 
     // new style bp index partition_map
     // NOTE: the part_map is inited during write process for N domains
@@ -7615,15 +7649,28 @@ void CONDUIT_RELAY_API write_mesh(const Node &mesh,
                         opts_ovl_topo_name,
                         root, 
                         write_overlink);
-        write_multimatspecs(dbfile.getSiloObject(),
-                            opts_out_mesh_name, 
-                            opts_ovl_topo_name, 
-                            root, 
-                            write_overlink,
-                            ovl_specset_names);
+
+        // TODO for overlink: Specie sets: A domain may contain multiple specie 
+        // sets. All domains must contain the same number of specie sets. The 
+        // numbers of species per material in each set may be different for the 
+        // same material in different sets. The number of species per material 
+        // in each set must be the same for all domains.
+
+        const int num_specsets_written = 
+            write_multimatspecs(dbfile.getSiloObject(),
+                                opts_out_mesh_name, 
+                                opts_ovl_topo_name, 
+                                root, 
+                                write_overlink,
+                                ovl_specset_names);
 
         if (write_overlink)
         {
+            write_num_species_sets(dbfile.getSiloObject(),
+                                   num_specsets_written,
+                                   opts_out_mesh_name,
+                                   root);
+
             write_var_attributes(dbfile.getSiloObject(),
                                  opts_out_mesh_name,
                                  root);
