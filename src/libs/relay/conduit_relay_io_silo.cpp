@@ -5050,6 +5050,8 @@ bool silo_write_matset(DBfile *dbfile,
     // bookkeeping
     detail::track_local_type_domain_info(bookkeeping_info, local_type_domain_info);
 
+    used_names.insert(silo_matset_name);
+
     return true;
 }
 
@@ -5062,6 +5064,7 @@ void silo_write_specset(DBfile *dbfile,
                         const int local_domain_index,
                         const uint64 global_domain_id,
                         std::set<std::string> &used_names,
+                        std::map<std::string, std::pair<std::string, std::string>> ovl_specset_names,
                         Node &local_type_domain_info,
                         Node &n_mesh_info)
 {
@@ -5072,26 +5075,47 @@ void silo_write_specset(DBfile *dbfile,
     {
         CONDUIT_INFO("Specset name " << specset_name << " contains " << 
                      "non-alphanumeric characters. Skipping.");
-        return false;
+        return;
     }
 
-    const std::string silo_specset_name = [&]()
+    std::string silo_specset_name;
+    if (write_overlink)
     {
-        if (write_overlink)
+        if (ovl_specset_names.find(specset_name) != ovl_specset_names.end())
         {
-
+            silo_specset_name = ovl_specset_names[specset_name].first;
+            if ("ERROR" == silo_specset_name)
+            {
+                CONDUIT_INFO(ovl_specset_names[specset_name].second);
+                return;
+            }
         }
         else
         {
-            return specset_name;
+            CONDUIT_INFO("Specset with name " << specset_name << " is missing from "
+                         "Blueprint index. Skipping.");
+            return;
         }
-    }();
+    }
+    else
+    {
+        silo_specset_name = specset_name;
+    }
 
     if (!n_specset.has_path("matset"))
     {
         CONDUIT_INFO("Skipping this specset because we are "
                      "missing a linked matset: "
                       << "specsets/" << specset_name << "/matset");
+        return;
+    }
+
+    if (used_names.find(silo_specset_name) != used_names.end())
+    {
+        CONDUIT_INFO("The name " << silo_specset_name << " has already been saved to "
+                     "Silo as the name for a different object. Saving this specset "
+                     "will overwrite that previous object, so we will skip specset " 
+                     << specset_name << ".");
         return;
     }
 
@@ -5135,13 +5159,7 @@ void silo_write_specset(DBfile *dbfile,
                                          specname_ptrs.data()),
                              "error adding matnames option");
 
-    // TODO different approach needed for overlink?
-    // TODO this name collision prevention is a bandaid.
-    const std::string safe_specset_name = detail::make_alphanumeric(
-        matset_name == specset_name ? specset_name + "_spec" : specset_name);
-
-    // TODO different option needed for overlink?
-    const std::string safe_matset_name = detail::make_alphanumeric(matset_name);
+    const std::string silo_matset_name = write_overlink ? "MATERIAL" : matset_name;
 
     const int nmat = silo_specset["nmat"].to_value();
 
@@ -5156,10 +5174,10 @@ void silo_write_specset(DBfile *dbfile,
 
     const int nspecies_mf = silo_specset["nspecies_mf"].to_value();
 
-    int silo_error =
+    CONDUIT_CHECK_SILO_ERROR(
         DBPutMatspecies(dbfile,                                // Database file pointer
-                        safe_specset_name.c_str(),             // specset name
-                        safe_matset_name.c_str(),              // matset name
+                        silo_specset_name.c_str(),             // specset name
+                        silo_matset_name.c_str(),              // matset name
                         nmat,                                  // number of materials
                         int_arrays["nmatspec"].value(),        // number of species associated with each material
                         int_arrays["speclist"].value(),        // indices into species_mf and mix_spec
@@ -5170,13 +5188,12 @@ void silo_write_specset(DBfile *dbfile,
                         int_arrays["mix_spec"].value(),        // array of length mixlen containing indices into the species_mf array
                         mixlen,                                // length of mix_spec array
                         datatype,                              // datatype of mass fraction data in species_mf
-                        optlist.getSiloObject());              // optlist
-
-    CONDUIT_CHECK_SILO_ERROR(silo_error, " DBPutMatspecies");
+                        optlist.getSiloObject()),              // optlist
+        " DBPutMatspecies");
 
     Node bookkeeping_info;
     bookkeeping_info["comp_info"]["comp"] = "specsets";
-    bookkeeping_info["comp_info"]["comp_name"] = safe_specset_name;
+    bookkeeping_info["comp_info"]["comp_name"] = specset_name;
     bookkeeping_info["domain_info"]["local_num_domains"] = local_num_domains;
     bookkeeping_info["domain_info"]["local_domain_index"] = local_domain_index;
     bookkeeping_info["domain_info"]["global_domain_id"] = global_domain_id;
@@ -5185,9 +5202,7 @@ void silo_write_specset(DBfile *dbfile,
     // bookkeeping
     detail::track_local_type_domain_info(bookkeeping_info, local_type_domain_info);
 
-    used_names.insert(silo_matset_name);
-
-    return true;
+    used_names.insert(silo_specset_name);
 }
 
 //---------------------------------------------------------------------------//
@@ -6729,12 +6744,10 @@ void CONDUIT_RELAY_API write_mesh(const Node &mesh,
     bp_idx[opts_out_mesh_name] = local_bp_idx;
 #endif
 
-    std::cout << bp_idx.to_yaml() << std::endl;
-
     // I want the names of specsets that are associated with the first
     // matset associated with the chosen topology
     // TODO USE THIS IN MULTIMATSPEC WRITE AND REGULAR SPEC WRITE
-    std::map<std::string, std::string> ovl_specset_names;
+    std::map<std::string, std::pair<std::string, std::string>> ovl_specset_names;
     if (write_overlink)
     {
         int ovl_mspecies_object_index = 0;
@@ -6749,14 +6762,18 @@ void CONDUIT_RELAY_API write_mesh(const Node &mesh,
             if (! detail::check_alphanumeric(specset_name))
             {
                 // non-alphanumeric name
-                ovl_specset_names[specset_name] = "ERROR";
+                ovl_specset_names[specset_name] = std::make_pair(
+                    "ERROR", "Specset name " + specset_name + " contains "
+                    "non-alphanumeric characters. Skipping.");
                 continue;
             }
 
             if (! specset_idx.has_child("matset"))
             {
                 // no linked matset
-                ovl_specset_names[specset_name] = "ERROR";
+                ovl_specset_names[specset_name] = std::make_pair(
+                    "ERROR", "Specset name " + specset_name + " is "
+                    "missing a linked matset. Skipping.");
                 continue;
             }
             const std::string linked_matset_name = specset_idx["matset"].as_string();
@@ -6764,7 +6781,9 @@ void CONDUIT_RELAY_API write_mesh(const Node &mesh,
             if (! bp_idx[opts_out_mesh_name].has_path("matsets/" + linked_matset_name + "/topology"))
             {
                 // linked matset is invalid or missing topo
-                ovl_specset_names[specset_name] = "ERROR";
+                ovl_specset_names[specset_name] = std::make_pair(
+                    "ERROR", "Specset name " + specset_name + " has "
+                    "an invalid linked matset. Skipping.");
                 continue;
             }
             const std::string linked_topo_name = bp_idx[opts_out_mesh_name]["matsets"][linked_matset_name]["topology"].as_string();
@@ -6772,17 +6791,20 @@ void CONDUIT_RELAY_API write_mesh(const Node &mesh,
             if (linked_topo_name != opts_ovl_topo_name)
             {
                 // specset is for a different topo
-                ovl_specset_names[specset_name] = "ERROR";
+                ovl_specset_names[specset_name] = std::make_pair(
+                    "ERROR", "Specset name " + specset_name + " is "
+                    "for a topology other than the selected topology to write. Skipping.");
                 continue;
             }
 
             if (ovl_mspecies_object_index == 0)
             {
-                ovl_specset_names[specset_name] = "SPECIES";
+                ovl_specset_names[specset_name] = std::make_pair("SPECIES", "");
             }
             else
             {
-                ovl_specset_names[specset_name] = "SPECIES" + std::to_string(ovl_mspecies_object_index);
+                ovl_specset_names[specset_name] = std::make_pair(
+                    "SPECIES" + std::to_string(ovl_mspecies_object_index), "");
             }
         }
     }
