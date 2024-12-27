@@ -723,8 +723,8 @@ add_sizes_and_offsets(DBzonelist *zones,
             offset += size;
         }
     }
-    n_elements["sizes"].set(sizes.data(), sizes.size());
-    n_elements["offsets"].set(offsets.data(), offsets.size());
+    n_elements["sizes"].set(sizes);
+    n_elements["offsets"].set(offsets);
 }
 
 //-----------------------------------------------------------------------------
@@ -1439,7 +1439,7 @@ read_matset_values(const Node &silo_mixvals,
         }
     }
 
-    field_out["matset_values"].set(matset_values.data(), matset_values.size());
+    field_out["matset_values"].set(matset_values);
 }
 
 //-----------------------------------------------------------------------------
@@ -2066,14 +2066,13 @@ read_matset_domain(DBfile* matset_domain_file_to_use,
 
     // TODO still need to find colmajor data to test this
 
-    intermediate_matset["material_ids"].set(material_ids.data(), material_ids.size());
-    intermediate_matset["volume_fractions"].set(volume_fractions.data(), volume_fractions.size());
-    intermediate_matset["sizes"].set(sizes.data(), sizes.size());
-    intermediate_matset["offsets"].set(offsets.data(), offsets.size());
+    intermediate_matset["material_ids"].set(material_ids);
+    intermediate_matset["volume_fractions"].set(volume_fractions);
+    intermediate_matset["sizes"].set(sizes);
+    intermediate_matset["offsets"].set(offsets);
 
-    matset_field_reconstruction["recipe"].set(field_reconstruction_recipe.data(), 
-                                    field_reconstruction_recipe.size());
-    matset_field_reconstruction["sizes"].set(sizes.data(), sizes.size());
+    matset_field_reconstruction["recipe"].set(field_reconstruction_recipe);
+    matset_field_reconstruction["sizes"].set(sizes);
 
     // create an entry for this matset in the output
     Node &matset_out = mesh_out["matsets"][multimat_name];
