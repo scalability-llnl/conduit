@@ -611,7 +611,7 @@ read_from_map_write_out(std::map<std::string, std::vector<T>> &datamap,
         const std::string &matname = mapitem.first;
         const std::vector<T> &data_vector = mapitem.second;
 
-        destination[matname].set(data_vector.data(), data_vector.size());
+        destination[matname].set(data_vector);
     }
 }
 
@@ -661,7 +661,7 @@ sbm_rep_to_full(const std::map<std::string, std::pair<int64_accessor, float64_ac
             values[elem_id] = value;
         }
 
-        destination[matname].set(values.data(), values.size());
+        destination[matname].set(values);
     }
 }
 
@@ -718,10 +718,10 @@ multi_buffer_by_element_to_uni_buffer_by_element_matset(const conduit::Node &src
         offset += size;
     }
 
-    dest_matset["volume_fractions"].set(vol_fracs.data(), vol_fracs.size());
-    dest_matset["material_ids"].set(mat_ids.data(), mat_ids.size());
-    dest_matset["sizes"].set(sizes.data(), sizes.size());
-    dest_matset["offsets"].set(offsets.data(), offsets.size());
+    dest_matset["volume_fractions"].set(vol_fracs);
+    dest_matset["material_ids"].set(mat_ids);
+    dest_matset["sizes"].set(sizes);
+    dest_matset["offsets"].set(offsets);
 }
 
 //-----------------------------------------------------------------------------
@@ -786,7 +786,7 @@ multi_buffer_by_element_to_uni_buffer_by_element_field(const conduit::Node &src_
             }
         }
 
-        dest_field["matset_values"].set(matset_values.data(), matset_values.size());
+        dest_field["matset_values"].set(matset_values);
     }
     else
     {
@@ -994,8 +994,8 @@ multi_buffer_by_element_to_multi_buffer_by_material_matset(const conduit::Node &
             }
         }
 
-        dest_matset["volume_fractions"][matname].set(vol_fracs.data(), vol_fracs.size());
-        dest_matset["element_ids"][matname].set(elem_ids.data(), elem_ids.size());
+        dest_matset["volume_fractions"][matname].set(vol_fracs);
+        dest_matset["element_ids"][matname].set(elem_ids);
     }
 }
 
@@ -1043,7 +1043,7 @@ multi_buffer_by_element_to_multi_buffer_by_material_field(const conduit::Node &s
                 }
             }
 
-            dest_field["matset_values"][matname].set(mset_vals.data(), mset_vals.size());
+            dest_field["matset_values"][matname].set(mset_vals);
         }
     }
     else
@@ -1190,10 +1190,10 @@ multi_buffer_by_material_to_uni_buffer_by_element_matset(const conduit::Node &sr
         offset += size;
     }
 
-    dest_matset["volume_fractions"].set(vol_fracs.data(), vol_fracs.size());
-    dest_matset["material_ids"].set(mat_ids.data(), mat_ids.size());
-    dest_matset["sizes"].set(sizes.data(), sizes.size());
-    dest_matset["offsets"].set(offsets.data(), offsets.size());
+    dest_matset["volume_fractions"].set(vol_fracs);
+    dest_matset["material_ids"].set(mat_ids);
+    dest_matset["sizes"].set(sizes);
+    dest_matset["offsets"].set(offsets);
 }
 
 //-----------------------------------------------------------------------------
@@ -1267,7 +1267,7 @@ multi_buffer_by_material_to_uni_buffer_by_element_field(const conduit::Node &src
             }
         }
 
-        dest_field["matset_values"].set(mset_vals.data(), mset_vals.size());
+        dest_field["matset_values"].set(mset_vals);
     }
     else
     {
@@ -1679,10 +1679,10 @@ to_silo(const conduit::Node &specset,
     dest["nspecies_mf"] = nspecies_mf;
     
     // mass fractions of the matspecies in an array of length nspecies_mf
-    dest["species_mf"].set(species_mf.data(), species_mf.size());
+    dest["species_mf"].set(species_mf);
     
     // array of length mixlen containing indices into the species_mf array
-    dest["mix_spec"].set(mix_spec.data(), mix_spec.size());
+    dest["mix_spec"].set(mix_spec);
     
     // length of mix_spec array
     dest["mixlen"] = mixlen;
