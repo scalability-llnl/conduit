@@ -198,8 +198,6 @@ TEST(conduit_relay_io_silo, round_trip_avoid_name_collisions)
     Node read_opts;
     read_opts["matset_style"] = "multi_buffer_full";
 
-    save_mesh.print();
-
     remove_path_if_exists(filename);
     io::silo::save_mesh(save_mesh, basename);
     io::silo::load_mesh(filename, read_opts, load_mesh);

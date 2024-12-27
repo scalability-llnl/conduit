@@ -4622,15 +4622,15 @@ void silo_write_pointmesh(DBfile *dbfile,
 }
 
 //---------------------------------------------------------------------------//
-bool silo_write_topo(const Node &mesh_domain,
+bool silo_write_topo(DBfile *dbfile,
+                     const Node &mesh_domain,
                      const std::string &topo_name,
-                     Node &n_mesh_info,
                      const bool write_overlink,
                      const int local_num_domains,
                      const int local_domain_index,
                      const uint64 global_domain_id,
-                     Node &local_type_domain_info,
-                     DBfile *dbfile)
+                     Node &n_mesh_info,
+                     Node &local_type_domain_info)
 {
     if (! detail::check_alphanumeric(topo_name))
     {
@@ -5196,16 +5196,16 @@ void silo_write_specset(DBfile *dbfile,
 }
 
 //---------------------------------------------------------------------------//
-void silo_mesh_write(const Node &mesh_domain, 
-                     DBfile *dbfile,
+void silo_mesh_write(DBfile *dbfile,
+                     const Node &mesh_domain, 
                      const std::string &silo_obj_path,
                      const std::string &ovl_topo_name,
                      const int local_num_domains,
                      const int local_domain_index,
                      const uint64 global_domain_id,
-                     Node &local_type_domain_info,
                      const bool write_overlink,
-                     const std::map<std::string, std::pair<std::string, std::string>> &ovl_specset_names)
+                     const std::map<std::string, std::pair<std::string, std::string>> &ovl_specset_names,
+                     Node &local_type_domain_info)
 {
     int silo_error = 0;
     char silo_prev_dir[256];
@@ -5239,15 +5239,15 @@ void silo_mesh_write(const Node &mesh_domain,
         if (mesh_domain["topologies"].has_child(ovl_topo_name))
         {
             // we choose one topo to write out: ovl_topo_name
-            silo_write_topo(mesh_domain,
+            silo_write_topo(dbfile,
+                            mesh_domain,
                             ovl_topo_name,
-                            n_mesh_info,
                             write_overlink,
                             local_num_domains,
                             local_domain_index,
                             global_domain_id,
-                            local_type_domain_info,
-                            dbfile);
+                            n_mesh_info,
+                            local_type_domain_info);
         }
     }
     else
@@ -5258,15 +5258,15 @@ void silo_mesh_write(const Node &mesh_domain,
         {
             topo_itr.next();
             const std::string topo_name = topo_itr.name();
-            if (silo_write_topo(mesh_domain,
+            if (silo_write_topo(dbfile,
+                                mesh_domain,
                                 topo_name,
-                                n_mesh_info,
                                 write_overlink,
                                 local_num_domains,
                                 local_domain_index,
                                 global_domain_id,
-                                local_type_domain_info,
-                                dbfile))
+                                n_mesh_info,
+                                local_type_domain_info))
             {
                 used_names.insert(topo_name);
             }
@@ -6996,16 +6996,16 @@ void CONDUIT_RELAY_API write_mesh(const Node &mesh,
                                                         opts_out_mesh_name);
                         // we cannot have overlink in the root_only case so no need to handle it
                     }
-                    silo_mesh_write(dom,
-                                    dbfile.getSiloObject(),
+                    silo_mesh_write(dbfile.getSiloObject(),
+                                    dom,
                                     mesh_path,
                                     opts_ovl_topo_name,
                                     local_num_domains,
                                     i, // local domain index
                                     domain, // global domain id
-                                    local_type_domain_info,
                                     write_overlink,
-                                    ovl_specset_names);
+                                    ovl_specset_names,
+                                    local_type_domain_info);
                 }
             }
 
@@ -7063,16 +7063,16 @@ void CONDUIT_RELAY_API write_mesh(const Node &mesh,
             std::string mesh_path = write_overlink ? "" : opts_out_mesh_name;
 
             // write to mesh name subpath
-            silo_mesh_write(dom, 
-                            dbfile.getSiloObject(), 
+            silo_mesh_write(dbfile.getSiloObject(), 
+                            dom, 
                             mesh_path, 
                             opts_ovl_topo_name,
                             local_num_domains,
                             i, // local domain index
                             domain, // global domain id
-                            local_type_domain_info,
                             write_overlink,
-                            ovl_specset_names);
+                            ovl_specset_names,
+                            local_type_domain_info);
         }
     }
     else // more complex case, N domains to M files
@@ -7280,16 +7280,16 @@ void CONDUIT_RELAY_API write_mesh(const Node &mesh,
                                 // CONDUIT_INFO("rank " << par_rank << " output_file"
                                 //              << output_file << " path " << path);
 
-                                silo_mesh_write(dom, 
-                                                dbfile.getSiloObject(), 
+                                silo_mesh_write(dbfile.getSiloObject(), 
+                                                dom, 
                                                 curr_path, 
                                                 opts_ovl_topo_name,
                                                 local_num_domains,
                                                 d, // local domain index
                                                 domain_id, // global domain id
-                                                local_type_domain_info,
                                                 write_overlink,
-                                                ovl_specset_names);
+                                                ovl_specset_names,
+                                                local_type_domain_info);
                                 
                                 // update status, we are done with this doman
                                 local_domain_status[d] = 0;
