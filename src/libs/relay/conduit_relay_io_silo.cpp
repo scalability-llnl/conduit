@@ -2643,11 +2643,75 @@ read_multimats(DBtoc *toc,
 }
 
 //-----------------------------------------------------------------------------
+bool
+read_multimatspecs(DBtoc *toc,
+                   DBfile *dbfile,
+                   const std::string &multimesh_name,
+                   const int nblocks,
+                   Node &root_node,
+                   std::ostringstream &error_oss)
+{
+    // iterate thru the multimatspecs and find the ones that are associated with
+    // the chosen multimesh
+    for (int mmatspec_id = 0; mmatspec_id < toc->nmultimatspecies; mmatspec_id ++)
+    {
+        const std::string multimatspec_name = toc->multimatspecies_names[mmatspec_id];
+        detail::SiloObjectWrapper<DBmultimatspecies, decltype(&DBFreeMultimatspecies)> multimatspec_obj{
+            DBGetMultimatspecies(dbfile, multimatspec_name.c_str()), 
+            &DBFreeMultimatspecies};
+        DBmultimat *multimatspec_ptr = multimatspec_obj.getSiloObject();
+        if (! multimatspec_ptr)
+        {
+            error_oss << "Error opening multimatspecies " << multimatspec_name;
+            return false;
+        }
+
+        // does this variable use nameschemes?
+        bool nameschemes = false;
+        if (!multimatspec_ptr->specnames)
+        {
+            nameschemes = true;
+            error_oss << "multimatspecies " << multimatspec_name << " uses nameschemes which are not yet supported.";
+            return false;
+        }
+
+        if (multimatspec_ptr->nmats != nblocks)
+        {
+            CONDUIT_INFO("Domain count mismatch between multimat " +
+                         multimatspec_name + " and multimesh " + 
+                         multimesh_name + ". Skipping.");
+            continue;
+        }
+        
+        Node &species_set = root_node[multimesh_name]["specsets"][multimatspec_name];
+        
+        // TODO nameschemes
+        if (nameschemes)
+        {
+            species_set["nameschemes"] = "yes";
+        }
+        else
+        {
+            species_set["nameschemes"] = "no";
+            for (int block_id = 0; block_id < nblocks; block_id ++)
+            {
+                Node &spec_path = species_set["matset_paths"].append();
+                spec_path.set(multimatspec_ptr->specnames[block_id]);
+            }
+        }
+    }
+
+    return true;
+}
+
+//-----------------------------------------------------------------------------
 void
 read_state(DBfile *dbfile,
            Node &root_node,
            const std::string &multimesh_name)
 {
+    // TODO every silo call should have a CONDUIT_CHECK_SILO_ERROR around it
+
     // look first for dtime, then time if dtime is not found like in VisIt
     if (DBInqVarExists(dbfile, "dtime"))
     {
@@ -2954,6 +3018,15 @@ read_root_silo_index(const std::string &root_file_path,
         {
             return false;
         }
+        if (! read_multimatspecs(toc,
+                                 dbfile.getSiloObject(),
+                                 mesh_name_to_read,
+                                 nblocks,
+                                 root_node,
+                                 error_oss))
+        {
+            return false;
+        }
 
         read_state(dbfile.getSiloObject(), root_node, mesh_name_to_read);
 
@@ -3024,6 +3097,14 @@ read_root_silo_index(const std::string &root_file_path,
     //             b: 2    
     //             c: 0
     //             ...
+    //       ...
+    //    specsets:
+    //       specset:
+    //          nameschemes: "no"
+    //          specset_paths:
+    //             - "domain_000000.silo:specset"
+    //             - "domain_000001.silo:specset"
+    //               ...
     //       ...
     //    matset_style: "default", OR "multi_buffer_full", OR "sparse_by_element", OR "multi_buffer_by_material"
     // mesh2:
@@ -3206,14 +3287,22 @@ read_mesh(const std::string &root_file_path,
 
         detail::SiloObjectWrapperCheckError<DBfile, decltype(&DBClose)> mesh_domain_file{
             nullptr, &DBClose};
-        DBfile *mesh_domain_file_to_use = open_or_reuse_file(ovltop_case, 
-            mesh_domain_filename, "", nullptr, mesh_domain_file);
+        DBfile *mesh_domain_file_to_use = 
+            open_or_reuse_file(ovltop_case, 
+                               mesh_domain_filename,
+                               "",
+                               nullptr,
+                               mesh_domain_file);
 
         // this is for the blueprint mesh output
         std::string domain_path = conduit_fmt::format("domain_{:06d}", domain_id);
 
-        if (! read_mesh_domain(meshtype, mesh_domain_file_to_use, mesh_name, 
-                               mesh_name_to_read, domain_path, mesh))
+        if (! read_mesh_domain(meshtype,
+                               mesh_domain_file_to_use, 
+                               mesh_name, 
+                               mesh_name_to_read, 
+                               domain_path, 
+                               mesh))
         {
             continue; // we hit a case where we want to skip this mesh domain
         }
@@ -3258,7 +3347,7 @@ read_mesh(const std::string &root_file_path,
             while (matset_itr.has_next())
             {
                 const Node &n_matset = matset_itr.next();
-                std::string multimat_name = matset_itr.name();
+                const std::string multimat_name = matset_itr.name();
 
                 bool matset_nameschemes = false;
                 if (n_matset.has_child("nameschemes") &&
@@ -3269,7 +3358,7 @@ read_mesh(const std::string &root_file_path,
                 }
                 detail::SiloTreePathGenerator matset_path_gen{matset_nameschemes};
 
-                std::string silo_matset_path = n_matset["matset_paths"][domain_id].as_string();
+                const std::string silo_matset_path = n_matset["matset_paths"][domain_id].as_string();
 
                 std::string matset_name, matset_domain_filename;
                 matset_path_gen.GeneratePaths(silo_matset_path, relative_dir, matset_domain_filename, matset_name);
@@ -3290,9 +3379,12 @@ read_mesh(const std::string &root_file_path,
 
                 detail::SiloObjectWrapperCheckError<DBfile, decltype(&DBClose)> matset_domain_file{
                     nullptr, &DBClose};
-                DBfile *matset_domain_file_to_use = open_or_reuse_file(
-                    ovltop_case, matset_domain_filename, mesh_domain_filename,
-                    mesh_domain_file.getSiloObject(), matset_domain_file);
+                DBfile *matset_domain_file_to_use = 
+                    open_or_reuse_file(ovltop_case, 
+                                       matset_domain_filename, 
+                                       mesh_domain_filename,
+                                       mesh_domain_file.getSiloObject(), 
+                                       matset_domain_file);
 
                 // If this completes successfully, it means we have found a matset
                 // associated with this mesh. Thus we can break iteration here,
@@ -3303,12 +3395,81 @@ read_mesh(const std::string &root_file_path,
                 // In silo, for each mesh, there can only be one matset, because otherwise
                 // it would be ambiguous. In Blueprint, we can allow multiple matsets per
                 // topo, because the fields explicitly link to the matset they use.
-                if (read_matset_domain(matset_domain_file_to_use, n_matset, matset_name,
-                                       mesh_name_to_read, multimat_name, bottom_level_mesh_name,
-                                       opts_matset_style, matset_field_reconstruction, mesh_out))
+                if (read_matset_domain(matset_domain_file_to_use, 
+                                       n_matset, matset_name,
+                                       mesh_name_to_read, 
+                                       multimat_name, 
+                                       bottom_level_mesh_name,
+                                       opts_matset_style, 
+                                       matset_field_reconstruction, 
+                                       mesh_out))
                 {
                     break;
                 }
+            }
+        }
+
+        //
+        // Read Species Sets
+        //
+
+        // for each mesh domain, we would like to iterate through all the species sets
+        // and extract the same domain from them.
+        if (mesh_index.has_child("specsets"))
+        {
+            auto specset_itr = mesh_index["specsets"].children();
+            while (specset_itr.has_next())
+            {
+                const Node &n_specset = specset_itr.next();
+                const std::string multimatspec_name = specset_itr.name();
+
+                bool specset_nameschemes = false;
+                if (n_specset.has_child("nameschemes") &&
+                    n_specset["nameschemes"].as_string() == "yes")
+                {
+                    specset_nameschemes = true;
+                    CONDUIT_ERROR("TODO no support for nameschemes yet");
+                }
+                detail::SiloTreePathGenerator specset_path_gen{specset_nameschemes};
+
+                const std::string silo_specset_path = n_specset["specset_paths"][domain_id].as_string();
+
+                std::string specset_name, specset_domain_filename;
+                specset_path_gen.GeneratePaths(silo_specset_path, relative_dir, specset_domain_filename, specset_name);
+
+                if (specset_name == "EMPTY")
+                {
+                    // we choose not to write anything to blueprint
+                    continue;
+                }
+
+                // root only case
+                if (specset_domain_filename.empty())
+                {
+                    specset_domain_filename = root_file_path;
+                    // we are in the root file only case so overlink is not possible
+                    ovltop_case = false;
+                }
+
+                detail::SiloObjectWrapperCheckError<DBfile, decltype(&DBClose)> specset_domain_file{
+                    nullptr, &DBClose};
+                DBfile *specset_domain_file_to_use = 
+                    open_or_reuse_file(ovltop_case,
+                                       specset_domain_filename,
+                                       mesh_domain_filename,
+                                       mesh_domain_file.getSiloObject(), 
+                                       specset_domain_file);
+
+                // TODO write this function
+                // read_specset_domain(specset_domain_file_to_use,
+                //                     n_specset, 
+                //                     matset_name,
+                //                     mesh_name_to_read, 
+                //                     multimatspec_name, 
+                //                     bottom_level_mesh_name,
+                //                     opts_matset_style, 
+                //                     matset_field_reconstruction, 
+                //                     mesh_out);
             }
         }
 
@@ -3335,7 +3496,7 @@ read_mesh(const std::string &root_file_path,
                 }
                 detail::SiloTreePathGenerator var_path_gen{var_nameschemes};
 
-                std::string silo_var_path = n_var["var_paths"][domain_id].as_string();
+                const std::string silo_var_path = n_var["var_paths"][domain_id].as_string();
                 int_accessor vartypes = n_var["var_types"].value();
                 int vartype = vartypes[domain_id];
 
@@ -3365,16 +3526,25 @@ read_mesh(const std::string &root_file_path,
 
                 detail::SiloObjectWrapperCheckError<DBfile, decltype(&DBClose)> var_domain_file{
                     nullptr, &DBClose};
-                DBfile *var_domain_file_to_use = open_or_reuse_file(
-                    ovltop_case, var_domain_filename, mesh_domain_filename,
-                    mesh_domain_file.getSiloObject(), var_domain_file);
+                DBfile *var_domain_file_to_use = 
+                    open_or_reuse_file(ovltop_case, 
+                                       var_domain_filename, 
+                                       mesh_domain_filename,
+                                       mesh_domain_file.getSiloObject(), 
+                                       var_domain_file);
 
                 // we don't care if this skips the var or not since this is the
                 // last thing in the loop iteration
-                read_variable_domain(vartype, var_domain_file_to_use, var_name,
-                    mesh_name_to_read, multivar_name, bottom_level_mesh_name,
-                    volume_dependent, opts_matset_style,
-                    matset_field_reconstruction, mesh_out);
+                read_variable_domain(vartype, 
+                                     var_domain_file_to_use, 
+                                     var_name,
+                                     mesh_name_to_read, 
+                                     multivar_name, 
+                                     bottom_level_mesh_name,
+                                     volume_dependent, 
+                                     opts_matset_style,
+                                     matset_field_reconstruction, 
+                                     mesh_out);
             }
         }
     }
@@ -5322,7 +5492,6 @@ void silo_mesh_write(DBfile *dbfile,
         auto specset_itr = mesh_domain["specsets"].children();
         while (specset_itr.has_next())
         {
-            // TODO pull error checking out of the write calls where appropriate
             const Node &n_specset = specset_itr.next();
             const std::string specset_name = specset_itr.name();
             if (n_specset.has_child("matset"))
