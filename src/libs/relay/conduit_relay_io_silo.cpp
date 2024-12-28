@@ -2659,7 +2659,7 @@ read_multimatspecs(DBtoc *toc,
         detail::SiloObjectWrapper<DBmultimatspecies, decltype(&DBFreeMultimatspecies)> multimatspec_obj{
             DBGetMultimatspecies(dbfile, multimatspec_name.c_str()), 
             &DBFreeMultimatspecies};
-        DBmultimat *multimatspec_ptr = multimatspec_obj.getSiloObject();
+        DBmultimatspecies *multimatspec_ptr = multimatspec_obj.getSiloObject();
         if (! multimatspec_ptr)
         {
             error_oss << "Error opening multimatspecies " << multimatspec_name;
@@ -2675,9 +2675,9 @@ read_multimatspecs(DBtoc *toc,
             return false;
         }
 
-        if (multimatspec_ptr->nmats != nblocks)
+        if (multimatspec_ptr->nspec != nblocks)
         {
-            CONDUIT_INFO("Domain count mismatch between multimat " +
+            CONDUIT_INFO("Domain count mismatch between multimatspec " +
                          multimatspec_name + " and multimesh " + 
                          multimesh_name + ". Skipping.");
             continue;
