@@ -3566,14 +3566,15 @@ bool prepare_field_for_write(const bool &convert_to_double_array,
 void silo_write_field(DBfile *dbfile,
                       const std::string &var_name,
                       const Node &n_var,
+                      const std::string &topo_name,
                       const Node &mesh_domain,
                       const bool write_overlink,
                       const int local_num_domains,
                       const int local_domain_index,
                       const uint64 global_domain_id,
+                      const Node &n_mesh_info,
                       std::set<std::string> &used_names,
-                      Node &local_type_domain_info,
-                      const Node &n_mesh_info)
+                      Node &local_type_domain_info)
 {
     if (! detail::check_alphanumeric(var_name))
     {
@@ -3581,16 +3582,6 @@ void silo_write_field(DBfile *dbfile,
                      "non-alphanumeric characters. Skipping.");
         return;
     }
-
-    if (!n_var.has_path("topology"))
-    {
-        CONDUIT_INFO("Skipping this variable because we are "
-                     "missing a linked topology: "
-                      << "fields/" << var_name << "/topology");
-        return;
-    }
-
-    const std::string topo_name = n_var["topology"].as_string();
 
     if (!n_mesh_info.has_path(topo_name))
     {
@@ -4017,7 +4008,7 @@ void silo_write_field(DBfile *dbfile,
         CONDUIT_ERROR("only DBPutQuadvar + DBPutUcdvar + DBPutPointvar var are supported");
     }
 
-    CONDUIT_CHECK_SILO_ERROR(silo_error, " after creating field " << var_name);
+    CONDUIT_CHECK_SILO_ERROR(silo_error, "after creating field " << var_name);
 
     Node bookkeeping_info;
     bookkeeping_info["comp_info"]["comp"] = "vars";
@@ -4917,13 +4908,14 @@ bool silo_write_topo(DBfile *dbfile,
 bool silo_write_matset(DBfile *dbfile,
                        const std::string &matset_name,
                        const Node &n_matset,
+                       const std::string &topo_name,
                        const bool write_overlink,
                        const int local_num_domains,
                        const int local_domain_index,
                        const uint64 global_domain_id,
+                       Node &n_mesh_info,
                        std::set<std::string> &used_names,
-                       Node &local_type_domain_info,
-                       Node &n_mesh_info)
+                       Node &local_type_domain_info)
 {
     if (! detail::check_alphanumeric(matset_name))
     {
@@ -4942,6 +4934,16 @@ bool silo_write_matset(DBfile *dbfile,
                      << matset_name << ".");
         return false;
     }
+
+    if (!n_mesh_info.has_path(topo_name))
+    {
+        CONDUIT_INFO("Skipping this matset because the linked "
+                     "topology is invalid: "
+                      << "matsets/" << matset_name
+                      << "/topology: " << topo_name);
+        return false;
+    }
+    const std::string silo_meshname = write_overlink ? "MESH" : topo_name;
 
     // use to_silo utility to create the needed silo arrays
     // cache all of these for later (in case we are writing specsets. If not, it doesn't hurt)
@@ -4962,24 +4964,6 @@ bool silo_write_matset(DBfile *dbfile,
     {
         silo_mix_vfs_final.set_external(silo_matset_compact["mix_vf"]);
     }
-
-    if (!n_matset.has_path("topology"))
-    {
-        CONDUIT_INFO("Skipping this matset because we are "
-                     "missing a linked topology: "
-                      << "matsets/" << matset_name << "/topology");
-        return false;
-    }
-    const std::string topo_name = silo_matset_compact["topology"].as_string();
-    if (!n_mesh_info.has_path(topo_name))
-    {
-        CONDUIT_INFO("Skipping this matset because the linked "
-                     "topology is invalid: "
-                      << "matsets/" << matset_name
-                      << "/topology: " << topo_name);
-        return false;
-    }
-    const std::string silo_meshname = write_overlink ? "MESH" : topo_name;
 
     // extract data from material map
     int nmat;
@@ -5071,9 +5055,9 @@ void silo_write_specset(DBfile *dbfile,
                         const int local_domain_index,
                         const uint64 global_domain_id,
                         const std::map<std::string, std::pair<std::string, std::string>> &ovl_specset_names,
+                        const Node &n_mesh_info,
                         std::set<std::string> &used_names,
-                        Node &local_type_domain_info,
-                        Node &n_mesh_info)
+                        Node &local_type_domain_info)
 {
     // TODO we only handle the fully blown out case
     // what to do for the others?
@@ -5118,7 +5102,7 @@ void silo_write_specset(DBfile *dbfile,
         return;
     }
 
-    Node &silo_matset = n_mesh_info["matsets"][matset_name]["silo_matset_compact"];
+    const Node &silo_matset = n_mesh_info["matsets"][matset_name]["silo_matset_compact"];
     Node silo_specset;
     conduit::blueprint::mesh::specset::to_silo(n_specset, silo_matset, silo_specset);
 
@@ -5222,7 +5206,7 @@ void silo_mesh_write(DBfile *dbfile,
             silo_error += DBSetDir(dbfile, dir.c_str());
         }
         CONDUIT_CHECK_SILO_ERROR(silo_error,
-                                 " failed to make silo directory: "
+                                 "failed to make silo directory: "
                                  << silo_obj_path);
     }
 
@@ -5293,7 +5277,17 @@ void silo_mesh_write(DBfile *dbfile,
         {
             const Node &n_matset = matset_itr.next();
             const std::string matset_name = matset_itr.name();
+
+            if (!n_matset.has_path("topology"))
+            {
+                CONDUIT_INFO("Skipping this matset because we are "
+                             "missing a linked topology: "
+                              << "matsets/" << matset_name << "/topology");
+                continue;
+            }
+
             const std::string topo_name = n_matset["topology"].as_string();
+
             // if we've already written a matset for this topo successfully
             if (topo_names.find(topo_name) != topo_names.end())
             {
@@ -5308,13 +5302,14 @@ void silo_mesh_write(DBfile *dbfile,
                 if (silo_write_matset(dbfile,
                                       matset_name,
                                       n_matset,
+                                      topo_name,
                                       write_overlink,
                                       local_num_domains,
                                       local_domain_index,
                                       global_domain_id,
+                                      n_mesh_info,
                                       used_names,
-                                      local_type_domain_info,
-                                      n_mesh_info))
+                                      local_type_domain_info))
                 {
                     topo_names.insert(topo_name);
                 }
@@ -5358,9 +5353,9 @@ void silo_mesh_write(DBfile *dbfile,
                                    local_domain_index,
                                    global_domain_id,
                                    ovl_specset_names,
+                                   n_mesh_info,
                                    used_names,
-                                   local_type_domain_info,
-                                   n_mesh_info);
+                                   local_type_domain_info);
             }
         }
     }
@@ -5372,19 +5367,28 @@ void silo_mesh_write(DBfile *dbfile,
         {
             const Node &n_var = field_itr.next();
             const std::string var_name = field_itr.name();
-            if (! write_overlink || n_var["topology"].as_string() == ovl_topo_name)
+            if (! n_var.has_path("topology"))
+            {
+                CONDUIT_INFO("Skipping this variable because we are "
+                             "missing a linked topology: "
+                              << "fields/" << var_name << "/topology");
+                continue;
+            }
+            const std::string topo_name = n_var["topology"].as_string();
+            if (! write_overlink || topo_name == ovl_topo_name)
             {
                 silo_write_field(dbfile,
                                  var_name,
                                  n_var,
+                                 topo_name,
                                  mesh_domain,
                                  write_overlink,
                                  local_num_domains,
                                  local_domain_index,
                                  global_domain_id,
+                                 n_mesh_info,
                                  used_names,
-                                 local_type_domain_info,
-                                 n_mesh_info);
+                                 local_type_domain_info);
             }
         }
     }
@@ -5424,7 +5428,7 @@ void silo_mesh_write(DBfile *dbfile,
     {
         silo_error = DBSetDir(dbfile, silo_prev_dir);
         CONDUIT_CHECK_SILO_ERROR(silo_error,
-                                 " changing silo directory to previous path");
+                                 "changing silo directory to previous path");
     }
 }
 
