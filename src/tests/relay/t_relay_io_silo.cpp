@@ -623,14 +623,40 @@ TEST(conduit_relay_io_silo, round_trip_specsets)
     Node save_mesh, load_mesh, info;
     // TODO do 10 x 10 ... why? I guess that would be good
     blueprint::mesh::examples::misc("specsets", 4, 4, 1, save_mesh);
+    save_mesh["matsets"].rename_child("mesh", "matset");
+    save_mesh["specsets"].rename_child("mesh", "specset");
+    save_mesh["specsets"]["specset"]["matset"].set("matset");
+
+    // save_mesh.print();
 
     const std::string basename = "silo_round_trip_specsets";
     const std::string filename = basename + ".cycle_000100.root";;
 
+    Node read_opts;
+    read_opts["matset_style"] = "multi_buffer_full";
+
     remove_path_if_exists(filename);
     io::silo::save_mesh(save_mesh, basename);
+    io::silo::load_mesh(filename, read_opts, load_mesh);
 
     // TODO
+    // EXPECT_TRUE(blueprint::mesh::verify(load_mesh, info));
+
+    // save_mesh["fields"].remove_child("mesh");
+    // save_mesh["matsets"].remove_child("mesh");
+    // save_mesh["specsets"].remove_child("mesh");
+
+    // // TODO remove this once we add specsets
+    // save_mesh.remove_child("specsets");
+
+    // // make changes to save mesh so the diff will pass
+    // silo_name_changer("mesh", save_mesh);
+
+    // // the loaded mesh will be in the multidomain format
+    // // but the saved mesh is in the single domain format
+    // EXPECT_EQ(load_mesh.number_of_children(), 1);
+    // EXPECT_EQ(load_mesh[0].number_of_children(), save_mesh.number_of_children());
+    // EXPECT_FALSE(load_mesh[0].diff(save_mesh, info, CONDUIT_EPSILON, true));
 
 }
 

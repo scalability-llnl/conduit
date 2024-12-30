@@ -2695,8 +2695,34 @@ read_multimatspecs(DBtoc *toc,
             species_set["nameschemes"] = "no";
             for (int block_id = 0; block_id < nblocks; block_id ++)
             {
-                Node &spec_path = species_set["matset_paths"].append();
+                Node &spec_path = species_set["specset_paths"].append();
                 spec_path.set(multimatspec_ptr->specnames[block_id]);
+            }
+        }
+
+        // gather species set information, if possible
+        const int nmat = multimatspec_ptr->nmat;
+        const int *nmatspec = multimatspec_ptr->nmatspec;
+        char **species_names = multimatspec_ptr->species_names;
+        if (0 != nmat && NULL != nmatspec && NULL != species_names)
+        {
+            // there's not much we can do without material names
+            // so we save the info that is here to potentially use 
+            // later
+            species_set["nmatspec"].set(nmatspec, nmat);
+            const int num_specs = [&]()
+            {
+                int sum = 0;
+                for (int mat_id = 0; mat_id < nmat; mat_id ++)
+                {
+                    sum += nmatspec[mat_id];
+                }
+                return sum;
+            }();
+            for (int specname_id = 0; specname_id < num_specs; specname_id ++)
+            {
+                Node &spec_name = species_set["species_names"].append();
+                spec_name.set(species_names[specname_id]);
             }
         }
     }
@@ -2981,6 +3007,8 @@ read_root_silo_index(const std::string &root_file_path,
             material["matset_paths"].append().set(mat_name);
         }
 
+        // TODO species
+
         read_state(dbfile.getSiloObject(), root_node, mesh_name_to_read);
 
         if (! opts_matset_style.empty())
@@ -3105,6 +3133,17 @@ read_root_silo_index(const std::string &root_file_path,
     //             - "domain_000000.silo:specset"
     //             - "domain_000001.silo:specset"
     //               ...
+    //          species_names: // (optional together with nmatspec)
+    //             - "energon"
+    //             - "unobtanium"
+    //             - "tibanna gas"
+    //             - "wood"
+    //             - "coin"
+    //             - "food"
+    //             - "stone"
+    //             - "favor"
+    //               ...
+    //          nmatspec: [3, 5, ...] // (optional together with species_names)
     //       ...
     //    matset_style: "default", OR "multi_buffer_full", OR "sparse_by_element", OR "multi_buffer_by_material"
     // mesh2:
@@ -5487,14 +5526,14 @@ void silo_mesh_write(DBfile *dbfile,
         }
     }
 
-    if (mesh_domain.has_path("specsets")) 
+    if (mesh_domain.has_path("specsets"))
     {
         auto specset_itr = mesh_domain["specsets"].children();
         while (specset_itr.has_next())
         {
             const Node &n_specset = specset_itr.next();
             const std::string specset_name = specset_itr.name();
-            if (n_specset.has_child("matset"))
+            if (! n_specset.has_child("matset"))
             {
                 CONDUIT_INFO("Skipping this specset because we are "
                              "missing a linked matset: "
@@ -5502,7 +5541,7 @@ void silo_mesh_write(DBfile *dbfile,
                 continue;
             }
             const std::string matset_name = n_specset["matset"].as_string();
-            if (!n_mesh_info.has_path("matsets/" + matset_name + "/topo_name"))
+            if (! n_mesh_info.has_path("matsets/" + matset_name + "/topo_name"))
             {
                 CONDUIT_INFO("Skipping this specset because the linked "
                              "matset is invalid or was not written: "
