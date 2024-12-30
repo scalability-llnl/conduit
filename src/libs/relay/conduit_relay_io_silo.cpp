@@ -3184,13 +3184,13 @@ read_mesh(const std::string &root_file_path,
     Node root_node;
 
     // only read bp index on rank 0
-    if (par_rank == 0)
+    if (0 == par_rank)
     {
-        if (!read_root_silo_index(root_file_path,
-                                  opts,
-                                  root_node,
-                                  mesh_name_to_read,
-                                  error_oss))
+        if (! read_root_silo_index(root_file_path,
+                                   opts,
+                                   root_node,
+                                   mesh_name_to_read,
+                                   error_oss))
         {
             error = 1;
         }
@@ -3205,7 +3205,7 @@ read_mesh(const std::string &root_file_path,
 
     error = n_global.as_int();
 
-    if(error == 1)
+    if (1 == error)
     {
         // we have a problem, broadcast string message
         // from rank 0 all ranks can throw an error
@@ -3231,7 +3231,7 @@ read_mesh(const std::string &root_file_path,
     }
 #else
     // non MPI case, throw error
-    if(error == 1)
+    if (1 == error)
     {
         CONDUIT_ERROR(error_oss.str());
     }
@@ -3252,7 +3252,7 @@ read_mesh(const std::string &root_file_path,
     int rem = num_domains % par_size;
     if(par_rank < rem)
     {
-        read_size++;
+        read_size ++;
     }
 
     Node n_read_size;
@@ -3263,7 +3263,7 @@ read_mesh(const std::string &root_file_path,
     relay::mpi::all_gather_using_schema(n_read_size,
                                         n_doms_per_rank,
                                         mpi_comm);
-    int *counts = (int*)n_doms_per_rank.data_ptr();
+    int *counts = static_cast<int *>(n_doms_per_rank.data_ptr());
 
     int rank_offset = 0;
     for(int i = 0; i < par_rank; ++i)
