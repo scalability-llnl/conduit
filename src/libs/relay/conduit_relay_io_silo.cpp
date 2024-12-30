@@ -2704,25 +2704,30 @@ read_multimatspecs(DBtoc *toc,
         const int nmat = multimatspec_ptr->nmat;
         const int *nmatspec = multimatspec_ptr->nmatspec;
         char **species_names = multimatspec_ptr->species_names;
-        if (0 != nmat && NULL != nmatspec && NULL != species_names)
+        if (0 != nmat)
         {
             // there's not much we can do without material names
-            // so we save the info that is here to potentially use 
-            // later
-            species_set["nmatspec"].set(nmatspec, nmat);
-            const int num_specs = [&]()
+            // so we save the info that is here as it is 
+            if (NULL != nmatspec)
             {
-                int sum = 0;
-                for (int mat_id = 0; mat_id < nmat; mat_id ++)
+                species_set["nmatspec"].set(nmatspec, nmat);
+                if (NULL != species_names)
                 {
-                    sum += nmatspec[mat_id];
+                    const int num_specs = [&]()
+                    {
+                        int sum = 0;
+                        for (int mat_id = 0; mat_id < nmat; mat_id ++)
+                        {
+                            sum += nmatspec[mat_id];
+                        }
+                        return sum;
+                    }();
+                    for (int specname_id = 0; specname_id < num_specs; specname_id ++)
+                    {
+                        Node &spec_name = species_set["species_names"].append();
+                        spec_name.set(species_names[specname_id]);
+                    }
                 }
-                return sum;
-            }();
-            for (int specname_id = 0; specname_id < num_specs; specname_id ++)
-            {
-                Node &spec_name = species_set["species_names"].append();
-                spec_name.set(species_names[specname_id]);
             }
         }
     }
@@ -2980,7 +2985,9 @@ read_root_silo_index(const std::string &root_file_path,
                                              char **var_names,
                                              const int var_type,
                                              const int num_mats,
-                                             char **mat_names)
+                                             char **mat_names,
+                                             const int num_specsets,
+                                             char **spec_names)
     {
         root_node[mesh_name_to_read]["nblocks"] = 1;
         root_node[mesh_name_to_read]["nameschemes"] = "no";
@@ -3007,13 +3014,14 @@ read_root_silo_index(const std::string &root_file_path,
             material["matset_paths"].append().set(mat_name);
         }
 
-        // TODO species
-
-        read_state(dbfile.getSiloObject(), root_node, mesh_name_to_read);
-
-        if (! opts_matset_style.empty())
+        // TODO should we check here if specsets are associated with this mesh?
+        // we have logic to get the right one later, but it could be quick to check now
+        for (int i = 0; i < num_specsets; i ++)
         {
-            root_node[mesh_name_to_read]["matset_style"] = opts_matset_style;
+            const std::string spec_name = spec_names[i];
+            Node &specset = root_node[mesh_name_to_read]["specsets"][spec_name];
+            specset["nameschemes"] = "no";
+            specset["specset_paths"].append().set(spec_name);
         }
     };
 
@@ -3056,37 +3064,40 @@ read_root_silo_index(const std::string &root_file_path,
             return false;
         }
 
-        read_state(dbfile.getSiloObject(), root_node, mesh_name_to_read);
-
         // overlink-specific
         read_var_attributes(dbfile.getSiloObject(),
                             mesh_name_to_read,
                             root_node);
-
-        if (! opts_matset_style.empty())
-        {
-            root_node[mesh_name_to_read]["matset_style"] = opts_matset_style;
-        }
     }
     else if (DB_QUADMESH == mesh_type)
     {
         prep_simple_silo_obj_metadata(toc->nqvar, toc->qvar_names, DB_QUADVAR,
-                                      toc->nmat, toc->mat_names);
+                                      toc->nmat, toc->mat_names,
+                                      toc->nmatspecies, toc->matspecies_names);
     }
     else if (DB_UCDMESH == mesh_type)
     {
         prep_simple_silo_obj_metadata(toc->nucdvar, toc->ucdvar_names, DB_UCDVAR,
-                                      toc->nmat, toc->mat_names);
+                                      toc->nmat, toc->mat_names,
+                                      toc->nmatspecies, toc->matspecies_names);
     }
     else if (DB_POINTMESH == mesh_type)
     {
         prep_simple_silo_obj_metadata(toc->nptvar, toc->ptvar_names, DB_POINTVAR,
-                                      toc->nmat, toc->mat_names);
+                                      toc->nmat, toc->mat_names,
+                                      toc->nmatspecies, toc->matspecies_names);
     }
     else
     {
         error_oss << "Unknown mesh type for mesh " << mesh_name_to_read;
         return false;
+    }
+
+    read_state(dbfile.getSiloObject(), root_node, mesh_name_to_read);
+
+    if (! opts_matset_style.empty())
+    {
+        root_node[mesh_name_to_read]["matset_style"] = opts_matset_style;
     }
 
     // our silo index should look like this:
