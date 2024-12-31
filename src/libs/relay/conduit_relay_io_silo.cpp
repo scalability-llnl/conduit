@@ -1572,7 +1572,7 @@ read_variable_domain_helper(const T *var_ptr,
                             Node &intermediate_field)
 {
     // If we cannot fetch this var we will skip
-    if (!var_ptr)
+    if (! var_ptr)
     {
         return false;
     }
@@ -1850,6 +1850,7 @@ read_matset_domain(DBfile* matset_domain_file_to_use,
                    const std::string &bottom_level_mesh_name,
                    const std::string &opts_matset_style,
                    Node &matset_field_reconstruction,
+                   Node &silo_material,
                    Node &mesh_out)
 {
     if (! DBInqVarExists(matset_domain_file_to_use, matset_name.c_str()))
@@ -1871,7 +1872,7 @@ read_matset_domain(DBfile* matset_domain_file_to_use,
     const DBmaterial* matset_ptr = material.getSiloObject();
 
     // If we cannot fetch this matset we will skip
-    if (!matset_ptr)
+    if (! matset_ptr)
     {
         return false;
     }
@@ -1936,7 +1937,7 @@ read_matset_domain(DBfile* matset_domain_file_to_use,
     CONDUIT_ASSERT(matset_ptr->allowmat0 == 0,
         "Material " << matset_name << " for multimesh " << multimesh_name << 
         " may contain zones with no materials defined on them." << 
-        "We currently do not support this case. Either contact a Conduit developer" <<
+        " We currently do not support this case. Either contact a Conduit developer" <<
         " or disable DBOPT_ALLOWMAT0 in calls to DBPutMaterial().");
 
     // create an intermediate matset, in case we need to transform it later
@@ -2053,18 +2054,9 @@ read_matset_domain(DBfile* matset_domain_file_to_use,
         }
     };
 
-    int nx = matset_ptr->dims[0];
-    int ny = 1;
-    int nz = 1;
-
-    if (matset_ptr->ndims > 1)
-    {
-        ny = matset_ptr->dims[1];
-    }
-    if (matset_ptr->ndims > 2)
-    {
-        nz = matset_ptr->dims[2];
-    }
+    const int nx = matset_ptr->dims[0];
+    const int ny = (matset_ptr->ndims > 1) ? matset_ptr->dims[1] : 1;
+    const int nz = (matset_ptr->ndims > 2) ? matset_ptr->dims[2] : 2;
 
     if (matset_ptr->major_order == DB_ROWMAJOR)
     {
@@ -2103,6 +2095,12 @@ read_matset_domain(DBfile* matset_domain_file_to_use,
 
     // TODO still need to find colmajor data to test this
 
+    // we need to save silo material information for use when reading specsets
+    const int nzones = nx * ny * nz;
+    silo_material["matlist"].set(matset_ptr->matlist, nzones);
+    silo_material["mix_next"].set(matset_ptr->mix_next, matset_ptr->mixlen);
+    silo_material["mix_mat"].set(matset_ptr->mix_mat, matset_ptr->mixlen);
+
     intermediate_matset["material_ids"].set(material_ids);
     intermediate_matset["volume_fractions"].set(volume_fractions);
     intermediate_matset["sizes"].set(sizes);
@@ -2137,6 +2135,283 @@ read_matset_domain(DBfile* matset_domain_file_to_use,
         // a different flavor of matset
         matset_field_reconstruction["original_matset"].move(intermediate_matset);
     }
+
+    return true;
+}
+
+//-----------------------------------------------------------------------------
+bool
+read_specset_domain(DBfile* specset_domain_file_to_use,
+                    const Node &n_specset,
+                    const std::string &specset_name,
+                    const std::string &multimesh_name,
+                    const std::string &multimatspecies_name,
+                    const std::string &bottom_level_mesh_name,
+                    const std::string &opts_matset_style,
+                    Node &silo_material,
+                    Node &mesh_out)
+{
+    if (! DBInqVarExists(specset_domain_file_to_use, specset_name.c_str()))
+    {
+        // This specset is missing
+        return false;
+    }
+    if (DBInqVarType(specset_domain_file_to_use, specset_name.c_str()) != DB_MATSPECIES)
+    {
+        // This specset is the wrong type
+        return false;
+    }
+
+    // create silo specset
+    detail::SiloObjectWrapper<DBmatspecies, decltype(&DBFreeMatspecies)> species_set{
+        DBGetMatspecies(specset_domain_file_to_use, specset_name.c_str()),
+        &DBFreeMatspecies};
+
+    const DBmatspecies* specset_ptr = species_set.getSiloObject();
+
+    // If we cannot fetch this specset we will skip
+    if (! specset_ptr)
+    {
+        return false;
+    }
+
+    // check that this specset is associated with a matset we have read
+    std::string assoc_matname = specset_ptr->matname;
+    if (assoc_matname.length() > 1 && assoc_matname[0] == '/')
+    {
+        assoc_matname = assoc_matname.substr(1);
+    }
+    if (! mesh_out.has_path("matsets/" + assoc_matname))
+    {
+        CONDUIT_INFO("DBmatspecies " + specset_name + " is associated "
+                     "with a matset called " + assoc_matname + " which "
+                     "has not been read from Silo. Skipping.");
+        return false;
+    }
+
+    // we can only succeed here if the data is regularly strided
+    const std::string irregular_striding_err_msg = "DBmatspecies " + specset_name + 
+        " has irregular striding, which makes it impossible to correctly convert"
+        " to Blueprint.";
+    if (1 == specset_ptr->ndims)
+    {
+        // TODO these don't have to be errors, just skips. not just for species too
+        CONDUIT_ASSERT(specset_ptr->stride[0] == 1,
+                       irregular_striding_err_msg);
+    }
+    else if (2 == specset_ptr->ndims)
+    {
+        CONDUIT_ASSERT(specset_ptr->stride[0] == 1 && 
+                       specset_ptr->stride[1] == specset_ptr->dims[0],
+                       irregular_striding_err_msg);
+    }
+    else // (3 == specset_ptr->ndims)
+    {
+        CONDUIT_ASSERT(specset_ptr->stride[0] == 1 && 
+                       specset_ptr->stride[1] == specset_ptr->dims[0] &&
+                       specset_ptr->stride[2] == specset_ptr->dims[0] * specset_ptr->dims[1],
+                       irregular_striding_err_msg);
+    }
+
+    if (! silo_material.has_child("matlist") ||
+        ! silo_material.has_child("mix_next") ||
+        ! silo_material.has_child("mix_mat"))
+    {
+        CONDUIT_INFO("Attempting to read DBmatspecies " + specset_name +
+                     " but required DBmaterial information is missing. Skipping.");
+        return false;
+    }
+
+    // create an entry for this matset in the output
+    Node &specset_out = mesh_out["specsets"][multimatspec_name];
+
+    specset_out["matset"] = assoc_matname;
+
+    int *nmatspec = nullptr
+    // does the multimatspecies object have nmatspec?
+    if (n_specset.has_child("nmatspec"))
+    {
+        nmatspec = n_specset["nmatspec"].data_ptr();
+    }
+    else // if not we can use the local version
+    {
+        nmatspec = specset_ptr->nmatspec;
+    }
+
+    const int sum_of_nmatspec = []()
+    {
+        int sum = 0;
+        for (int i = 0; i < specset_ptr->nmat; i ++)
+        {
+            sum += nmatspec[i];
+        }
+        return sum;
+    }();
+
+    std::vector<std::string> species_names;
+    // does the multimatspecies object have species_names?
+    if (n_specset.has_child("species_names"))
+    {
+        for (int specname_id = 0; specname_id < sum_of_nmatspec; specname_id ++)
+        {
+            species_names.emplace_back(n_specset["species_names"][specname_id].as_string(););
+        }
+    }
+    else // if not we can use the local version, provided it exists
+    {
+        if (nullptr != specset_ptr->specnames)
+        {
+            for (int specname_id = 0; specname_id < sum_of_nmatspec; specname_id ++)
+            {
+                species_names.emplace_back(specset_ptr->specnames);
+            }
+        }
+        else
+        {
+            // we make up species names if they do not exist
+            for (int specname_id = 0; specname_id < sum_of_nmatspec; specname_id ++)
+            {
+                species_names.emplace_back("species" + std::to_string(specname_id));
+            }
+        }
+    }
+
+    // we read into multi buffer full
+
+    // TODO everything below this is just copied from the matset code
+
+    // TODO does it make sense to not read into full? but instead come up with some kind
+    // of sparse by element specset representation? and then write converters like we did
+    // for matsets?
+
+    std::vector<double> volume_fractions;
+    std::vector<int> material_ids;
+    std::vector<int> sizes;
+    std::vector<int> offsets;
+    int curr_offset = 0;
+
+    // The field reconstruction recipe is an array that will help us to
+    // reconstruct the blueprint matset_values for any fields that use
+    // this matset. I put -1 into it whenever I am supposed to read from
+    // the regular values, and a positive index into it whenever I am 
+    // supposed to read from the mixvals from silo.
+    std::vector<int> field_reconstruction_recipe;
+
+    auto read_matlist_entry = [&](const int matlist_index)
+    {
+        int matlist_entry = matset_ptr->matlist[matlist_index];
+        if (matlist_entry >= 0) // this relies on matset_ptr->allowmat0 == 0
+        {
+            field_reconstruction_recipe.push_back(-1);
+            volume_fractions.push_back(1.0);
+            material_ids.push_back(matlist_entry);
+            sizes.push_back(1);
+            offsets.push_back(curr_offset);
+            curr_offset ++;
+        }
+        else
+        {
+            // for mixed zones, the numbers in the matlist are negated 1-indices into
+            // the silo mixed data arrays. To turn them into zero-indices, we must add
+            // 1 and negate the result. Example:
+            // indices: -1 -2 -3 -4 ...
+            // become:   0  1  2  3 ...
+
+            int mix_id = -1 * (matlist_entry + 1);
+            int curr_size = 0;
+
+            // when matset_ptr->mix_next[mix_id] is 0, we are on the last one
+            while (mix_id >= 0)
+            {
+                material_ids.push_back(matset_ptr->mix_mat[mix_id]);
+
+                // mix_vf is a void ptr so we must cast
+                if (matset_ptr->datatype == DB_DOUBLE)
+                {
+                    volume_fractions.push_back(static_cast<double *>(matset_ptr->mix_vf)[mix_id]);
+                }
+                else if (matset_ptr->datatype == DB_FLOAT)
+                {
+                    volume_fractions.push_back(static_cast<float *>(matset_ptr->mix_vf)[mix_id]);
+                }
+                else
+                {
+                    CONDUIT_ERROR("Volume fractions must be doubles or floats." <<
+                        "Unknown type for volume fractions for " << matset_name);
+                }
+                field_reconstruction_recipe.push_back(mix_id);
+
+                curr_size ++;
+                // since mix_id is a 1-index, we must subtract one
+                // this makes sure that mix_id = 0 is the last case,
+                // since it will make our mix_id == -1, which ends
+                // the while loop.
+                mix_id = matset_ptr->mix_next[mix_id] - 1;
+            }
+
+            sizes.push_back(curr_size);
+            offsets.push_back(curr_offset);
+            curr_offset += curr_size;
+        }
+    };
+
+    int nx = matset_ptr->dims[0];
+    int ny = 1;
+    int nz = 1;
+
+    if (matset_ptr->ndims > 1)
+    {
+        ny = matset_ptr->dims[1];
+    }
+    if (matset_ptr->ndims > 2)
+    {
+        nz = matset_ptr->dims[2];
+    }
+
+    if (matset_ptr->major_order == DB_ROWMAJOR)
+    {
+        for (int z = 0; z < nz; z ++)
+        {
+            for (int y = 0; y < ny; y ++)
+            {
+                for (int x = 0; x < nx; x ++)
+                {
+                    read_matlist_entry(x + y * nx + z * nx * ny);
+                }
+            }
+        }
+    }
+    else // COLMAJOR
+    {
+        // I'm not convinced it is ever possible to hit this case.
+        // If you have column major mesh data, you hit the strided structured
+        // case, which (for now) forces an early return at the beginning of
+        // this function. We may reenable that case later, which requires 
+        // filtering the specset down and is potentially quite challenging.
+        // The only way you can get here I think is if you have column major
+        // species set data and row major mesh data. I've never seen an example
+        // file like that so far.
+        for (int x = 0; x < nx; x ++)
+        {
+            for (int y = 0; y < ny; y ++)
+            {
+                for (int z = 0; z < nz; z ++)
+                {
+                    read_matlist_entry(z + y * nz + x * nz * ny);
+                }
+            }
+        }
+    }
+
+    // TODO still need to find colmajor data to test this
+
+    intermediate_matset["material_ids"].set(material_ids);
+    intermediate_matset["volume_fractions"].set(volume_fractions);
+    intermediate_matset["sizes"].set(sizes);
+    intermediate_matset["offsets"].set(offsets);
+
+    matset_field_reconstruction["recipe"].set(field_reconstruction_recipe);
+    matset_field_reconstruction["sizes"].set(sizes);
 
     return true;
 }
@@ -2584,7 +2859,7 @@ read_multimats(DBtoc *toc,
             CONDUIT_INFO("MultiMaterial " << multimat_name << 
                 " for multimesh " << multimesh_name << 
                 " may contain zones with no materials defined on them." << 
-                "We currently do not support this case. Either contact a Conduit developer" <<
+                " We currently do not support this case. Either contact a Conduit developer" <<
                 " or disable DBOPT_ALLOWMAT0 in calls to DBPutMaterial()." <<
                 " Skipping this MultiMaterial.");
             continue;
@@ -3385,9 +3660,15 @@ read_mesh(const std::string &root_file_path,
         // Read Materials
         //
 
+        // We only read a single material. Reasoning is explained below.
+
         // This node will house the recipe for reconstructing matset_values
         // from silo mixvals.
         Node matset_field_reconstruction;
+
+        // This node will house the silo representation of the matset, for use
+        // in reading species sets.
+        Node silo_material;
 
         // for each mesh domain, we would like to iterate through all the materials
         // and extract the same domain from them.
@@ -3451,7 +3732,8 @@ read_mesh(const std::string &root_file_path,
                                        multimat_name, 
                                        bottom_level_mesh_name,
                                        opts_matset_style, 
-                                       matset_field_reconstruction, 
+                                       matset_field_reconstruction,
+                                       silo_material,
                                        mesh_out))
                 {
                     break;
@@ -3518,7 +3800,7 @@ read_mesh(const std::string &root_file_path,
                 //                     multimatspec_name, 
                 //                     bottom_level_mesh_name,
                 //                     opts_matset_style, 
-                //                     matset_field_reconstruction, 
+                //                     silo_material, 
                 //                     mesh_out);
             }
         }
