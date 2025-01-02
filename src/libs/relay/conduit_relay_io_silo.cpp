@@ -1808,7 +1808,7 @@ read_variable_domain(const int vartype,
 
     if (intermediate_field.has_child("matset"))
     {
-        std::string matset_name = intermediate_field["matset"].as_string();
+        const std::string matset_name = intermediate_field["matset"].as_string();
 
         // collect the sparse by element matset we generated
         const Node &original_matset = matset_field_reconstruction["original_matset"];
