@@ -837,7 +837,6 @@ void venn_full_specset(Node &res, index_t nx, index_t ny)
         for (index_t x = 0; x < nx; x ++)
         {
             const index_t elem_id = x + nx * y;
-            std::cout << elem_id << std::endl;
             const float64 xf = static_cast<float64>(x);
 
             // circle_a species vary horizontally
