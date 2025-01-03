@@ -6819,8 +6819,6 @@ bool
 mesh::specset::index::verify(const Node &specset_idx,
                              Node &info)
 {
-    specset_idx.print();
-
     const std::string protocol = "mesh::specset::index";
     bool res = true;
     info.reset();

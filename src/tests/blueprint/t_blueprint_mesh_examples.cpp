@@ -1148,7 +1148,7 @@ TEST(conduit_blueprint_mesh_examples, check_gen_index_state_prop)
 void venn_test_small_yaml(const std::string &venn_type, const bool specsets)
 {
     // provide small example save to yaml for folks to look at
-    const int nx = 4, ny = 4;
+    const int nx = 2, ny = 2;
     const double radius = 0.25;
 
     Node res, info, n_idx;
@@ -1164,7 +1164,6 @@ void venn_test_small_yaml(const std::string &venn_type, const bool specsets)
     EXPECT_TRUE(blueprint::mesh::verify(res, info));
     info.print();
     blueprint::mesh::generate_index(res,"",1,n_idx);
-    n_idx.print();
     EXPECT_TRUE(blueprint::verify("mesh/index",n_idx,info));
 
     std::string ofbase = "venn_" + std::string(specsets ? "specsets_" : "") + "small_example_" + venn_type;

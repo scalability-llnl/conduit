@@ -837,23 +837,24 @@ void venn_full_specset(Node &res, index_t nx, index_t ny)
         for (index_t x = 0; x < nx; x ++)
         {
             const index_t elem_id = x + nx * y;
+            std::cout << elem_id << std::endl;
             const float64 xf = static_cast<float64>(x);
 
             // circle_a species vary horizontally
-            float64 specvalue = xf / (nxf - 1.0);
+            float64 specvalue = xf / nxf;
             ca_spec1[elem_id] = specvalue;
             ca_spec2[elem_id] = 1.0 - specvalue;
 
             // circle_b species vary vertically
-            specvalue = yf / (nyf - 1.0);
+            specvalue = yf / nyf;
             cb_spec1[elem_id] = specvalue;
             cb_spec2[elem_id] = 1.0 - specvalue;
 
             // circle_c species vary diagonally
-            specvalue = (yf / (nyf - 1.0) + xf / (nxf - 1.0)) / 2.0;
-            cc_spec1[elem_id] = specvalue;
-            cc_spec2[elem_id] = (1.0 - specvalue) / 2.0;
-            cc_spec2[elem_id] = (1.0 - specvalue) / 2.0;
+            specvalue = (yf / nyf + xf / nxf) / 2.0;
+            cc_spec1[elem_id] = 1.0 - specvalue;
+            cc_spec2[elem_id] = 0.75 * specvalue;
+            cc_spec3[elem_id] = 0.25 * specvalue;
 
             // background species do not vary
             bg_spec1[elem_id] = 1.0;
@@ -893,7 +894,7 @@ void venn_sparse_by_material_specset(Node &res, index_t nx, index_t ny)
             if (contains(element_ids["circle_a"], elem_id))
             {
                 // circle_a species vary horizontally
-                const float64 specvalue = xf / (nxf - 1.0);
+                const float64 specvalue = xf / nxf;
                 ca_spec1.push_back(specvalue);
                 ca_spec2.push_back(1.0 - specvalue);
             }
@@ -901,7 +902,7 @@ void venn_sparse_by_material_specset(Node &res, index_t nx, index_t ny)
             if (contains(element_ids["circle_b"], elem_id))
             {
                 // circle_b species vary vertically
-                const float64 specvalue = yf / (nyf - 1.0);
+                const float64 specvalue = yf / nyf;
                 cb_spec1.push_back(specvalue);
                 cb_spec2.push_back(1.0 - specvalue);
             }
@@ -909,10 +910,10 @@ void venn_sparse_by_material_specset(Node &res, index_t nx, index_t ny)
             if (contains(element_ids["circle_c"], elem_id))
             {
                 // circle_c species vary diagonally
-                const float64 specvalue = (yf / (nyf - 1.0) + xf / (nxf - 1.0)) / 2.0;
-                cc_spec1.push_back(specvalue);
-                cc_spec2.push_back((1.0 - specvalue) / 2.0);
-                cc_spec2.push_back((1.0 - specvalue) / 2.0);
+                const float64 specvalue = (yf / nyf + xf / nxf) / 2.0;
+                cc_spec1.push_back(1.0 - specvalue);
+                cc_spec2.push_back(0.75 * specvalue);
+                cc_spec3.push_back(0.25 * specvalue);
             }
 
             if (contains(element_ids["background"], elem_id))
@@ -990,7 +991,7 @@ void venn_sparse_by_element_specset(Node &res, index_t nx, index_t ny)
                 if ("circle_a" == matname)
                 {
                     // circle_a species vary horizontally
-                    const float64 specvalue = xf / (nxf - 1.0);
+                    const float64 specvalue = xf / nxf;
                     matset_values.push_back(specvalue);
                     matset_values.push_back(1.0 - specvalue);
                     num_specs_in_zone += 2;
@@ -998,7 +999,7 @@ void venn_sparse_by_element_specset(Node &res, index_t nx, index_t ny)
                 else if ("circle_b" == matname)
                 {
                     // circle_b species vary vertically
-                    const float64 specvalue = yf / (nyf - 1.0);
+                    const float64 specvalue = yf / nyf;
                     matset_values.push_back(specvalue);
                     matset_values.push_back(1.0 - specvalue);
                     num_specs_in_zone += 2;
@@ -1006,10 +1007,10 @@ void venn_sparse_by_element_specset(Node &res, index_t nx, index_t ny)
                 else if ("circle_c" == matname)
                 {
                     // circle_c species vary diagonally
-                    const float64 specvalue = (yf / (nyf - 1.0) + xf / (nxf - 1.0)) / 2.0;
-                    matset_values.push_back(specvalue);
-                    matset_values.push_back((1.0 - specvalue) / 2.0);
-                    matset_values.push_back((1.0 - specvalue) / 2.0);
+                    const float64 specvalue = (yf / nyf + xf / nxf) / 2.0;
+                    matset_values.push_back(1.0 - specvalue);
+                    matset_values.push_back(0.75 * specvalue);
+                    matset_values.push_back(0.25 * specvalue);
                     num_specs_in_zone += 3;
                 }
                 else // ("background" == matname)
