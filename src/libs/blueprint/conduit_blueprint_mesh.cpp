@@ -6723,7 +6723,6 @@ mesh::specset::verify(const Node &specset,
             {
                 const Node &mat = mat_it.next();
                 const std::string &mat_name = mat_it.name();
-                Node &mat_info = mfs_info[mat_name];
 
                 if (!mat.dtype().is_object())
                 {
@@ -6733,6 +6732,7 @@ mesh::specset::verify(const Node &specset,
                 }
                 else
                 {
+                    Node &mat_info = mfs_info[mat_name];
                     NodeConstIterator spec_it = mat.children();
                     while (spec_it.has_next())
                     {
@@ -6748,6 +6748,9 @@ mesh::specset::verify(const Node &specset,
                             mvs_res &= verify_number_field(protocol, mat, mat_info, spec_name);
                         }
                     }
+
+                    res &= mvs_res;
+                    log::validation(mat_info, mvs_res);
                 }
             }
 
