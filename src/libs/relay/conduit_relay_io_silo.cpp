@@ -2001,9 +2001,12 @@ read_matset_domain(DBfile* matset_domain_file_to_use,
         const int matlist_entry = matset_ptr->matlist[matlist_index];
         if (matlist_entry >= 0) // this relies on matset_ptr->allowmat0 == 0
         {
+            // clean zone
+            // this zone has the material with mat id == matlist_entry
+            const int &mat_id = matlist_entry;
             field_reconstruction_recipe.push_back(-1);
             volume_fractions.push_back(1.0);
-            material_ids.push_back(matlist_entry);
+            material_ids.push_back(mat_id);
             sizes.push_back(1);
             offsets.push_back(curr_offset);
             curr_offset ++;
@@ -2100,7 +2103,7 @@ read_matset_domain(DBfile* matset_domain_file_to_use,
     silo_material["matlist"].set(matset_ptr->matlist, nzones);
     silo_material["mix_next"].set(matset_ptr->mix_next, matset_ptr->mixlen);
     silo_material["mix_mat"].set(matset_ptr->mix_mat, matset_ptr->mixlen);
-    silo_material["matnos"].set(matset_ptr->matnos, matset_ptr->nmatnos);
+    silo_material["matnos"].set(matset_ptr->matnos, matset_ptr->nmat);
     silo_material["material_map"].set(material_map);
     silo_material["num_zones"].set(static_cast<int>(sizes.size()));
 
@@ -2150,7 +2153,6 @@ read_specset_domain(DBfile* specset_domain_file_to_use,
                     const std::string &multimesh_name,
                     const std::string &multimatspecies_name,
                     const std::string &bottom_level_mesh_name,
-                    const std::string &opts_matset_style,
                     const Node &silo_material,
                     Node &mesh_out)
 {
@@ -2234,12 +2236,7 @@ read_specset_domain(DBfile* specset_domain_file_to_use,
     const int_accessor silo_matnos = silo_material["matnos"].value();
     const int num_zones = silo_material["num_zones"].as_int();
 
-    // create an entry for this matset in the output
-    Node &specset_out = mesh_out["specsets"][multimatspec_name];
-
-    specset_out["matset"] = assoc_matname;
-
-    int *nmatspec = nullptr
+    int *nmatspec = nullptr;
     // does the multimatspecies object have nmatspec?
     if (n_specset.has_child("nmatspec"))
     {
@@ -2250,54 +2247,7 @@ read_specset_domain(DBfile* specset_domain_file_to_use,
         nmatspec = specset_ptr->nmatspec;
     }
 
-    const int sum_of_nmatspec = []()
-    {
-        int sum = 0;
-        for (int i = 0; i < specset_ptr->nmat; i ++)
-        {
-            sum += nmatspec[i];
-        }
-        return sum;
-    }();
-
-    std::vector<std::string> species_names;
-    // does the multimatspecies object have species_names?
-    if (n_specset.has_child("species_names"))
-    {
-        if (n_specset["species_names"].number_of_children() != sum_of_nmatspec)
-        {
-            CONDUIT_INFO("Attempting to read DBmatspecies " + specset_name +
-                         " but there is a mismatch with nmatspec in the DBmultimatspecies. Skipping.");
-            return false;
-        }
-        for (int specname_id = 0; specname_id < sum_of_nmatspec; specname_id ++)
-        {
-            species_names.emplace_back(n_specset["species_names"][specname_id].as_string(););
-        }
-    }
-    else // if not we can use the local version, provided it exists
-    {
-        if (nullptr != specset_ptr->specnames)
-        {
-            for (int specname_id = 0; specname_id < sum_of_nmatspec; specname_id ++)
-            {
-                species_names.emplace_back(specset_ptr->specnames);
-            }
-        }
-        else
-        {
-            // we make up species names if they do not exist
-            for (int specname_id = 0; specname_id < sum_of_nmatspec; specname_id ++)
-            {
-                species_names.emplace_back("species" + std::to_string(specname_id));
-            }
-        }
-    }
-
-    Node matset_values;
-
     std::map<int, std::string> reverse_matmap;
-    std::map<std::string, int> matname_to_nmatspec;
     auto matmap_itr = silo_material["material_map"].children();
     while (matmap_itr.has_next())
     {
@@ -2313,35 +2263,71 @@ read_specset_domain(DBfile* specset_domain_file_to_use,
         return false;
     }
 
-    int running_index = 0;
-    for (int mat_idx = 0; mat_idx < silo_matnos.number_of_elements(); mat_idx ++)
-    {
-        const int mat_id = silo_matnos[mat_idx];
-        const std::string &matname = reverse_matmap[mat_id]
-        const int num_spec_for_mat = nmatspec[mat_idx];
-        matname_to_nmatspec[matname] = num_spec_for_mat;
+    // create an entry for this matset in the output
+    Node &specset_out = mesh_out["specsets"][multimatspec_name];
 
-        for (int specname_id = 0; specname_id < num_spec_for_mat; specname_id ++)
+    // add the matset association
+    specset_out["matset"] = assoc_matname;
+
+    // create the matset_values output
+    Node &matset_values = specset_out["matset_values"];
+
+    auto init_matset_values = [&](std::string (get_spec_name)(int))
+    {
+        int running_index = 0;
+        for (int mat_idx = 0; mat_idx < specset_ptr->nmat; mat_idx ++)
         {
-            matset_values[matname][species_names[running_index]].set(DataType::float64(num_zones));
+            const int mat_id = silo_matnos[mat_idx];
+            const std::string &matname = reverse_matmap[mat_id];
+            const int num_spec_for_mat = nmatspec[mat_idx];
+            for (int specname_id = 0; specname_id < num_spec_for_mat; specname_id ++)
+            {
+                const std::string spec_name = get_spec_name(running_index + specname_id);
+                matset_values[matname][spec_name].set(DataType::float64(num_zones));
+                float64_array mass_fractions = matset_values[matname][spec_name].value();
+                mass_fractions.fill(0.0);
+
+            }
+            running_index += num_spec_for_mat;
         }
-        running_index += num_spec_for_mat;
+    };
+
+    // does the multimatspecies object have species_names?
+    if (n_specset.has_child("species_names"))
+    {
+        const int sum_of_nmatspec = []()
+        {
+            int sum = 0;
+            for (int i = 0; i < specset_ptr->nmat; i ++)
+            {
+                sum += nmatspec[i];
+            }
+            return sum;
+        }();
+        CONDUIT_ASSERT(n_specset["species_names"].number_of_children() == sum_of_nmatspec,
+                       "Attempting to read DBmatspecies " + specset_name +
+                       " but there is a mismatch with nmatspec in the DBmultimatspecies.");
+        init_matset_values([&](const int index) -> std::string
+                           { return n_specset["species_names"][index].as_string(); });
+    }
+    else if (nullptr != specset_ptr->specnames)
+    {
+        // if not we can use the local version, provided it exists
+        init_matset_values([&](const int index) -> std::string
+                           { return specset_ptr->specnames[index]; });
+    }
+    else
+    {
+        // we make up species names if they do not exist
+        init_matset_values([&](const int index) -> std::string
+                           { return "species" + std::to_string(index); });
     }
 
-
-    // we read into multi buffer full
-
-    // TODO everything below this is just copied from the matset code
+    // we read into full (element_dominant and multi_buffer)
 
     // TODO does it make sense to not read into full? but instead come up with some kind
     // of sparse by element specset representation? and then write converters like we did
     // for matsets?
-
-    std::vector<double> volume_fractions;
-    std::vector<int> material_ids;
-    std::vector<int> sizes;
-    std::vector<int> offsets;
-    int curr_offset = 0;
 
     auto read_speclist_entry = [&](const int zone_id)
     {
@@ -2350,46 +2336,40 @@ read_specset_domain(DBfile* specset_domain_file_to_use,
 
         if (matlist_entry >= 0) // this relies on matset_ptr->allowmat0 == 0
         {
+            // clean zone
             // this zone has the material with mat id == matlist_entry
-            const std::string &matname = reverse_matmap[matlist_entry];
+            const int &mat_id = matlist_entry;
+            const std::string &matname = reverse_matmap[mat_id];
 
-            auto matspec_itr = matset_values.children();
-            while (matspec_itr.has_next())
+            // read mass fractions for this material in this zone
+            const std::vector<std::string> &specnames_for_mat = matset_values[matname].child_names();
+            const int num_spec_for_mat = matset_values[matname].number_of_children();
+            // speclist_entry is a 1-index into species_mf
+            const int species_mf_index = speclist_entry - 1;
+            for (int spec_id = 0; spec_id < num_spec_for_mat; spec_id ++)
             {
-                const Node &matspec = matspec_itr.next();
-                const std::string &curr_matname = matspec_itr.name();
-
-                if (matname == curr_matname)
+                const std::string &specname = specnames_for_mat[spec_id];
+                float64_array mass_fractions = matset_values[matname][specname].value();
+                // species_mf is a void ptr so we must cast
+                if (specset_ptr->datatype == DB_DOUBLE)
                 {
-                    // read mass fractions for this material in this zone
-                    const int num_spec_for_mat = matname_to_nmatspec[matname];
-
-                    
+                    mass_fractions[zone_id] = static_cast<double *>(specset_ptr->species_mf)[species_mf_index + spec_id];
+                }
+                else if (specset_ptr->datatype == DB_FLOAT)
+                {
+                    mass_fractions[zone_id] = static_cast<float *>(specset_ptr->species_mf)[species_mf_index + spec_id];
                 }
                 else
                 {
-                    // set mass fractions to zero for all species that are not in this zone
-                    auto spec_itr = matspec.children();
-                    while (spec_itr.has_next())
-                    {
-                        Node &spec = spec_itr.next();
-                        const std::string &curr_specname = spec_itr.name();
-                        float64_array mass_fractions = spec.value();
-                        mass_fractions[zone_id] = 0.0;
-                    }
+                    CONDUIT_ERROR("Mass fractions must be doubles or floats." <<
+                        "Unknown type for mass fractions for " << specset_name);
                 }
             }
-        }
 
-
-
-        if (speclist_entry >= 0) // this relies on matset_ptr->allowmat0 == 0
-        {
-            volume_fractions.push_back(1.0);
-            material_ids.push_back(speclist_entry);
-            sizes.push_back(1);
-            offsets.push_back(curr_offset);
-            curr_offset ++;
+            // we don't have to do anything for the other materials because
+            // we used data_array fill up above to set everything to all zeros
+            // mass fractions should be zero for all species that belong to
+            // materials that are not in the zone.
         }
         else
         {
@@ -2399,40 +2379,43 @@ read_specset_domain(DBfile* specset_domain_file_to_use,
             // indices: -1 -2 -3 -4 ...
             // become:   0  1  2  3 ...
 
-            int mix_id = -1 * (speclist_entry + 1);
-            int curr_size = 0;
+            int mix_id = -1 * (matlist_entry + 1);
 
-            // when matset_ptr->mix_next[mix_id] is 0, we are on the last one
+            // when silo_mix_next[mix_id] is 0, we are on the last one
             while (mix_id >= 0)
             {
-                material_ids.push_back(matset_ptr->mix_mat[mix_id]);
-
-                // mix_vf is a void ptr so we must cast
-                if (matset_ptr->datatype == DB_DOUBLE)
+                const int mat_id = silo_mix_mat[mix_id];
+                const std::string &matname = reverse_matmap[mat_id];
+                // read mass fractions for this material in this zone
+                const std::vector<std::string> &specnames_for_mat = matset_values[matname].child_names();
+                const int num_spec_for_mat = matset_values[matname].number_of_children();
+                // mix_speclist entry is a 1-index into species_mf
+                const int species_mf_index = specset_ptr->mix_speclist[mix_id] - 1;
+                for (int spec_id = 0; spec_id < num_spec_for_mat; spec_id ++)
                 {
-                    volume_fractions.push_back(static_cast<double *>(matset_ptr->mix_vf)[mix_id]);
+                    const std::string &specname = specnames_for_mat[spec_id];
+                    float64_array mass_fractions = matset_values[matname][specname].value();
+                    // species_mf is a void ptr so we must cast
+                    if (specset_ptr->datatype == DB_DOUBLE)
+                    {
+                        mass_fractions[zone_id] = static_cast<double *>(specset_ptr->species_mf)[species_mf_index + spec_id];
+                    }
+                    else if (specset_ptr->datatype == DB_FLOAT)
+                    {
+                        mass_fractions[zone_id] = static_cast<float *>(specset_ptr->species_mf)[species_mf_index + spec_id];
+                    }
+                    else
+                    {
+                        CONDUIT_ERROR("Mass fractions must be doubles or floats." <<
+                            "Unknown type for mass fractions for " << specset_name);
+                    }
                 }
-                else if (matset_ptr->datatype == DB_FLOAT)
-                {
-                    volume_fractions.push_back(static_cast<float *>(matset_ptr->mix_vf)[mix_id]);
-                }
-                else
-                {
-                    CONDUIT_ERROR("Volume fractions must be doubles or floats." <<
-                        "Unknown type for volume fractions for " << matset_name);
-                }
-
-                curr_size ++;
                 // since mix_id is a 1-index, we must subtract one
                 // this makes sure that mix_id = 0 is the last case,
                 // since it will make our mix_id == -1, which ends
                 // the while loop.
-                mix_id = matset_ptr->mix_next[mix_id] - 1;
+                mix_id = silo_mix_next[mix_id] - 1;
             }
-
-            sizes.push_back(curr_size);
-            offsets.push_back(curr_offset);
-            curr_offset += curr_size;
         }
     };
 
@@ -2487,14 +2470,6 @@ read_specset_domain(DBfile* specset_domain_file_to_use,
     }
 
     // TODO still need to find colmajor data to test this
-
-    intermediate_matset["material_ids"].set(material_ids);
-    intermediate_matset["volume_fractions"].set(volume_fractions);
-    intermediate_matset["sizes"].set(sizes);
-    intermediate_matset["offsets"].set(offsets);
-
-    matset_field_reconstruction["recipe"].set(field_reconstruction_recipe);
-    matset_field_reconstruction["sizes"].set(sizes);
 
     return true;
 }
@@ -3875,16 +3850,14 @@ read_mesh(const std::string &root_file_path,
                                        mesh_domain_file.getSiloObject(), 
                                        specset_domain_file);
 
-                // TODO write this function
-                // read_specset_domain(specset_domain_file_to_use,
-                //                     n_specset, 
-                //                     matset_name,
-                //                     mesh_name_to_read, 
-                //                     multimatspec_name, 
-                //                     bottom_level_mesh_name,
-                //                     opts_matset_style, 
-                //                     silo_material, 
-                //                     mesh_out);
+                read_specset_domain(specset_domain_file_to_use,
+                                    n_specset, 
+                                    specset_name,
+                                    mesh_name_to_read, 
+                                    multimatspec_name, 
+                                    bottom_level_mesh_name,
+                                    silo_material, 
+                                    mesh_out);
             }
         }
 
@@ -5716,7 +5689,9 @@ void silo_write_specset(DBfile *dbfile,
         DBAddOption(optlist.getSiloObject(),
                     DBOPT_SPECNAMES,
                     specname_ptrs.data()),
-        "error adding matnames option");
+        "error adding specnames option");
+
+    // TODO adding the specnames appears to be bugged - see output files
 
     const std::string silo_matset_name = write_overlink ? "MATERIAL" : matset_name;
 
