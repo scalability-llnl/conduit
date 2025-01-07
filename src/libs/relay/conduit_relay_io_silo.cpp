@@ -2059,7 +2059,7 @@ read_matset_domain(DBfile* matset_domain_file_to_use,
 
     const int nx = matset_ptr->dims[0];
     const int ny = (matset_ptr->ndims > 1) ? matset_ptr->dims[1] : 1;
-    const int nz = (matset_ptr->ndims > 2) ? matset_ptr->dims[2] : 2;
+    const int nz = (matset_ptr->ndims > 2) ? matset_ptr->dims[2] : 1;
 
     if (matset_ptr->major_order == DB_ROWMAJOR)
     {
@@ -2106,6 +2106,8 @@ read_matset_domain(DBfile* matset_domain_file_to_use,
     silo_material["matnos"].set(matset_ptr->matnos, matset_ptr->nmat);
     silo_material["material_map"].set(material_map);
     silo_material["num_zones"].set(static_cast<int>(sizes.size()));
+    silo_material["matset_path"].set(matset_name);
+    silo_material["matset_name"].set(multimat_name);
 
     intermediate_matset["material_ids"].set(material_ids);
     intermediate_matset["volume_fractions"].set(volume_fractions);
@@ -2178,13 +2180,28 @@ read_specset_domain(DBfile* specset_domain_file_to_use,
         return false;
     }
 
+    if (! silo_material.has_child("matlist") ||
+        ! silo_material.has_child("mix_next") ||
+        ! silo_material.has_child("mix_mat") ||
+        ! silo_material.has_child("material_map") ||
+        ! silo_material.has_child("matnos") ||
+        ! silo_material.has_child("num_zones") ||
+        ! silo_material.has_child("matset_path"))
+    {
+        CONDUIT_INFO("Attempting to read DBmatspecies " + specset_name +
+                     " but required DBmaterial information is missing. Skipping.");
+        return false;
+    }
+
     // check that this specset is associated with a matset we have read
     std::string assoc_matname = specset_ptr->matname;
     if (assoc_matname.length() > 1 && assoc_matname[0] == '/')
     {
         assoc_matname = assoc_matname.substr(1);
     }
-    if (! mesh_out.has_path("matsets/" + assoc_matname))
+    std::string specset_path, bottom_level_specset_name;
+    conduit::utils::rsplit_file_path(specset_name, "/", bottom_level_specset_name, specset_path);
+    if (specset_path + "/" + assoc_matname != silo_material["matset_path"].as_string())
     {
         CONDUIT_INFO("DBmatspecies " + specset_name + " is associated "
                      "with a matset called " + assoc_matname + " which "
@@ -2214,18 +2231,6 @@ read_specset_domain(DBfile* specset_domain_file_to_use,
                        specset_ptr->stride[1] == specset_ptr->dims[0] &&
                        specset_ptr->stride[2] == specset_ptr->dims[0] * specset_ptr->dims[1],
                        irregular_striding_err_msg);
-    }
-
-    if (! silo_material.has_child("matlist") ||
-        ! silo_material.has_child("mix_next") ||
-        ! silo_material.has_child("mix_mat") ||
-        ! silo_material.has_child("material_map") ||
-        ! silo_material.has_child("matnos") ||
-        ! silo_material.has_child("num_zones"))
-    {
-        CONDUIT_INFO("Attempting to read DBmatspecies " + specset_name +
-                     " but required DBmaterial information is missing. Skipping.");
-        return false;
     }
 
     const int_accessor silo_matlist = silo_material["matlist"].value();
@@ -2265,7 +2270,7 @@ read_specset_domain(DBfile* specset_domain_file_to_use,
     Node &specset_out = mesh_out["specsets"][multimatspecies_name];
 
     // add the matset association
-    specset_out["matset"] = assoc_matname;
+    specset_out["matset"] = silo_material["matset_name"].as_string();
 
     // create the matset_values output
     Node &matset_values = specset_out["matset_values"];
@@ -2419,18 +2424,9 @@ read_specset_domain(DBfile* specset_domain_file_to_use,
 
     // TODO ensure dims match matset?
 
-    int nx = specset_ptr->dims[0];
-    int ny = 1;
-    int nz = 1;
-
-    if (specset_ptr->ndims > 1)
-    {
-        ny = specset_ptr->dims[1];
-    }
-    if (specset_ptr->ndims > 2)
-    {
-        nz = specset_ptr->dims[2];
-    }
+    const int nx = specset_ptr->dims[0];
+    const int ny = (specset_ptr->ndims > 1) ? specset_ptr->dims[1] : 1;
+    const int nz = (specset_ptr->ndims > 2) ? specset_ptr->dims[2] : 1;
 
     if (specset_ptr->major_order == DB_ROWMAJOR)
     {
@@ -3783,7 +3779,8 @@ read_mesh(const std::string &root_file_path,
                 // it would be ambiguous. In Blueprint, we can allow multiple matsets per
                 // topo, because the fields explicitly link to the matset they use.
                 if (read_matset_domain(matset_domain_file_to_use, 
-                                       n_matset, matset_name,
+                                       n_matset,
+                                       matset_name,
                                        mesh_name_to_read, 
                                        multimat_name, 
                                        bottom_level_mesh_name,
