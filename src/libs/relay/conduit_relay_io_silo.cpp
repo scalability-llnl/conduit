@@ -2251,13 +2251,7 @@ read_specset_domain(DBfile* specset_domain_file_to_use,
     }
 
     std::map<int, std::string> reverse_matmap;
-    auto matmap_itr = silo_material["material_map"].children();
-    while (matmap_itr.has_next())
-    {
-        const Node &matmap_entry = matmap_itr.next();
-        const std::string matname = matmap_itr.name();
-        reverse_matmap[matmap_entry.to_int()] = matname;
-    }
+    create_reverse_material_map(silo_material["material_map"], reverse_matmap);
 
     if (silo_matnos.number_of_elements() != specset_ptr->nmat)
     {
@@ -3866,7 +3860,7 @@ read_mesh(const std::string &root_file_path,
             while (var_itr.has_next())
             {
                 const Node &n_var = var_itr.next();
-                std::string multivar_name = var_itr.name();
+                const std::string multivar_name = var_itr.name();
 
                 bool var_nameschemes = false;
                 if (n_var.has_child("nameschemes") &&
@@ -6641,7 +6635,7 @@ write_var_attributes(DBfile *dbfile,
         while (field_itr.has_next())
         {
             const Node &n_var = field_itr.next();
-            std::string var_name = field_itr.name();
+            const std::string var_name = field_itr.name();
 
             // did we actually write this field to silo?
             if (n_var["number_of_components"].to_int64() != 1)

@@ -75,8 +75,8 @@ silo_name_changer(const std::string &mmesh_name,
         while(topo_itr.has_next())
         {
             Node &n_topo = topo_itr.next();
-            std::string topo_name = topo_itr.name();
-            std::string new_topo_name = mmesh_name + "_" + topo_name;
+            const std::string topo_name = topo_itr.name();
+            const std::string new_topo_name = mmesh_name + "_" + topo_name;
 
             old_to_new_names[topo_name] = new_topo_name;
 
@@ -124,30 +124,94 @@ silo_name_changer(const std::string &mmesh_name,
         while (matset_itr.has_next())
         {
             Node &n_matset = matset_itr.next();
-            std::string matset_name = matset_itr.name();
+            const std::string matset_name = matset_itr.name();
 
-            std::string old_topo_name = n_matset["topology"].as_string();
+            const std::string old_matset_name = n_matset["topology"].as_string();
 
-            if (old_to_new_names.find(old_topo_name) == old_to_new_names.end())
+            if (old_to_new_names.find(old_matset_name) == old_to_new_names.end())
             {
                 continue;
                 // If this is the case, we probably need to delete this matset.
                 // But our job in this function is just to rename things, so we 
                 // will just skip.
             }
-            std::string new_topo_name = old_to_new_names[old_topo_name];
+            const std::string new_topo_name = old_to_new_names[old_matset_name];
 
             // use new topo name
             n_matset["topology"].reset();
             n_matset["topology"] = new_topo_name;
 
             // come up with new matset name
-            std::string new_matset_name = mmesh_name + "_" + matset_name;
+            const std::string new_matset_name = mmesh_name + "_" + matset_name;
 
             old_to_new_names[matset_name] = new_matset_name;
 
             // rename the matset
             save_mesh["matsets"].rename_child(matset_name, new_matset_name);
+        }
+    }
+
+    if (save_mesh.has_child("specsets"))
+    {
+        auto specset_itr = save_mesh["specsets"].children();
+        while (specset_itr.has_next())
+        {
+            Node &n_specset = specset_itr.next();
+            const std::string specset_name = specset_itr.name();
+
+            const std::string old_matset_name = n_specset["matset"].as_string();
+
+            if (old_to_new_names.find(old_matset_name) == old_to_new_names.end())
+            {
+                continue;
+                // If this is the case, we probably need to delete this specset.
+                // But our job in this function is just to rename things, so we 
+                // will just skip.
+            }
+            const std::string &new_matset_name = old_to_new_names[old_matset_name];
+
+            const Node &n_matset = save_mesh["matsets"][new_matset_name];
+
+            // TODO I assume the specset is multi_buffer full
+            // we have no way to check for now
+            // and multi_buffer full is the only allowed specset variety
+            // later, we will need to add functionality here
+
+            // TODO we need to change the specset
+
+            Node &matset_values = n_specset["matset_values"];
+            auto mat_itr = matset_values.children();
+            while (mat_itr.has_next())
+            {
+                Node &mat = mat_itr.next();
+                const std::string matname = mat_itr.name();
+
+                if (blueprint::mesh::matset::is_material_in_zone(n_matset, matname, ))
+
+                auto spec_itr = mat.children();
+                while (spec_itr.has_next())
+                {
+                    Node &spec = spec_itr.next();
+                    const std::string specname = spec_itr.name();
+
+                    float64_accessor mass_fractions = spec.value();
+                }
+            }
+
+
+
+
+            // use new matset name
+            n_specset["matset"].reset();
+            n_specset["matset"] = new_matset_name;
+
+            // come up with new specset name
+            const std::string new_specset_name = mmesh_name + "_" + specset_name;
+
+            old_to_new_names[specset_name] = new_specset_name;
+
+            // rename the specset
+            save_mesh["specsets"].rename_child(specset_name, new_specset_name);
         }
     }
 
@@ -159,7 +223,7 @@ silo_name_changer(const std::string &mmesh_name,
             Node &n_field = field_itr.next();
             std::string field_name = field_itr.name();
 
-            std::string old_topo_name = n_field["topology"].as_string();
+            const std::string old_topo_name = n_field["topology"].as_string();
             if (old_to_new_names.find(old_topo_name) == old_to_new_names.end())
             {
                 continue;
@@ -167,14 +231,14 @@ silo_name_changer(const std::string &mmesh_name,
                 // But our job in this function is just to rename things, so we 
                 // will just skip.
             }
-            std::string new_topo_name = old_to_new_names[old_topo_name];
+            const std::string new_topo_name = old_to_new_names[old_topo_name];
             // use new topo name
             n_field["topology"].reset();
             n_field["topology"] = new_topo_name;
 
             if (n_field.has_child("matset"))
             {
-                std::string old_matset_name = n_field["matset"].as_string();
+                const std::string old_matset_name = n_field["matset"].as_string();
                 if (old_to_new_names.find(old_matset_name) == old_to_new_names.end())
                 {
                     continue;
@@ -182,7 +246,7 @@ silo_name_changer(const std::string &mmesh_name,
                     // But our job in this function is just to rename things, so we 
                     // will just skip.
                 }
-                std::string new_matset_name = old_to_new_names[old_matset_name];
+                const std::string new_matset_name = old_to_new_names[old_matset_name];
                 // use new matset name
                 n_field["matset"].reset();
                 n_field["matset"] = new_matset_name;
@@ -204,7 +268,7 @@ silo_name_changer(const std::string &mmesh_name,
                     while (val_itr.has_next())
                     {
                         val_itr.next();
-                        std::string comp_name = val_itr.name();
+                        const std::string comp_name = val_itr.name();
 
                         // rename vector components
                         n_field["values"].rename_child(comp_name, std::to_string(child_index));
