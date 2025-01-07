@@ -770,19 +770,6 @@ namespace matset
                                        const float64 epsilon = CONDUIT_EPSILON);
 
     //-------------------------------------------------------------------------
-    bool CONDUIT_BLUEPRINT_API count_zones_in_matset(const conduit::Node &matset);
-
-    //-------------------------------------------------------------------------
-    bool CONDUIT_BLUEPRINT_API is_material_in_zone(const conduit::Node &matset,
-                                                   const std::string &matname,
-                                                   const index_t zone_id,
-                                                   const float64 epsilon = CONDUIT_EPSILON);
-
-    //-----------------------------------------------------------------------------
-    std::map<int, std::string> CONDUIT_BLUEPRINT_API create_reverse_material_map(
-        const conduit::Node &src_matset);
-
-    //-------------------------------------------------------------------------
     // blueprint::mesh::matset::index protocol interface
     //-------------------------------------------------------------------------
     namespace index
