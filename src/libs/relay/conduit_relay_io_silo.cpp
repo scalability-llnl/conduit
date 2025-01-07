@@ -2150,9 +2150,7 @@ bool
 read_specset_domain(DBfile* specset_domain_file_to_use,
                     const Node &n_specset,
                     const std::string &specset_name,
-                    const std::string &multimesh_name,
                     const std::string &multimatspecies_name,
-                    const std::string &bottom_level_mesh_name,
                     const Node &silo_material,
                     Node &mesh_out)
 {
@@ -2236,11 +2234,11 @@ read_specset_domain(DBfile* specset_domain_file_to_use,
     const int_accessor silo_matnos = silo_material["matnos"].value();
     const int num_zones = silo_material["num_zones"].as_int();
 
-    int *nmatspec = nullptr;
+    const int *nmatspec = nullptr;
     // does the multimatspecies object have nmatspec?
     if (n_specset.has_child("nmatspec"))
     {
-        nmatspec = n_specset["nmatspec"].data_ptr();
+        nmatspec = n_specset["nmatspec"].as_int_ptr();
     }
     else // if not we can use the local version
     {
@@ -2264,7 +2262,7 @@ read_specset_domain(DBfile* specset_domain_file_to_use,
     }
 
     // create an entry for this matset in the output
-    Node &specset_out = mesh_out["specsets"][multimatspec_name];
+    Node &specset_out = mesh_out["specsets"][multimatspecies_name];
 
     // add the matset association
     specset_out["matset"] = assoc_matname;
@@ -2272,7 +2270,7 @@ read_specset_domain(DBfile* specset_domain_file_to_use,
     // create the matset_values output
     Node &matset_values = specset_out["matset_values"];
 
-    auto init_matset_values = [&](std::string (get_spec_name)(int))
+    auto init_matset_values = [&](auto get_spec_name)
     {
         int running_index = 0;
         for (int mat_idx = 0; mat_idx < specset_ptr->nmat; mat_idx ++)
@@ -2295,7 +2293,7 @@ read_specset_domain(DBfile* specset_domain_file_to_use,
     // does the multimatspecies object have species_names?
     if (n_specset.has_child("species_names"))
     {
-        const int sum_of_nmatspec = []()
+        const int sum_of_nmatspec = [&]()
         {
             int sum = 0;
             for (int i = 0; i < specset_ptr->nmat; i ++)
@@ -3853,9 +3851,7 @@ read_mesh(const std::string &root_file_path,
                 read_specset_domain(specset_domain_file_to_use,
                                     n_specset, 
                                     specset_name,
-                                    mesh_name_to_read, 
                                     multimatspec_name, 
-                                    bottom_level_mesh_name,
                                     silo_material, 
                                     mesh_out);
             }
