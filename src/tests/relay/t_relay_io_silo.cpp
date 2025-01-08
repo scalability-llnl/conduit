@@ -1906,8 +1906,8 @@ TEST(conduit_relay_io_silo, round_trip_specsets)
 //     EXPECT_TRUE(load_mesh[0]["topologies"].number_of_children() == 1);
 // }
 
-// TEST(conduit_relay_io_silo, round_trip_read_option_matset_style)
 // //-----------------------------------------------------------------------------
+// TEST(conduit_relay_io_silo, round_trip_read_option_matset_style)
 // {
 //     // the matset type and the type we are requesting on read
 //     const std::vector<std::pair<std::string, std::string>> matset_types = {
