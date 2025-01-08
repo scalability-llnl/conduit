@@ -168,38 +168,43 @@ silo_name_changer(const std::string &mmesh_name,
                 // But our job in this function is just to rename things, so we 
                 // will just skip.
             }
-            const std::string &new_matset_name = old_to_new_names[old_matset_name];
-
-            const Node &n_matset = save_mesh["matsets"][new_matset_name];
 
             // TODO I assume the specset is multi_buffer full
             // we have no way to check for now
             // and multi_buffer full is the only allowed specset variety
             // later, we will need to add functionality here
 
-            // TODO we need to change the specset
-
+            const std::string &new_matset_name = old_to_new_names[old_matset_name];
+            const Node &n_matset = save_mesh["matsets"][new_matset_name];
+            const int num_zones = blueprint::mesh::matset::count_zones_from_matset(n_matset);
             Node &matset_values = n_specset["matset_values"];
-            auto mat_itr = matset_values.children();
-            while (mat_itr.has_next())
+
+            // we must modify the specset; see note below
+            for (int zone_id = 0; zone_id < num_zones; zone_id ++)
             {
-                Node &mat = mat_itr.next();
-                const std::string matname = mat_itr.name();
-
-                if (blueprint::mesh::matset::is_material_in_zone(n_matset, matname, ))
-
-                auto spec_itr = mat.children();
-                while (spec_itr.has_next())
+                auto mat_itr = matset_values.children();
+                while (mat_itr.has_next())
                 {
-                    Node &spec = spec_itr.next();
-                    const std::string specname = spec_itr.name();
+                    Node &mat = mat_itr.next();
+                    const std::string matname = mat_itr.name();
+                    if (! blueprint::mesh::matset::is_material_in_zone(n_matset, matname, zone_id))
+                    {
+                        // if this material is not present in the zone, then we need
+                        // to change the species mass fractions to all zero to pass
+                        // the diff, since Silo read will set everything to zero
+                        // for multi_buffer full.
 
-                    float64_accessor mass_fractions = spec.value();
+                        auto spec_itr = mat.children();
+                        while (spec_itr.has_next())
+                        {
+                            Node &spec = spec_itr.next();
+                            const std::string specname = spec_itr.name();
+                            float64_accessor mass_fractions = spec.value();
+                            mass_fractions.set(zone_id, 0.0);
+                        }
+                    }
                 }
             }
-
-
-
 
             // use new matset name
             n_specset["matset"].reset();

@@ -2250,8 +2250,8 @@ read_specset_domain(DBfile* specset_domain_file_to_use,
         nmatspec = specset_ptr->nmatspec;
     }
 
-    std::map<int, std::string> reverse_matmap;
-    create_reverse_material_map(silo_material["material_map"], reverse_matmap);
+    std::map<int, std::string> reverse_matmap = 
+        conduit::blueprint::mesh::matset::create_reverse_material_map(silo_material["material_map"]);
 
     if (silo_matnos.number_of_elements() != specset_ptr->nmat)
     {
