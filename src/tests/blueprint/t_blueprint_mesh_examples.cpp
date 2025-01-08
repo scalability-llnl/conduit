@@ -1145,21 +1145,28 @@ TEST(conduit_blueprint_mesh_examples, check_gen_index_state_prop)
 
 
 //-----------------------------------------------------------------------------
-void venn_test_small_yaml(const std::string &venn_type)
+void venn_test_small_yaml(const std::string &venn_type, const bool specsets)
 {
     // provide small example save to yaml for folks to look at
-    const int nx = 4, ny = 4;
+    const int nx = 2, ny = 2;
     const double radius = 0.25;
 
     Node res, info, n_idx;
-    blueprint::mesh::examples::venn(venn_type, nx, ny, radius, res);
+    if (specsets)
+    {
+        blueprint::mesh::examples::venn_specsets(venn_type, nx, ny, radius, res);
+    }
+    else
+    {
+        blueprint::mesh::examples::venn(venn_type, nx, ny, radius, res);
+    }
 
     EXPECT_TRUE(blueprint::mesh::verify(res, info));
     info.print();
     blueprint::mesh::generate_index(res,"",1,n_idx);
     EXPECT_TRUE(blueprint::verify("mesh/index",n_idx,info));
 
-    std::string ofbase= "venn_small_example_" + venn_type;
+    std::string ofbase = "venn_" + std::string(specsets ? "specsets_" : "") + "small_example_" + venn_type;
 
     // save yaml and hdf5 versions
     relay::io::blueprint::save_mesh(res,
@@ -1180,23 +1187,28 @@ void venn_test_small_yaml(const std::string &venn_type)
 }
 
 //-----------------------------------------------------------------------------
-void venn_test(const std::string &venn_type)
+void venn_test(const std::string &venn_type, const bool specsets)
 {
     const int nx = 100, ny = 100;
     const double radius = 0.25;
 
     Node res, info;
-    blueprint::mesh::examples::venn(venn_type, nx, ny, radius, res);
+    if (specsets)
+    {
+        blueprint::mesh::examples::venn_specsets(venn_type, nx, ny, radius, res);
+    }
+    else
+    {
+        blueprint::mesh::examples::venn(venn_type, nx, ny, radius, res);
+    }
 
     EXPECT_TRUE(blueprint::mesh::verify(res, info));
     utils::log::remove_valid(info);
     CONDUIT_INFO(info.to_yaml());
     CONDUIT_INFO(res.schema().to_json());
 
-    std::string ofbase = "venn_example_" + venn_type;
+    std::string ofbase = "venn_" + std::string(specsets ? "specsets_" : "") + "example_" + venn_type;
     std::cout << "[Saving " << ofbase << "]" << std::endl;
-
-    std::string ofile_root= "venn_small_example_" + venn_type;
 
     // save yaml and hdf5 versions
     relay::io::blueprint::save_mesh(res,
@@ -1234,22 +1246,28 @@ void venn_test(const std::string &venn_type)
 //-----------------------------------------------------------------------------
 TEST(conduit_blueprint_mesh_examples, venn_full)
 {
-    venn_test("full");
-    venn_test_small_yaml("full");
+    venn_test("full", false);
+    venn_test("full", true);
+    venn_test_small_yaml("full", false);
+    venn_test_small_yaml("full", true);
 }
 
 //-----------------------------------------------------------------------------
 TEST(conduit_blueprint_mesh_examples, venn_sparse_by_material)
 {
-    venn_test("sparse_by_material");
-    venn_test_small_yaml("sparse_by_material");
+    venn_test("sparse_by_material", false);
+    venn_test("sparse_by_material", true);
+    venn_test_small_yaml("sparse_by_material", false);
+    venn_test_small_yaml("sparse_by_material", true);
 }
 
 //-----------------------------------------------------------------------------
 TEST(conduit_blueprint_mesh_examples, venn_sparse_by_element)
 {
-    venn_test("sparse_by_element");
-    venn_test_small_yaml("sparse_by_element");
+    venn_test("sparse_by_element", false);
+    venn_test("sparse_by_element", true);
+    venn_test_small_yaml("sparse_by_element", false);
+    venn_test_small_yaml("sparse_by_element", true);
 }
 
 //-----------------------------------------------------------------------------
