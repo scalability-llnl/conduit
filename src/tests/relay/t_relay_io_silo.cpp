@@ -78,61 +78,6 @@ TEST(conduit_relay_io_silo, conduit_silo_cold_storage_generic_iface)
 }
 
 //-----------------------------------------------------------------------------
-// TODO move this test to be with the other overlink tests
-// test reading in a handful of different overlink files
-TEST(conduit_relay_io_silo, load_mesh_geometry)
-{
-    // TODO: all these files are in overlink symlink format.
-    // Symlinks may break on Windows (?)
-    // Could make them overlink format without the symlink.
-    // But would require modifying the files.
-    std::vector<std::string> filename_vec = {
-        "box2d.silo",
-        "box3d.silo",
-        "diamond.silo",
-        // TODO: rename these files to be more descriptive.
-        // would also require modifying the paths stored within the files,
-        // and re-symlinking
-        "testDisk2D_a.silo",
-        "donordiv.s2_materials2.silo",
-        "donordiv.s2_materials3.silo"
-    };
-    std::vector<int> dims_vec            = {2, 3, 2,  2,    2,  2};
-    std::vector<int> coordset_length_vec = {4, 8, 36, 1994, 16, 961};
-    std::vector<int> topology_length_vec = {1, 1, 33, 1920, 9,  900};
-    for (int i = 0; i < filename_vec.size(); ++i)
-    {
-        Node mesh, info;
-        std::string path = utils::join_file_path("overlink", filename_vec.at(i));
-        std::string input_file = relay_test_silo_data_path(path);
-        io::silo::load_mesh(input_file, mesh);
-
-        EXPECT_TRUE(blueprint::mesh::verify(mesh, info));
-        EXPECT_EQ(blueprint::mesh::number_of_domains(mesh), 1);
-
-        const Node &domain = *blueprint::mesh::domains(mesh).front();
-        EXPECT_TRUE(domain.has_child("coordsets"));
-        EXPECT_EQ(domain["coordsets"].number_of_children(), 1);
-        EXPECT_TRUE(domain.has_child("topologies"));
-        EXPECT_EQ(domain["topologies"].number_of_children(), 1);
-
-        { // Coordset Validation //
-            const Node &cset = domain["coordsets"].child(0);
-            EXPECT_EQ(blueprint::mesh::coordset::dims(cset), dims_vec.at(i));
-            EXPECT_EQ(blueprint::mesh::coordset::length(cset), coordset_length_vec.at(i));
-            EXPECT_TRUE(blueprint::mesh::coordset::_explicit::verify(cset, info));
-        }
-
-        { // Topology Validation //
-            const Node &topo = domain["topologies"].child(0);
-            EXPECT_EQ(blueprint::mesh::topology::dims(topo), dims_vec.at(i));
-            EXPECT_EQ(blueprint::mesh::topology::length(topo), topology_length_vec.at(i));
-            EXPECT_TRUE(blueprint::mesh::topology::unstructured::verify(topo, info));
-        }
-    }
-}
-
-//-----------------------------------------------------------------------------
 TEST(conduit_relay_io_silo, round_trip_basic)
 {
     const std::vector<std::pair<std::string, std::string>> mesh_types = {
@@ -1985,6 +1930,57 @@ TEST(conduit_relay_io_silo, round_trip_read_option_matset_style)
 //
 
 //-----------------------------------------------------------------------------
+// test reading in a handful of different overlink files
+TEST(conduit_relay_io_silo, load_mesh_geometry)
+{
+    const std::vector<std::pair<std::string, std::vector<int>>> file_info = {
+        std::make_pair("box2d",                  std::vector<int>{2, 4,    1}),
+        std::make_pair("box3d",                  std::vector<int>{3, 8,    1}),
+        std::make_pair("diamond",                std::vector<int>{2, 36,   33}),
+        std::make_pair("testDisk2D_a",           std::vector<int>{2, 1994, 1920}),
+        std::make_pair("donordiv.s2_materials2", std::vector<int>{2, 16,   9}),
+        std::make_pair("donordiv.s2_materials3", std::vector<int>{2, 961,  900}),
+    };
+
+    for (size_t i = 0; i < file_info.size(); i ++)
+    {
+        const std::string &basename = file_info[i].first;
+        const std::string filename = basename + ".silo";
+        const int dim = file_info[i].second[0];
+        const int coordset_length = file_info[i].second[1];
+        const int topology_length = file_info[i].second[2];
+
+        Node mesh, info;
+        const std::string path = utils::join_file_path("overlink", filename);
+        const std::string input_file = relay_test_silo_data_path(path);
+        io::silo::load_mesh(input_file, mesh);
+
+        EXPECT_TRUE(blueprint::mesh::verify(mesh, info));
+        EXPECT_EQ(blueprint::mesh::number_of_domains(mesh), 1);
+
+        const Node &domain = *blueprint::mesh::domains(mesh).front();
+        EXPECT_TRUE(domain.has_child("coordsets"));
+        EXPECT_EQ(domain["coordsets"].number_of_children(), 1);
+        EXPECT_TRUE(domain.has_child("topologies"));
+        EXPECT_EQ(domain["topologies"].number_of_children(), 1);
+
+        { // Coordset Validation //
+            const Node &cset = domain["coordsets"].child(0);
+            EXPECT_EQ(blueprint::mesh::coordset::dims(cset), dim);
+            EXPECT_EQ(blueprint::mesh::coordset::length(cset), coordset_length);
+            EXPECT_TRUE(blueprint::mesh::coordset::_explicit::verify(cset, info));
+        }
+
+        { // Topology Validation //
+            const Node &topo = domain["topologies"].child(0);
+            EXPECT_EQ(blueprint::mesh::topology::dims(topo), dim);
+            EXPECT_EQ(blueprint::mesh::topology::length(topo), topology_length);
+            EXPECT_TRUE(blueprint::mesh::topology::unstructured::verify(topo, info));
+        }
+    }
+}
+
+//-----------------------------------------------------------------------------
 // read normal silo files containing multimeshes, multivars, and multimats
 TEST(conduit_relay_io_silo, read_silo)
 {
@@ -2152,17 +2148,23 @@ TEST(conduit_relay_io_silo, read_overlink_symlink_format)
         {".", "box2d",                  ".silo", "MMESH"},
         {".", "box3d",                  ".silo", ""     }, // test default case
         {".", "box3d",                  ".silo", "MMESH"},
+        {".", "c36_m5",                 ".silo", ""     }, // test default case
+        {".", "c36_m5",                 ".silo", "MMESH"},
         {".", "diamond",                ".silo", ""     }, // test default case
         {".", "diamond",                ".silo", "MMESH"},
         // TODO check diamond filled boundary plot in visit
         // once https://github.com/visit-dav/visit/issues/19522
         // is resolved.
-        {".", "testDisk2D_a",           ".silo", ""     }, // test default case
-        {".", "testDisk2D_a",           ".silo", "MMESH"},
         {".", "donordiv.s2_materials2", ".silo", ""     }, // test default case
         {".", "donordiv.s2_materials2", ".silo", "MMESH"},
         {".", "donordiv.s2_materials3", ".silo", ""     }, // test default case
         {".", "donordiv.s2_materials3", ".silo", "MMESH"},
+        {".", "hl18spec",               ".silo", ""     }, // test default case
+        {".", "hl18spec",               ".silo", "MMESH"},
+        {".", "testDisk2D_a",           ".silo", ""     }, // test default case
+        {".", "testDisk2D_a",           ".silo", "MMESH"},
+        {".", "tetra8",                 ".silo", ""     }, // test default case
+        {".", "tetra8",                 ".silo", "MMESH"},
     };
 
     for (int i = 0; i < file_info.size(); i ++) 
@@ -2207,14 +2209,20 @@ TEST(conduit_relay_io_silo, read_overlink_directly)
         {"box2d",                  "OvlTop", ".silo", "MMESH"},
         {"box3d",                  "OvlTop", ".silo", ""     }, // test default case
         {"box3d",                  "OvlTop", ".silo", "MMESH"},
+        {"c36_m5",                 "OvlTop", ".silo", ""     }, // test default case
+        {"c36_m5",                 "OvlTop", ".silo", "MMESH"},
         {"diamond",                "OvlTop", ".silo", ""     }, // test default case
         {"diamond",                "OvlTop", ".silo", "MMESH"},
-        {"testDisk2D_a",           "OvlTop", ".silo", ""     }, // test default case
-        {"testDisk2D_a",           "OvlTop", ".silo", "MMESH"},
         {"donordiv.s2_materials2", "OvlTop", ".silo", ""     }, // test default case
         {"donordiv.s2_materials2", "OvlTop", ".silo", "MMESH"},
         {"donordiv.s2_materials3", "OvlTop", ".silo", ""     }, // test default case
         {"donordiv.s2_materials3", "OvlTop", ".silo", "MMESH"},
+        {"hl18spec",               "OvlTop", ".silo", ""     }, // test default case
+        {"hl18spec",               "OvlTop", ".silo", "MMESH"},
+        {"testDisk2D_a",           "OvlTop", ".silo", ""     }, // test default case
+        {"testDisk2D_a",           "OvlTop", ".silo", "MMESH"},
+        {"tetra8",                 "OvlTop", ".silo", ""     }, // test default case
+        {"tetra8",                 "OvlTop", ".silo", "MMESH"},
     };
 
     for (int i = 0; i < file_info.size(); i ++) 
