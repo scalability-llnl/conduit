@@ -528,22 +528,6 @@ copy_matset_independent_parts_of_field(const conduit::Node &src_field,
 }
 
 //-----------------------------------------------------------------------------
-void
-create_reverse_matmap(const conduit::Node &src_matset,
-                      std::map<int, std::string> &reverse_matmap)
-{
-    // fill out map
-    auto matmap_itr = src_matset["material_map"].children();
-    while (matmap_itr.has_next())
-    {
-        const Node &matmap_entry = matmap_itr.next();
-        const std::string matname = matmap_itr.name();
-
-        reverse_matmap[matmap_entry.to_int()] = matname;
-    }
-}
-
-//-----------------------------------------------------------------------------
 // load the element ids into a set to find out how many there are
 int
 determine_num_elems_in_multi_buffer_by_material(const conduit::Node &elem_ids)
@@ -564,13 +548,13 @@ determine_num_elems_in_multi_buffer_by_material(const conduit::Node &elem_ids)
     }
 
     return static_cast<int>(elem_ids_set.size());
-};
+}
 
 //-----------------------------------------------------------------------------
 void
 walk_uni_buffer_by_element_to_multi_buffer_by_element(
     const conduit::Node &src_matset,
-    std::map<int, std::string> &reverse_matmap,
+    const std::map<int, std::string> &reverse_matmap,
     float64_accessor &values, // can be either vol fracs or matset vals
     int64_accessor &material_ids,
     std::map<std::string, std::vector<float64>> &new_vals)
@@ -579,7 +563,7 @@ walk_uni_buffer_by_element_to_multi_buffer_by_element(
     int num_elems = o2m_idx.size();
 
     // initialize sizes
-    for (auto & mapitem : reverse_matmap)
+    for (const auto & mapitem : reverse_matmap)
     {
         const std::string &matname = mapitem.second;
         new_vals[matname] = std::vector<float64>(num_elems);
@@ -594,7 +578,7 @@ walk_uni_buffer_by_element_to_multi_buffer_by_element(
 
             float64 val = values[data_index];
             int mat_id = material_ids[data_index];
-            const std::string &matname = reverse_matmap[mat_id];
+            const std::string &matname = reverse_matmap.at(mat_id);
             new_vals[matname][elem_id] = val;
         }
     }
@@ -806,8 +790,7 @@ uni_buffer_by_element_to_multi_buffer_by_element_matset(const conduit::Node &src
     dest_matset["topology"].set(src_matset["topology"]);
 
     // map material numbers to material names
-    std::map<int, std::string> reverse_matmap;
-    create_reverse_matmap(src_matset, reverse_matmap);
+    const std::map<int, std::string> reverse_matmap = create_reverse_material_map(src_matset["material_map"]);
 
     // get ptr to vol fracs and mat ids
     float64_accessor volume_fractions = src_matset["volume_fractions"].value();
@@ -843,8 +826,7 @@ uni_buffer_by_element_to_multi_buffer_by_element_field(const conduit::Node &src_
                                                dest_field);
 
         // map material numbers to material names
-        std::map<int, std::string> reverse_matmap;
-        create_reverse_matmap(src_matset, reverse_matmap);
+        const std::map<int, std::string> reverse_matmap = create_reverse_material_map(src_matset["material_map"]);
 
         // get ptr to matset values and mat ids
         float64_accessor matset_values = src_field["matset_values"].value();
@@ -879,8 +861,7 @@ uni_buffer_by_element_to_multi_buffer_by_material_matset(const conduit::Node &sr
     dest_matset["topology"].set(src_matset["topology"]);
 
     // map material numbers to material names
-    std::map<int, std::string> reverse_matmap;
-    create_reverse_matmap(src_matset, reverse_matmap);
+    const std::map<int, std::string> reverse_matmap = create_reverse_material_map(src_matset["material_map"]);
 
     // get ptr to vol fracs and mat ids
     float64_accessor volume_fractions = src_matset["volume_fractions"].value();
@@ -900,7 +881,7 @@ uni_buffer_by_element_to_multi_buffer_by_material_matset(const conduit::Node &sr
 
             float64 vol_frac = volume_fractions[data_index];
             int64 mat_id = material_ids[data_index];
-            const std::string &matname = reverse_matmap[mat_id];
+            const std::string &matname = reverse_matmap.at(mat_id);
             
             new_vol_fracs[matname].push_back(vol_frac);
             new_elem_ids[matname].push_back(elem_id);
@@ -929,8 +910,7 @@ uni_buffer_by_element_to_multi_buffer_by_material_field(const conduit::Node &src
                                                dest_field);
 
         // map material numbers to material names
-        std::map<int, std::string> reverse_matmap;
-        create_reverse_matmap(src_matset, reverse_matmap);
+        const std::map<int, std::string> reverse_matmap = create_reverse_material_map(src_matset["material_map"]);
 
         // get ptr to matset values and mat ids
         float64_accessor matset_values = src_field["matset_values"].value();
@@ -948,7 +928,7 @@ uni_buffer_by_element_to_multi_buffer_by_material_field(const conduit::Node &src
 
                 float64 mset_val = matset_values[data_index];
                 int64 mat_id = material_ids[data_index];
-                const std::string &matname = reverse_matmap[mat_id];
+                const std::string &matname = reverse_matmap.at(mat_id);
                 
                 new_mset_vals[matname].push_back(mset_val);
             }
@@ -1302,6 +1282,134 @@ to_silo(const conduit::Node &matset,
                     matset,
                     dest,
                     epsilon);
+}
+
+//-----------------------------------------------------------------------------
+std::map<int, std::string>
+create_reverse_material_map(const conduit::Node &src_material_map)
+{
+    std::map<int, std::string> reverse_matmap;
+    // fill out map
+    auto matmap_itr = src_material_map.children();
+    while (matmap_itr.has_next())
+    {
+        const Node &matmap_entry = matmap_itr.next();
+        const std::string matname = matmap_itr.name();
+        reverse_matmap[matmap_entry.to_int()] = matname;
+    }
+    return reverse_matmap;
+}
+//-------------------------------------------------------------------------
+index_t 
+count_zones_from_matset(const conduit::Node &matset)
+{
+    // extra seat belt here
+    if (! matset.dtype().is_object())
+    {
+        CONDUIT_ERROR("blueprint::mesh::matset::count_zones_in_matset"
+                      " passed matset node must be a valid matset tree.");
+    }
+    // full
+    if (is_element_dominant(matset) && is_multi_buffer(matset))
+    {
+        if (matset["volume_fractions"].number_of_children() > 0)
+        {
+            return matset["volume_fractions"][0].dtype().number_of_elements();
+        }
+        else
+        {
+            return 0;
+        }
+    }
+    // sparse_by_element
+    else if (is_element_dominant(matset))
+    {
+        return matset["sizes"].dtype().number_of_elements();
+    }
+    // sparse_by_material
+    else if (is_material_dominant(matset))
+    {
+        return detail::determine_num_elems_in_multi_buffer_by_material(matset["element_ids"]);
+    }
+    else
+    {
+        CONDUIT_ERROR("Unknown matset type.");
+    }
+
+    return -1;
+}
+
+//-------------------------------------------------------------------------
+bool 
+is_material_in_zone(const conduit::Node &matset,
+                    const std::string &matname,
+                    const index_t zone_id,
+                    const float64 epsilon)
+{
+    // extra seat belt here
+    if (! matset.dtype().is_object())
+    {
+        CONDUIT_ERROR("blueprint::mesh::matset::is_material_in_zone"
+                      " passed matset node must be a valid matset tree.");
+    }
+    // full
+    if (is_element_dominant(matset) && is_multi_buffer(matset))
+    {
+        if (matset["volume_fractions"].has_child(matname))
+        {
+            const float64_accessor vfs = matset["volume_fractions"][matname].value();
+            return vfs[zone_id] > epsilon;
+        }
+        else
+        {
+            // obviously the material is not present in the zone; it is not
+            // present in the matset
+            return false;
+        }
+    }
+    // sparse_by_element
+    else if (is_element_dominant(matset))
+    {
+        const index_t_accessor sizes = matset["sizes"].value();
+        const index_t_accessor offsets = matset["offsets"].value();
+        const index_t_accessor material_ids = matset["material_ids"].value();
+        const index_t size = sizes[zone_id];
+        const index_t offset = offsets[zone_id];
+        std::map<int, std::string> reverse_matmap = mesh::matset::create_reverse_material_map(matset["material_map"]);
+        // look at materials in this zone
+        for (index_t idx = 0; idx < size; idx ++)
+        {
+            const index_t mat_id = material_ids[idx + offset];
+            const std::string &curr_matname = reverse_matmap.at(mat_id);
+            if (curr_matname == matname)
+            {
+                // we found the right material in this zone
+                return true;
+            }
+        }
+        // not found in this zone
+        return false;
+    }
+    // sparse_by_material
+    else if (is_material_dominant(matset))
+    {
+        if (matset["element_ids"].has_child(matname))
+        {
+            const index_t_accessor elem_ids = matset["element_ids"][matname].value();
+            return elem_ids.count(zone_id) > 0;
+        }
+        else
+        {
+            // obviously the material is not present in the zone; it is not
+            // present in the matset
+            return false;
+        }
+    }
+    else
+    {
+        CONDUIT_ERROR("Unknown matset type.");
+    }
+    return false;
 }
 
 //-----------------------------------------------------------------------------

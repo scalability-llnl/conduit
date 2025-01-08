@@ -36,6 +36,94 @@ convert_to_material_based(const Node &topo, Node &mset)
 /// Test Cases ///
 
 //-----------------------------------------------------------------------------
+TEST(conduit_blueprint_mesh_matset_xforms, mesh_util_create_reverse_matmap)
+{
+    Node material_map;
+    material_map["mat1"] = 5;
+    material_map["mat2"] = 213423;
+    material_map["mat3"] = 6;
+    material_map["mat4"] = 0;
+
+    const std::map<int, std::string> reverse_matmap = 
+        blueprint::mesh::matset::create_reverse_material_map(material_map);
+    EXPECT_EQ("mat4", reverse_matmap.at(0));
+    EXPECT_EQ("mat1", reverse_matmap.at(5));
+    EXPECT_EQ("mat3", reverse_matmap.at(6));
+    EXPECT_EQ("mat2", reverse_matmap.at(213423));
+}
+
+//-----------------------------------------------------------------------------
+TEST(conduit_blueprint_mesh_matset_xforms, mesh_util_count_zones_from_matset)
+{
+    const int nx = 4, ny = 4;
+    const double radius = 0.25;
+
+    CONDUIT_INFO("venn full count zones");
+    {
+        Node mesh;
+        blueprint::mesh::examples::venn("full", nx, ny, radius, mesh);
+        const Node &mset = mesh["matsets/matset"];
+
+        EXPECT_EQ(16, blueprint::mesh::matset::count_zones_from_matset(mset));
+    }
+
+    CONDUIT_INFO("venn sparse_by_material count zones");
+    {
+        Node mesh;
+        blueprint::mesh::examples::venn("sparse_by_material", nx, ny, radius, mesh);
+        const Node &mset = mesh["matsets/matset"];
+
+        EXPECT_EQ(16, blueprint::mesh::matset::count_zones_from_matset(mset));
+    }
+
+    CONDUIT_INFO("venn sparse_by_element count zones");
+    {
+        Node mesh;
+        blueprint::mesh::examples::venn("sparse_by_element", nx, ny, radius, mesh);
+        const Node &mset = mesh["matsets/matset"];
+
+        EXPECT_EQ(16, blueprint::mesh::matset::count_zones_from_matset(mset));
+    }
+}
+
+//-----------------------------------------------------------------------------
+TEST(conduit_blueprint_mesh_matset_xforms, mesh_util_is_material_in_zone)
+{
+    const int nx = 2, ny = 2;
+    const double radius = 0.25;
+
+    CONDUIT_INFO("venn full check mat in zone");
+    {
+        Node mesh;
+        blueprint::mesh::examples::venn("full", nx, ny, radius, mesh);
+        const Node &mset = mesh["matsets/matset"];
+
+        EXPECT_FALSE(blueprint::mesh::matset::is_material_in_zone(mset, "circle_c", 0));
+        EXPECT_TRUE(blueprint::mesh::matset::is_material_in_zone(mset, "circle_c", 3));
+    }
+
+    CONDUIT_INFO("venn sparse_by_material check mat in zone");
+    {
+        Node mesh;
+        blueprint::mesh::examples::venn("sparse_by_material", nx, ny, radius, mesh);
+        const Node &mset = mesh["matsets/matset"];
+
+        EXPECT_FALSE(blueprint::mesh::matset::is_material_in_zone(mset, "circle_c", 0));
+        EXPECT_TRUE(blueprint::mesh::matset::is_material_in_zone(mset, "circle_c", 3));
+    }
+
+    CONDUIT_INFO("venn sparse_by_element check mat in zone");
+    {
+        Node mesh;
+        blueprint::mesh::examples::venn("sparse_by_element", nx, ny, radius, mesh);
+        const Node &mset = mesh["matsets/matset"];
+
+        EXPECT_FALSE(blueprint::mesh::matset::is_material_in_zone(mset, "circle_c", 0));
+        EXPECT_TRUE(blueprint::mesh::matset::is_material_in_zone(mset, "circle_c", 3));
+    }
+}
+
+//-----------------------------------------------------------------------------
 TEST(conduit_blueprint_mesh_matset_xforms, mesh_util_to_silo_basic)
 {
     Node mesh;
