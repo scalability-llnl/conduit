@@ -602,3 +602,55 @@ TEST(conduit_blueprint_mesh_matset_xforms, mesh_util_to_silo_misc)
     std::cout << silo_rep2.to_yaml() << std::endl;
     EXPECT_FALSE(silo_rep2.diff(baseline, info, CONDUIT_EPSILON, true));
 }
+
+//-----------------------------------------------------------------------------
+TEST(conduit_blueprint_mesh_matset_xforms, mesh_util_to_silo_specset_missing_mats)
+{
+    Node mesh;
+    blueprint::mesh::examples::venn_specsets("sparse_by_material", 4, 4, 0.25, mesh);
+
+    mesh["specsets"]["specset"]["matset_values"].remove_child("background");
+
+    const Node &matset = mesh["matsets/matset"];
+    const Node &specset = mesh["specsets/specset"];
+
+    Node silo_rep;
+
+    // first test transforming specset to silo rep with a regular matset
+    blueprint::mesh::specset::to_silo(specset, matset, silo_rep);
+    std::cout << silo_rep.to_yaml() << std::endl;
+
+    // mesh.print();
+
+    // TODO JUSTIN the above error is triggered because we have this case here:
+    // topology: "MMESH"
+    // material_map: 
+    //   1: 1
+    //   2: 2
+    //   3: 3
+    //   4: 4
+    //   5: 5
+    //   6: 6
+    // matlist: [2, 2, 2, ..., 2, 2]
+    // mix_next: []
+    // mix_mat: []
+    // mix_vf: []
+
+
+    // matset: "MMATERIAL"
+    // matset_values: 
+    //   2: 
+    //     species0: [0.00221, -0.0712111111111111, -0.144632222222222, ..., 0.663, 0.589578888888889]
+    //     species1: [0.00222, -0.0715333333333333, -0.145286666666667, ..., 0.666, 0.592246666666667]
+    //     species2: [0.00223, -0.0718555555555556, -0.145941111111111, ..., 0.669, 0.594914444444445]
+    //     species3: [0.00224, -0.0721777777777778, -0.146595555555556, ..., 0.672, 0.597582222222222]
+    //   3: 
+    //     species4: [0.0, 0.0, 0.0, ..., 0.0, 0.0]
+    //     species5: [0.0, 0.0, 0.0, ..., 0.0, 0.0]
+    //   4: 
+    //     species6: [0.0, 0.0, 0.0, ..., 0.0, 0.0]
+
+    // not all materials show up in the specset
+    // this really screws things up. I need to be very careful when making silo arrays like nmatspec
+    // I also need a test for this
+}
