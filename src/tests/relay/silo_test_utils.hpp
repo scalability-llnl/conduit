@@ -312,7 +312,6 @@ overlink_name_changer(conduit::Node &save_mesh)
     // we assume 1 coordset and 1 topo
     Node &coordsets = save_mesh["coordsets"];
     Node &topologies = save_mesh["topologies"];
-    
 
     // we assume only 1 child for each
     std::string coordset_name = coordsets.children().next().name();
@@ -350,7 +349,7 @@ overlink_name_changer(conduit::Node &save_mesh)
     {
         // we assume 1 adjset
         Node &n_adjset = save_mesh["adjsets"].children().next();
-        std::string adjset_name = n_adjset.name();
+        const std::string adjset_name = n_adjset.name();
 
         // use new topo name
         n_adjset["topology"].reset();
@@ -370,7 +369,7 @@ overlink_name_changer(conduit::Node &save_mesh)
         // one per topo. But if you want the diff to pass for tests, you 
         // really can only have one. So we assume one.
         Node &n_matset = save_mesh["matsets"].children().next();
-        std::string matset_name = n_matset.name();
+        const std::string matset_name = n_matset.name();
 
         // use new topo name
         n_matset["topology"].reset();
@@ -378,6 +377,69 @@ overlink_name_changer(conduit::Node &save_mesh)
 
         // rename the matset
         save_mesh["matsets"].rename_child(matset_name, "MMATERIAL");
+    }
+
+    if (save_mesh.has_child("specsets"))
+    {
+        int species_id = 0;
+
+        auto specset_itr = save_mesh["specsets"].children();
+        while (specset_itr.has_next())
+        {
+            Node &n_specset = specset_itr.next();
+            const std::string specset_name = specset_itr.name();
+
+            // TODO I assume the specset is multi_buffer full
+            // we have no way to check for now
+            // and multi_buffer full is the only allowed specset variety
+            // later, we will need to add functionality here
+
+            const Node &n_matset = save_mesh["matsets"]["MMATERIAL"];
+            const int num_zones = blueprint::mesh::matset::count_zones_from_matset(n_matset);
+            Node &matset_values = n_specset["matset_values"];
+
+            // we must modify the specset; see note below
+            for (int zone_id = 0; zone_id < num_zones; zone_id ++)
+            {
+                auto mat_itr = matset_values.children();
+                while (mat_itr.has_next())
+                {
+                    Node &mat = mat_itr.next();
+                    const std::string matname = mat_itr.name();
+                    if (! blueprint::mesh::matset::is_material_in_zone(n_matset, matname, zone_id))
+                    {
+                        // if this material is not present in the zone, then we need
+                        // to change the species mass fractions to all zero to pass
+                        // the diff, since Silo read will set everything to zero
+                        // for multi_buffer full.
+
+                        auto spec_itr = mat.children();
+                        while (spec_itr.has_next())
+                        {
+                            Node &spec = spec_itr.next();
+                            const std::string specname = spec_itr.name();
+                            float64_accessor mass_fractions = spec.value();
+                            mass_fractions.set(zone_id, 0.0);
+                        }
+                    }
+                }
+            }
+
+            // use new matset name
+            n_specset["matset"].reset();
+            n_specset["matset"] = "MMATERIAL";
+
+            // rename the specset
+            if (species_id == 0)
+            {
+                save_mesh["specsets"].rename_child(specset_name, "MSPECIES");
+            }
+            else
+            {
+                save_mesh["specsets"].rename_child(specset_name, "MSPECIES" + std::to_string(species_id));
+            }
+            species_id ++;
+        }
     }
 
     if (save_mesh.has_child("fields"))
@@ -457,6 +519,7 @@ add_matset_to_spiral(Node &n_mesh, const int ndomains)
 //-----------------------------------------------------------------------------
 void
 vector_field_to_scalars_braid(Node &n_mesh, const std::string &dim)
+// TODO generalize this approach so that it works for all fields as part of overlink_name_changer
 {
     Node &field_vel = n_mesh["fields"]["vel"];
     

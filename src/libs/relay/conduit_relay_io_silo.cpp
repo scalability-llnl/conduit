@@ -2354,7 +2354,10 @@ read_specset_domain(DBfile* specset_domain_file_to_use,
     }
     std::string specset_path, bottom_level_specset_name;
     conduit::utils::rsplit_file_path(specset_name, "/", bottom_level_specset_name, specset_path);
-    if (specset_path + "/" + assoc_matname != silo_material["matset_path"].as_string())
+    const std::string matset_path = (specset_path.empty() ? 
+                                     assoc_matname : 
+                                     specset_path + "/" + assoc_matname);
+    if (matset_path != silo_material["matset_path"].as_string())
     {
         CONDUIT_INFO("DBmatspecies " + specset_name + " is associated "
                      "with a matset called " + assoc_matname + " which "
