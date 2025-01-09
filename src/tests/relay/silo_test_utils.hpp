@@ -128,7 +128,7 @@ silo_name_changer(const std::string &mmesh_name,
 
             const std::string old_topo_name = n_matset["topology"].as_string();
 
-            if (old_to_new_names.find(old_matset_name) == old_to_new_names.end())
+            if (old_to_new_names.find(old_topo_name) == old_to_new_names.end())
             {
                 continue;
                 // If this is the case, we probably need to delete this matset.

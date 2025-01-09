@@ -2301,6 +2301,149 @@ read_matset_domain(DBfile* matset_domain_file_to_use,
 }
 
 //-----------------------------------------------------------------------------
+template<typename T>
+void
+read_speclist_entry(const DBmatspecies* specset_ptr,
+                    const int zone_id,
+                    const int_accessor &silo_matlist,
+                    const int_accessor &silo_mix_mat,
+                    const int_accessor &silo_mix_next,
+                    const std::map<int, std::string> &reverse_matmap,
+                    Node &matset_values)
+{
+    const int matlist_entry = silo_matlist[zone_id];
+    const int speclist_entry = specset_ptr->speclist[zone_id];
+
+    if (matlist_entry >= 0) // this relies on matset_ptr->allowmat0 == 0
+    {
+        // clean zone
+        // this zone has the material with mat id == matlist_entry
+        const int &mat_id = matlist_entry;
+        const std::string &matname = reverse_matmap.at(mat_id);
+
+        // read mass fractions for this material in this zone
+        const std::vector<std::string> &specnames_for_mat = matset_values[matname].child_names();
+        const int num_spec_for_mat = matset_values[matname].number_of_children();
+        // speclist_entry is a 1-index into species_mf
+        const int species_mf_index = speclist_entry - 1;
+        for (int spec_id = 0; spec_id < num_spec_for_mat; spec_id ++)
+        {
+            const std::string &specname = specnames_for_mat[spec_id];
+            float64_array mass_fractions = matset_values[matname][specname].value();
+            // species_mf is a void ptr so we must cast
+            mass_fractions[zone_id] = static_cast<T *>(specset_ptr->species_mf)[species_mf_index + spec_id];
+        }
+
+        // we don't have to do anything for the other materials because
+        // we used data_array fill up above to set everything to all zeros
+        // mass fractions should be zero for all species that belong to
+        // materials that are not in the zone.
+    }
+    else
+    {
+        // for mixed zones, the numbers in the matlist are negated 1-indices into
+        // the silo mixed data arrays. To turn them into zero-indices, we must add
+        // 1 and negate the result. Example:
+        // indices: -1 -2 -3 -4 ...
+        // become:   0  1  2  3 ...
+
+        int mix_id = -1 * (matlist_entry + 1);
+
+        // when silo_mix_next[mix_id] is 0, we are on the last one
+        while (mix_id >= 0)
+        {
+            const int mat_id = silo_mix_mat[mix_id];
+            const std::string &matname = reverse_matmap.at(mat_id);
+            // read mass fractions for this material in this zone
+            const std::vector<std::string> &specnames_for_mat = matset_values[matname].child_names();
+            const int num_spec_for_mat = matset_values[matname].number_of_children();
+            // mix_speclist entry is a 1-index into species_mf
+            const int species_mf_index = specset_ptr->mix_speclist[mix_id] - 1;
+            for (int spec_id = 0; spec_id < num_spec_for_mat; spec_id ++)
+            {
+                const std::string &specname = specnames_for_mat[spec_id];
+                float64_array mass_fractions = matset_values[matname][specname].value();
+                // species_mf is a void ptr so we must cast
+                mass_fractions[zone_id] = static_cast<T *>(specset_ptr->species_mf)[species_mf_index + spec_id];
+            }
+            // since mix_id is a 1-index, we must subtract one
+            // this makes sure that mix_id = 0 is the last case,
+            // since it will make our mix_id == -1, which ends
+            // the while loop.
+            mix_id = silo_mix_next[mix_id] - 1;
+        }
+    }
+}
+
+//-----------------------------------------------------------------------------
+template <typename T>
+void
+read_speclist(const DBmatspecies* specset_ptr,
+              const int_accessor &silo_matlist,
+              const int_accessor &silo_mix_mat,
+              const int_accessor &silo_mix_next,
+              const std::map<int, std::string> &reverse_matmap,
+              Node &matset_values)
+{
+    // TODO ensure dims match matset?
+
+    const int nx = specset_ptr->dims[0];
+    const int ny = (specset_ptr->ndims > 1) ? specset_ptr->dims[1] : 1;
+    const int nz = (specset_ptr->ndims > 2) ? specset_ptr->dims[2] : 1;
+
+    if (specset_ptr->major_order == DB_ROWMAJOR)
+    {
+        for (int z = 0; z < nz; z ++)
+        {
+            for (int y = 0; y < ny; y ++)
+            {
+                for (int x = 0; x < nx; x ++)
+                {
+                    const int zone_id = x + y * nx + z * nx * ny;
+                    read_speclist_entry<T>(specset_ptr,
+                                           zone_id,
+                                           silo_matlist,
+                                           silo_mix_mat,
+                                           silo_mix_next,
+                                           reverse_matmap,
+                                           matset_values);
+                }
+            }
+        }
+    }
+    else // COLMAJOR
+    {
+        // I'm not convinced it is ever possible to hit this case.
+        // If you have column major mesh data, you hit the strided structured
+        // case, which (for now) forces an early return at the beginning of
+        // this function. We may reenable that case later, which requires 
+        // filtering the specset down and is potentially quite challenging.
+        // The only way you can get here I think is if you have column major
+        // species set data and row major mesh data. I've never seen an example
+        // file like that so far.
+        for (int x = 0; x < nx; x ++)
+        {
+            for (int y = 0; y < ny; y ++)
+            {
+                for (int z = 0; z < nz; z ++)
+                {
+                    const int zone_id = z + y * nz + x * nz * ny;
+                    read_speclist_entry<T>(specset_ptr,
+                                           zone_id,
+                                           silo_matlist,
+                                           silo_mix_mat,
+                                           silo_mix_next,
+                                           reverse_matmap,
+                                           matset_values);
+                }
+            }
+        }
+    }
+
+    // TODO still need to find colmajor data to test this
+}
+
+//-----------------------------------------------------------------------------
 bool
 read_specset_domain(DBfile* specset_domain_file_to_use,
                     const Node &n_specset,
@@ -2482,138 +2625,32 @@ read_specset_domain(DBfile* specset_domain_file_to_use,
     // of sparse by element specset representation? and then write converters like we did
     // for matsets?
 
-    auto read_speclist_entry = [&](const int zone_id)
+    if (specset_ptr->datatype != DB_DOUBLE && specset_ptr->datatype != DB_FLOAT)
     {
-        const int matlist_entry = silo_matlist[zone_id];
-        const int speclist_entry = specset_ptr->speclist[zone_id];
-
-        if (matlist_entry >= 0) // this relies on matset_ptr->allowmat0 == 0
-        {
-            // clean zone
-            // this zone has the material with mat id == matlist_entry
-            const int &mat_id = matlist_entry;
-            const std::string &matname = reverse_matmap[mat_id];
-
-            // read mass fractions for this material in this zone
-            const std::vector<std::string> &specnames_for_mat = matset_values[matname].child_names();
-            const int num_spec_for_mat = matset_values[matname].number_of_children();
-            // speclist_entry is a 1-index into species_mf
-            const int species_mf_index = speclist_entry - 1;
-            for (int spec_id = 0; spec_id < num_spec_for_mat; spec_id ++)
-            {
-                const std::string &specname = specnames_for_mat[spec_id];
-                float64_array mass_fractions = matset_values[matname][specname].value();
-                // species_mf is a void ptr so we must cast
-                if (specset_ptr->datatype == DB_DOUBLE)
-                {
-                    mass_fractions[zone_id] = static_cast<double *>(specset_ptr->species_mf)[species_mf_index + spec_id];
-                }
-                else if (specset_ptr->datatype == DB_FLOAT)
-                {
-                    mass_fractions[zone_id] = static_cast<float *>(specset_ptr->species_mf)[species_mf_index + spec_id];
-                }
-                else
-                {
-                    CONDUIT_ERROR("Mass fractions must be doubles or floats." <<
-                        "Unknown type for mass fractions for " << specset_name);
-                }
-            }
-
-            // we don't have to do anything for the other materials because
-            // we used data_array fill up above to set everything to all zeros
-            // mass fractions should be zero for all species that belong to
-            // materials that are not in the zone.
-        }
-        else
-        {
-            // for mixed zones, the numbers in the matlist are negated 1-indices into
-            // the silo mixed data arrays. To turn them into zero-indices, we must add
-            // 1 and negate the result. Example:
-            // indices: -1 -2 -3 -4 ...
-            // become:   0  1  2  3 ...
-
-            int mix_id = -1 * (matlist_entry + 1);
-
-            // when silo_mix_next[mix_id] is 0, we are on the last one
-            while (mix_id >= 0)
-            {
-                const int mat_id = silo_mix_mat[mix_id];
-                const std::string &matname = reverse_matmap[mat_id];
-                // read mass fractions for this material in this zone
-                const std::vector<std::string> &specnames_for_mat = matset_values[matname].child_names();
-                const int num_spec_for_mat = matset_values[matname].number_of_children();
-                // mix_speclist entry is a 1-index into species_mf
-                const int species_mf_index = specset_ptr->mix_speclist[mix_id] - 1;
-                for (int spec_id = 0; spec_id < num_spec_for_mat; spec_id ++)
-                {
-                    const std::string &specname = specnames_for_mat[spec_id];
-                    float64_array mass_fractions = matset_values[matname][specname].value();
-                    // species_mf is a void ptr so we must cast
-                    if (specset_ptr->datatype == DB_DOUBLE)
-                    {
-                        mass_fractions[zone_id] = static_cast<double *>(specset_ptr->species_mf)[species_mf_index + spec_id];
-                    }
-                    else if (specset_ptr->datatype == DB_FLOAT)
-                    {
-                        mass_fractions[zone_id] = static_cast<float *>(specset_ptr->species_mf)[species_mf_index + spec_id];
-                    }
-                    else
-                    {
-                        CONDUIT_ERROR("Mass fractions must be doubles or floats." <<
-                            "Unknown type for mass fractions for " << specset_name);
-                    }
-                }
-                // since mix_id is a 1-index, we must subtract one
-                // this makes sure that mix_id = 0 is the last case,
-                // since it will make our mix_id == -1, which ends
-                // the while loop.
-                mix_id = silo_mix_next[mix_id] - 1;
-            }
-        }
-    };
-
-    // TODO ensure dims match matset?
-
-    const int nx = specset_ptr->dims[0];
-    const int ny = (specset_ptr->ndims > 1) ? specset_ptr->dims[1] : 1;
-    const int nz = (specset_ptr->ndims > 2) ? specset_ptr->dims[2] : 1;
-
-    if (specset_ptr->major_order == DB_ROWMAJOR)
-    {
-        for (int z = 0; z < nz; z ++)
-        {
-            for (int y = 0; y < ny; y ++)
-            {
-                for (int x = 0; x < nx; x ++)
-                {
-                    read_speclist_entry(x + y * nx + z * nx * ny);
-                }
-            }
-        }
-    }
-    else // COLMAJOR
-    {
-        // I'm not convinced it is ever possible to hit this case.
-        // If you have column major mesh data, you hit the strided structured
-        // case, which (for now) forces an early return at the beginning of
-        // this function. We may reenable that case later, which requires 
-        // filtering the specset down and is potentially quite challenging.
-        // The only way you can get here I think is if you have column major
-        // species set data and row major mesh data. I've never seen an example
-        // file like that so far.
-        for (int x = 0; x < nx; x ++)
-        {
-            for (int y = 0; y < ny; y ++)
-            {
-                for (int z = 0; z < nz; z ++)
-                {
-                    read_speclist_entry(z + y * nz + x * nz * ny);
-                }
-            }
-        }
+        CONDUIT_INFO("Species mass fractions must be doubles or floats." <<
+                     " Unknown type for mass fractions for " << specset_name);
+        return false;
     }
 
-    // TODO still need to find colmajor data to test this
+    if (specset_ptr->datatype == DB_DOUBLE)
+    {
+        read_speclist<double>(specset_ptr,
+                              silo_matlist,
+                              silo_mix_mat,
+                              silo_mix_next,
+                              reverse_matmap,
+                              matset_values);
+    }
+    else
+    {
+        // we have verified up above that this is a float
+        read_speclist<float>(specset_ptr,
+                             silo_matlist,
+                             silo_mix_mat,
+                             silo_mix_next,
+                             reverse_matmap,
+                             matset_values);
+    }
 
     return true;
 }
