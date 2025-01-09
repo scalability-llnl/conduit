@@ -1139,7 +1139,7 @@ read_ucdmesh_domain(DBucdmesh *ucdmesh_ptr,
 
     const int ndims = ucdmesh_ptr->ndims;
 
-    if (ucdmesh_ptr->datatype != DB_DOUBLE || ucdmesh_ptr->datatype != DB_FLOAT)
+    if (ucdmesh_ptr->datatype != DB_DOUBLE && ucdmesh_ptr->datatype != DB_FLOAT)
     {
         CONDUIT_INFO("Unsupported mesh data type " << ucdmesh_ptr->datatype);
         return false;
@@ -1308,7 +1308,7 @@ read_quadmesh_domain(DBquadmesh *quadmesh_ptr,
         }
     }
 
-    if (quadmesh_ptr->datatype != DB_DOUBLE || quadmesh_ptr->datatype != DB_FLOAT)
+    if (quadmesh_ptr->datatype != DB_DOUBLE && quadmesh_ptr->datatype != DB_FLOAT)
     {
         CONDUIT_INFO("Unsupported mesh data type " << quadmesh_ptr->datatype);
         return false;
@@ -1364,7 +1364,7 @@ read_pointmesh_domain(DBpointmesh *pointmesh_ptr,
 
     const int ndims = pointmesh_ptr->ndims;
 
-    if (pointmesh_ptr->datatype != DB_DOUBLE || pointmesh_ptr->datatype != DB_FLOAT)
+    if (pointmesh_ptr->datatype != DB_DOUBLE && pointmesh_ptr->datatype != DB_FLOAT)
     {
         CONDUIT_INFO("Unsupported mesh data type " << pointmesh_ptr->datatype);
         return false;
