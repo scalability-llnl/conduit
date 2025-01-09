@@ -659,35 +659,24 @@ colmajor_regular_striding(int *strides_out,
 }
 
 //-----------------------------------------------------------------------------
+template <typename T>
 void
-copy_point_coords(const int datatype,
-                  void *coords[3],
-                  int ndims,
+copy_point_coords(void *coords[3],
+                  const int ndims,
                   const int *dims,
                   const int coord_sys,
                   std::vector<const char *> &labels,
-                  Node &node)
+                  Node &coordset_values)
 {
-    ndims = ndims < 3 ? ndims : 3;
     labels = get_coordset_axis_labels(coord_sys);
+    // TODO audit all conduit asserts, we want skips not errors
     CONDUIT_ASSERT(!(coord_sys == DB_CYLINDRICAL && ndims >= 3), 
         "Blueprint only supports 2D cylindrical coordinates");
-    for (int i = 0; i < ndims; i ++)
+    for (int dim_id = 0; dim_id < ndims; dim_id ++)
     {
-        if (coords[i])
+        if (nullptr != coords[dim_id])
         {
-            if (datatype == DB_DOUBLE)
-            {
-                node[labels[i]].set(static_cast<double *>(coords[i]), dims[i]);
-            }
-            else if (datatype == DB_FLOAT)
-            {
-                node[labels[i]].set(static_cast<float *>(coords[i]), dims[i]);
-            }
-            else
-            {
-                CONDUIT_ERROR("Unsupported mesh data type " << datatype);
-            }
+            coordset_values[labels[dim_id]].set(static_cast<T *>(coords[dim_id]), dims[dim_id]);
         }
         else
         {
@@ -704,11 +693,11 @@ set_units_or_labels(char *units_or_labels[3],
                     Node &coordset,
                     const std::string &units_or_labels_string)
 {
-    for (int i = 0; i < ndims; i ++)
+    for (int dim_id = 0; dim_id < ndims; dim_id ++)
     {
-        if (units_or_labels[i])
+        if (units_or_labels[dim_id])
         {
-            coordset[units_or_labels_string][labels[i]] = units_or_labels[i];
+            coordset[units_or_labels_string][labels[dim_id]] = units_or_labels[dim_id];
         }
         else
         {
@@ -727,7 +716,7 @@ add_sizes_and_offsets(DBzonelist *zones,
     int offset = 0;
     for (int i = 0; i < zones->nshapes; ++i)
     {
-        int shapecnt = zones->shapecnt[i];
+        const int shapecnt = zones->shapecnt[i];
         // there could be more than one shape
         for (int j = 0; j < shapecnt; j ++)
         {
@@ -1107,38 +1096,41 @@ read_dims_from_mesh_info(const Node &mesh_info_for_topo, int *dims)
 
 //-----------------------------------------------------------------------------
 // add complete topology and coordset entries to a mesh domain
-void
+bool
 read_ucdmesh_domain(DBucdmesh *ucdmesh_ptr,
                     const std::string &mesh_name,
                     const std::string &multimesh_name,
                     Node &mesh_domain)
 {
+    Node intermediate_coordset, intermediate_topo;
+
     if (ucdmesh_ptr->zones)
     {
-        CONDUIT_ASSERT(!ucdmesh_ptr->phzones,
-                       "Both phzones and zones are defined in mesh "
-                           << mesh_name);
+        if (ucdmesh_ptr->phzones)
+        {
+            CONDUIT_INFO("Both phzones and zones are defined in mesh " << mesh_name);
+            return false;
+        }
         detail::add_shape_info(ucdmesh_ptr->zones,
-                               mesh_domain["topologies"][multimesh_name]["elements"]);
+                               intermediate_topo["elements"]);
     }
     else if (ucdmesh_ptr->phzones)
     {
         // TODO implement support for phzones
-        CONDUIT_ERROR("Silo ucdmesh phzones not yet supported");
-        mesh_domain["topologies"][multimesh_name]["elements"]["shape"] =
+        CONDUIT_INFO("Silo ucdmesh phzones not yet supported");
+        return false;
+        intermediate_topo["elements"]["shape"] =
             detail::shapetype_to_string(DB_ZONETYPE_POLYHEDRON);
     }
     else
     {
-        CONDUIT_ERROR("Neither phzones nor zones is defined in mesh "
-                      << mesh_name);
+        CONDUIT_INFO("Neither phzones nor zones is defined in mesh " << mesh_name);
+        return false;
     }
 
-    Node &coordset = mesh_domain["coordsets"][multimesh_name];
-
-    mesh_domain["topologies"][multimesh_name]["coordset"] = multimesh_name;
-    mesh_domain["topologies"][multimesh_name]["type"] = "unstructured";
-    coordset["type"] = "explicit";
+    intermediate_topo["coordset"] = multimesh_name;
+    intermediate_topo["type"] = "unstructured";
+    intermediate_coordset["type"] = "explicit";
 
     // explicit coords
     const int dims[] = {ucdmesh_ptr->nnodes,
@@ -1147,27 +1139,55 @@ read_ucdmesh_domain(DBucdmesh *ucdmesh_ptr,
 
     const int ndims = ucdmesh_ptr->ndims;
 
+    if (ucdmesh_ptr->datatype != DB_DOUBLE || ucdmesh_ptr->datatype != DB_FLOAT)
+    {
+        CONDUIT_INFO("Unsupported mesh data type " << ucdmesh_ptr->datatype);
+        return false;
+    }
+
     std::vector<const char *> labels;
+    if (ucdmesh_ptr->datatype == DB_DOUBLE)
+    {
+        detail::copy_point_coords<double>(ucdmesh_ptr->coords,
+                                          ndims,
+                                          dims,
+                                          ucdmesh_ptr->coord_sys,
+                                          labels,
+                                          intermediate_coordset["values"]);
+    }
+    else
+    {
+        // we have guaranteed that this must be float
+        detail::copy_point_coords<float>(ucdmesh_ptr->coords,
+                                         ndims,
+                                         dims,
+                                         ucdmesh_ptr->coord_sys,
+                                         labels,
+                                         intermediate_coordset["values"]);
+    }
 
-    detail::copy_point_coords(ucdmesh_ptr->datatype,
-                              ucdmesh_ptr->coords,
-                              ndims,
-                              dims,
-                              ucdmesh_ptr->coord_sys,
-                              labels,
-                              coordset["values"]);
+    detail::set_units_or_labels(ucdmesh_ptr->units, ndims, labels, intermediate_coordset, "units");
+    detail::set_units_or_labels(ucdmesh_ptr->labels, ndims, labels, intermediate_coordset, "labels");
 
-    detail::set_units_or_labels(ucdmesh_ptr->units, ndims, labels, coordset, "units");
-    detail::set_units_or_labels(ucdmesh_ptr->labels, ndims, labels, coordset, "labels");
+    // TODO the following statement should be the gold standard for everything that is
+    // read from silo. Make it happen.
+    // I don't want to create these entries in the output unless no errors have 
+    // been encountered. Errors will trigger an early return.
+    mesh_domain["topologies"][multimesh_name].move(intermediate_topo);
+    mesh_domain["coordsets"][multimesh_name].move(intermediate_coordset);
+
+    return true;
 }
 
 //-----------------------------------------------------------------------------
 // add complete topology and coordset entries to a mesh domain
-void
+bool
 read_quadmesh_domain(DBquadmesh *quadmesh_ptr,
                      const std::string &multimesh_name,
                      Node &mesh_domain)
 {
+    Node intermediate_coordset, intermediate_topo;
+    
     const int coordtype{quadmesh_ptr->coordtype};
     int ndims{quadmesh_ptr->ndims};
     int dims[] = {quadmesh_ptr->nnodes,
@@ -1175,15 +1195,13 @@ read_quadmesh_domain(DBquadmesh *quadmesh_ptr,
                   quadmesh_ptr->nnodes};
     int *real_dims = dims;
 
-    Node &topo_out = mesh_domain["topologies"][multimesh_name];
-    Node &coords_out = mesh_domain["coordsets"][multimesh_name];
-
     if (coordtype == DB_COLLINEAR)
     {
-        coords_out["type"] = "rectilinear";
-        topo_out["type"] = "rectilinear";
+        intermediate_coordset["type"] = "rectilinear";
+        intermediate_topo["type"] = "rectilinear";
         real_dims = quadmesh_ptr->dims;
 
+        // TODO these should trigger skips not errors
         CONDUIT_ASSERT(detail::check_using_whole_coordset(quadmesh_ptr->dims, 
                                                           quadmesh_ptr->min_index,
                                                           quadmesh_ptr->max_index,
@@ -1198,8 +1216,8 @@ read_quadmesh_domain(DBquadmesh *quadmesh_ptr,
     }
     else if (coordtype == DB_NONCOLLINEAR)
     {
-        coords_out["type"] = "explicit";
-        topo_out["type"] = "structured";
+        intermediate_coordset["type"] = "explicit";
+        intermediate_topo["type"] = "structured";
 
         const std::string irregular_striding_err_msg = "Structured (noncollinear)"
             " column major quadmesh " + multimesh_name + " has irregular striding,"
@@ -1211,14 +1229,14 @@ read_quadmesh_domain(DBquadmesh *quadmesh_ptr,
                                                ndims))
         {
             // We subtract 1 from each of these because in silo these dims are node dims, not element dims
-            topo_out["elements/dims/i"] = quadmesh_ptr->dims[0] - 1;
+            intermediate_topo["elements/dims/i"] = quadmesh_ptr->dims[0] - 1;
             if (ndims > 1)
             {
-                topo_out["elements/dims/j"] = quadmesh_ptr->dims[1] - 1;
+                intermediate_topo["elements/dims/j"] = quadmesh_ptr->dims[1] - 1;
             }
             if (ndims > 2)
             {
-                topo_out["elements/dims/k"] = quadmesh_ptr->dims[2] - 1;
+                intermediate_topo["elements/dims/k"] = quadmesh_ptr->dims[2] - 1;
             }
 
             // row major case requires nothing else
@@ -1231,28 +1249,28 @@ read_quadmesh_domain(DBquadmesh *quadmesh_ptr,
                                                   irregular_striding_err_msg,
                                                   quadmesh_ptr->stride,
                                                   quadmesh_ptr->dims);
-                topo_out["elements/dims/strides"].set(strides, ndims);
+                intermediate_topo["elements/dims/strides"].set(strides, ndims);
             }
         }
         else
         {
             // strided structured case
 
-            topo_out["elements/dims/i"] = quadmesh_ptr->max_index[0] - quadmesh_ptr->min_index[0];
+            intermediate_topo["elements/dims/i"] = quadmesh_ptr->max_index[0] - quadmesh_ptr->min_index[0];
             if (ndims > 1)
             {
-                topo_out["elements/dims/j"] = quadmesh_ptr->max_index[1] - quadmesh_ptr->min_index[1];
+                intermediate_topo["elements/dims/j"] = quadmesh_ptr->max_index[1] - quadmesh_ptr->min_index[1];
             }
             if (ndims > 2)
             {
-                topo_out["elements/dims/k"] = quadmesh_ptr->max_index[2] - quadmesh_ptr->min_index[2];
+                intermediate_topo["elements/dims/k"] = quadmesh_ptr->max_index[2] - quadmesh_ptr->min_index[2];
             }
 
-            topo_out["elements/dims/offsets"].set(quadmesh_ptr->min_index, ndims);
+            intermediate_topo["elements/dims/offsets"].set(quadmesh_ptr->min_index, ndims);
 
             if (quadmesh_ptr->major_order == DB_ROWMAJOR)
             {
-                topo_out["elements/dims/strides"].set(quadmesh_ptr->stride, ndims);
+                intermediate_topo["elements/dims/strides"].set(quadmesh_ptr->stride, ndims);
             }
             else // colmajor
             {
@@ -1262,7 +1280,7 @@ read_quadmesh_domain(DBquadmesh *quadmesh_ptr,
                                                   irregular_striding_err_msg,
                                                   quadmesh_ptr->stride,
                                                   quadmesh_ptr->dims);
-                topo_out["elements/dims/strides"].set(actual_strides, ndims);
+                intermediate_topo["elements/dims/strides"].set(actual_strides, ndims);
             }
         }
     }
@@ -1271,14 +1289,14 @@ read_quadmesh_domain(DBquadmesh *quadmesh_ptr,
         CONDUIT_ERROR("Undefined coordtype in " << coordtype);
     }
 
-    topo_out["coordset"] = multimesh_name;
+    intermediate_topo["coordset"] = multimesh_name;
 
     // If the origin is not the default value, then we need to specify it
     if (quadmesh_ptr->base_index[0] != 0 && 
         quadmesh_ptr->base_index[1] != 0 && 
         quadmesh_ptr->base_index[2] != 0)
     {
-        Node &origin = topo_out["elements"]["origin"];
+        Node &origin = intermediate_topo["elements"]["origin"];
         origin["i"] = quadmesh_ptr->base_index[0];
         if (ndims > 1)
         {
@@ -1290,49 +1308,98 @@ read_quadmesh_domain(DBquadmesh *quadmesh_ptr,
         }
     }
 
+    if (quadmesh_ptr->datatype != DB_DOUBLE || quadmesh_ptr->datatype != DB_FLOAT)
+    {
+        CONDUIT_INFO("Unsupported mesh data type " << quadmesh_ptr->datatype);
+        return false;
+    }
+
     std::vector<const char *> labels;
+    if (quadmesh_ptr->datatype == DB_DOUBLE)
+    {
+        detail::copy_point_coords<double>(quadmesh_ptr->coords,
+                                          ndims,
+                                          real_dims,
+                                          quadmesh_ptr->coord_sys,
+                                          labels,
+                                          intermediate_coordset["values"]);
+    }
+    else
+    {
+        // we have guaranteed that this must be float
+        detail::copy_point_coords<float>(quadmesh_ptr->coords,
+                                         ndims,
+                                         real_dims,
+                                         quadmesh_ptr->coord_sys,
+                                         labels,
+                                         intermediate_coordset["values"]);
+    }
 
-    detail::copy_point_coords(quadmesh_ptr->datatype,
-                              quadmesh_ptr->coords,
-                              ndims,
-                              real_dims,
-                              quadmesh_ptr->coord_sys,
-                              labels,
-                              coords_out["values"]);
+    detail::set_units_or_labels(quadmesh_ptr->units, ndims, labels, intermediate_coordset, "units");
+    detail::set_units_or_labels(quadmesh_ptr->labels, ndims, labels, intermediate_coordset, "labels");
 
-    detail::set_units_or_labels(quadmesh_ptr->units, ndims, labels, coords_out, "units");
-    detail::set_units_or_labels(quadmesh_ptr->labels, ndims, labels, coords_out, "labels");
+    // I don't want to create these entries in the output unless no errors have 
+    // been encountered. Errors will trigger an early return.
+    mesh_domain["topologies"][multimesh_name].move(intermediate_topo);
+    mesh_domain["coordsets"][multimesh_name].move(intermediate_coordset);
+
+    return true;
 }
 
 //-----------------------------------------------------------------------------
 // add complete topology and coordset entries to a mesh domain
-void
+bool
 read_pointmesh_domain(DBpointmesh *pointmesh_ptr,
                       const std::string &multimesh_name,
                       Node &mesh_domain)
 {
-    Node &coordset = mesh_domain["coordsets"][multimesh_name];
+    Node intermediate_coordset, intermediate_topo;
 
-    mesh_domain["topologies"][multimesh_name]["type"] = "points";
-    mesh_domain["topologies"][multimesh_name]["coordset"] = multimesh_name;
-    coordset["type"] = "explicit";
+    intermediate_topo["type"] = "points";
+    intermediate_topo["coordset"] = multimesh_name;
+    intermediate_coordset["type"] = "explicit";
     const int dims[] = {pointmesh_ptr->nels,
                         pointmesh_ptr->nels,
                         pointmesh_ptr->nels};
 
     const int ndims = pointmesh_ptr->ndims;
+
+    if (pointmesh_ptr->datatype != DB_DOUBLE || pointmesh_ptr->datatype != DB_FLOAT)
+    {
+        CONDUIT_INFO("Unsupported mesh data type " << pointmesh_ptr->datatype);
+        return false;
+    }
+
     std::vector<const char *> labels;
+    if (pointmesh_ptr->datatype == DB_DOUBLE)
+    {
+        detail::copy_point_coords<double>(pointmesh_ptr->coords,
+                                          ndims,
+                                          dims,
+                                          DB_CARTESIAN,
+                                          labels,
+                                          intermediate_coordset["values"]);
+    }
+    else
+    {
+        // we have guaranteed that this must be float
+        detail::copy_point_coords<float>(pointmesh_ptr->coords,
+                                         ndims,
+                                         dims,
+                                         DB_CARTESIAN,
+                                         labels,
+                                         intermediate_coordset["values"]);
+    }
 
-    detail::copy_point_coords(pointmesh_ptr->datatype,
-                              pointmesh_ptr->coords,
-                              ndims,
-                              dims,
-                              DB_CARTESIAN,
-                              labels,
-                              coordset["values"]);
+    detail::set_units_or_labels(pointmesh_ptr->units, ndims, labels, intermediate_coordset, "units");
+    detail::set_units_or_labels(pointmesh_ptr->labels, ndims, labels, intermediate_coordset, "labels");
 
-    detail::set_units_or_labels(pointmesh_ptr->units, ndims, labels, coordset, "units");
-    detail::set_units_or_labels(pointmesh_ptr->labels, ndims, labels, coordset, "labels");
+    // I don't want to create these entries in the output unless no errors have 
+    // been encountered. Errors will trigger an early return.
+    mesh_domain["topologies"][multimesh_name].move(intermediate_topo);
+    mesh_domain["coordsets"][multimesh_name].move(intermediate_coordset);
+
+    return true;
 }
 
 //-----------------------------------------------------------------------------
@@ -1366,15 +1433,18 @@ read_mesh_domain(const int meshtype,
         detail::SiloObjectWrapper<DBucdmesh, decltype(&DBFreeUcdmesh)> ucdmesh{
             DBGetUcdmesh(mesh_domain_file_to_use, mesh_name.c_str()), 
             &DBFreeUcdmesh};
-        if (!ucdmesh.getSiloObject())
+        if (! ucdmesh.getSiloObject())
         {
             // If we cannot fetch this mesh we will skip
             return false;
         }
-        read_ucdmesh_domain(ucdmesh.getSiloObject(), 
-                            mesh_name, 
-                            multimesh_name, 
-                            mesh[domain_path]);
+        if (! read_ucdmesh_domain(ucdmesh.getSiloObject(), 
+                                  mesh_name, 
+                                  multimesh_name, 
+                                  mesh[domain_path]))
+        {
+            return false;
+        }
     }
     else if (meshtype_is_quad(meshtype))
     {
@@ -1386,14 +1456,17 @@ read_mesh_domain(const int meshtype,
         detail::SiloObjectWrapper<DBquadmesh, decltype(&DBFreeQuadmesh)> quadmesh{
             DBGetQuadmesh(mesh_domain_file_to_use, mesh_name.c_str()), 
             &DBFreeQuadmesh};
-        if (!quadmesh.getSiloObject())
+        if (! quadmesh.getSiloObject())
         {
             // If we cannot fetch this mesh we will skip
             return false;
         }
-        read_quadmesh_domain(quadmesh.getSiloObject(), 
-                             multimesh_name, 
-                             mesh[domain_path]);
+        if (! read_quadmesh_domain(quadmesh.getSiloObject(), 
+                                   multimesh_name, 
+                                   mesh[domain_path]))
+        {
+            return false;
+        }
     }
     else if (meshtype == DB_POINTMESH)
     {
@@ -1405,18 +1478,22 @@ read_mesh_domain(const int meshtype,
         detail::SiloObjectWrapper<DBpointmesh, decltype(&DBFreePointmesh)> pointmesh{
             DBGetPointmesh(mesh_domain_file_to_use, mesh_name.c_str()), 
             &DBFreePointmesh};
-        if (!pointmesh.getSiloObject())
+        if (! pointmesh.getSiloObject())
         {
             // If we cannot fetch this mesh we will skip
             return false;
         }
-        read_pointmesh_domain(pointmesh.getSiloObject(), 
-                              multimesh_name, 
-                              mesh[domain_path]);
+        if (! read_pointmesh_domain(pointmesh.getSiloObject(), 
+                                    multimesh_name, 
+                                    mesh[domain_path]))
+        {
+            return false;
+        }
     }
     else
     {
-        CONDUIT_ERROR("Unsupported mesh type " << meshtype);
+        CONDUIT_INFO("Unsupported mesh type " << meshtype);
+        return false;
     }
 
     return true;
@@ -1841,6 +1918,139 @@ read_variable_domain(const int vartype,
 }
 
 //-----------------------------------------------------------------------------
+template<typename T>
+void
+read_matlist_entry(const DBmaterial* matset_ptr,
+                   const int matlist_index,
+                   std::vector<double> &volume_fractions,
+                   std::vector<int> &material_ids,
+                   std::vector<int> &sizes,
+                   std::vector<int> &offsets,
+                   int &curr_offset,
+                   std::vector<int> &field_reconstruction_recipe)
+{
+    const int matlist_entry = matset_ptr->matlist[matlist_index];
+    if (matlist_entry >= 0) // this relies on matset_ptr->allowmat0 == 0
+    {
+        // clean zone
+        // this zone has the material with mat id == matlist_entry
+        const int &mat_id = matlist_entry;
+        field_reconstruction_recipe.push_back(-1);
+        volume_fractions.push_back(1.0);
+        material_ids.push_back(mat_id);
+        sizes.push_back(1);
+        offsets.push_back(curr_offset);
+        curr_offset ++;
+    }
+    else
+    {
+        // for mixed zones, the numbers in the matlist are negated 1-indices into
+        // the silo mixed data arrays. To turn them into zero-indices, we must add
+        // 1 and negate the result. Example:
+        // indices: -1 -2 -3 -4 ...
+        // become:   0  1  2  3 ...
+
+        int mix_id = -1 * (matlist_entry + 1);
+        int curr_size = 0;
+
+        // when matset_ptr->mix_next[mix_id] is 0, we are on the last one
+        while (mix_id >= 0)
+        {
+            material_ids.push_back(matset_ptr->mix_mat[mix_id]);
+
+            // mix_vf is a void ptr so we must cast
+            volume_fractions.push_back(static_cast<T *>(matset_ptr->mix_vf)[mix_id]);
+
+            field_reconstruction_recipe.push_back(mix_id);
+
+            curr_size ++;
+            // since mix_id is a 1-index, we must subtract one
+            // this makes sure that mix_id = 0 is the last case,
+            // since it will make our mix_id == -1, which ends
+            // the while loop.
+            mix_id = matset_ptr->mix_next[mix_id] - 1;
+        }
+
+        sizes.push_back(curr_size);
+        offsets.push_back(curr_offset);
+        curr_offset += curr_size;
+    }
+}
+
+//-----------------------------------------------------------------------------
+template <typename T>
+int
+read_matlist(const DBmaterial* matset_ptr,
+             std::vector<double> &volume_fractions,
+             std::vector<int> &material_ids,
+             std::vector<int> &sizes,
+             std::vector<int> &offsets,
+             std::vector<int> &field_reconstruction_recipe)
+{
+    int curr_offset = 0;
+
+    const int nx = matset_ptr->dims[0];
+    const int ny = (matset_ptr->ndims > 1) ? matset_ptr->dims[1] : 1;
+    const int nz = (matset_ptr->ndims > 2) ? matset_ptr->dims[2] : 1;
+
+    if (matset_ptr->major_order == DB_ROWMAJOR)
+    {
+        for (int z = 0; z < nz; z ++)
+        {
+            for (int y = 0; y < ny; y ++)
+            {
+                for (int x = 0; x < nx; x ++)
+                {
+                    const int matlist_index = x + y * nx + z * nx * ny;
+                    read_matlist_entry<T>(matset_ptr,
+                                          matlist_index,
+                                          volume_fractions,
+                                          material_ids,
+                                          sizes,
+                                          offsets,
+                                          curr_offset,
+                                          field_reconstruction_recipe);
+                }
+            }
+        }
+    }
+    else // COLMAJOR
+    {
+        // I'm not convinced it is ever possible to hit this case.
+        // If you have column major mesh data, you hit the strided structured
+        // case, which (for now) forces an early return at the beginning of
+        // this function. We may reenable that case later, which requires 
+        // filtering the matset down and is potentially quite challenging.
+        // The only way you can get here I think is if you have column major
+        // material data and row major mesh data. I've never seen an example
+        // file like that so far.
+        for (int x = 0; x < nx; x ++)
+        {
+            for (int y = 0; y < ny; y ++)
+            {
+                for (int z = 0; z < nz; z ++)
+                {
+                    const int matlist_index = z + y * nz + x * nz * ny;
+                    read_matlist_entry<T>(matset_ptr,
+                                          matlist_index,
+                                          volume_fractions,
+                                          material_ids,
+                                          sizes,
+                                          offsets,
+                                          curr_offset,
+                                          field_reconstruction_recipe);
+                }
+            }
+        }
+    }
+
+    // TODO still need to find colmajor data to test this
+
+    // return num_zones
+    return nx * ny * nz;
+}
+
+//-----------------------------------------------------------------------------
 bool
 read_matset_domain(DBfile* matset_domain_file_to_use,
                    const Node &n_matset,
@@ -1912,33 +2122,46 @@ read_matset_domain(DBfile* matset_domain_file_to_use,
     }
 
     // we can only succeed here if the data is regularly strided
-    const std::string irregular_striding_err_msg = "DBmaterial " + matset_name + 
+    const std::string irregular_striding_warn_msg = "DBmaterial " + matset_name + 
         " has irregular striding, which makes it impossible to correctly convert"
         " to Blueprint.";
     if (1 == matset_ptr->ndims)
     {
-        CONDUIT_ASSERT(matset_ptr->stride[0] == 1,
-                       irregular_striding_err_msg);
+        if (matset_ptr->stride[0] != 1)
+        {
+            CONDUIT_INFO(irregular_striding_warn_msg);
+            return false;
+        }
     }
     else if (2 == matset_ptr->ndims)
     {
-        CONDUIT_ASSERT(matset_ptr->stride[0] == 1 && 
-                       matset_ptr->stride[1] == matset_ptr->dims[0],
-                       irregular_striding_err_msg);
+        if (matset_ptr->stride[0] != 1 || 
+            matset_ptr->stride[1] != matset_ptr->dims[0])
+        {
+            CONDUIT_INFO(irregular_striding_warn_msg);
+            return false;
+        }
     }
     else // (3 == matset_ptr->ndims)
     {
-        CONDUIT_ASSERT(matset_ptr->stride[0] == 1 && 
-                       matset_ptr->stride[1] == matset_ptr->dims[0] &&
-                       matset_ptr->stride[2] == matset_ptr->dims[0] * matset_ptr->dims[1],
-                       irregular_striding_err_msg);
+        if (matset_ptr->stride[0] != 1 || 
+            matset_ptr->stride[1] != matset_ptr->dims[0] ||
+            matset_ptr->stride[2] != matset_ptr->dims[0] * matset_ptr->dims[1])
+        {
+            CONDUIT_INFO(irregular_striding_warn_msg);
+            return false;
+        }
     }
 
-    CONDUIT_ASSERT(matset_ptr->allowmat0 == 0,
-        "Material " << matset_name << " for multimesh " << multimesh_name << 
-        " may contain zones with no materials defined on them." << 
-        " We currently do not support this case. Either contact a Conduit developer" <<
-        " or disable DBOPT_ALLOWMAT0 in calls to DBPutMaterial().");
+    if (matset_ptr->allowmat0 != 0)
+    {
+        CONDUIT_INFO(
+            "Material " << matset_name << " for multimesh " << multimesh_name << 
+            " may contain zones with no materials defined on them." << 
+            " We currently do not support this case. Either contact a Conduit developer" <<
+            " or disable DBOPT_ALLOWMAT0 in calls to DBPutMaterial().");
+        return false;
+    }
 
     // create an intermediate matset, in case we need to transform it later
     Node intermediate_matset;
@@ -1956,8 +2179,12 @@ read_matset_domain(DBfile* matset_domain_file_to_use,
     }
     else
     {
-        CONDUIT_ASSERT(matset_ptr->nmat > 0, "Number of materials is non-positive for material "
-            << matset_name << " for multimesh " << multimesh_name);
+        if (matset_ptr->nmat <= 0)
+        {
+            CONDUIT_INFO("Number of materials is non-positive for material "
+                         << matset_name << " for multimesh " << multimesh_name);
+            return false;
+        }
         for (int i = 0; i < matset_ptr->nmat; i ++)
         {
             int matno;
@@ -1983,11 +2210,17 @@ read_matset_domain(DBfile* matset_domain_file_to_use,
         }
     }
 
+    if (matset_ptr->datatype != DB_DOUBLE || matset_ptr->datatype != DB_FLOAT)
+    {
+        CONDUIT_INFO("Volume fractions must be doubles or floats." <<
+                     "Unknown type for volume fractions for " << matset_name);
+        return false;
+    }
+
     std::vector<double> volume_fractions;
     std::vector<int> material_ids;
     std::vector<int> sizes;
     std::vector<int> offsets;
-    int curr_offset = 0;
 
     // The field reconstruction recipe is an array that will help us to
     // reconstruct the blueprint matset_values for any fields that use
@@ -1996,111 +2229,31 @@ read_matset_domain(DBfile* matset_domain_file_to_use,
     // supposed to read from the mixvals from silo.
     std::vector<int> field_reconstruction_recipe;
 
-    auto read_matlist_entry = [&](const int matlist_index)
+    const int num_zones = [&]()
     {
-        const int matlist_entry = matset_ptr->matlist[matlist_index];
-        if (matlist_entry >= 0) // this relies on matset_ptr->allowmat0 == 0
+        if (matset_ptr->datatype == DB_DOUBLE)
         {
-            // clean zone
-            // this zone has the material with mat id == matlist_entry
-            const int &mat_id = matlist_entry;
-            field_reconstruction_recipe.push_back(-1);
-            volume_fractions.push_back(1.0);
-            material_ids.push_back(mat_id);
-            sizes.push_back(1);
-            offsets.push_back(curr_offset);
-            curr_offset ++;
+            return read_matlist<double>(matset_ptr,
+                                        volume_fractions,
+                                        material_ids,
+                                        sizes,
+                                        offsets,
+                                        field_reconstruction_recipe);
         }
         else
         {
-            // for mixed zones, the numbers in the matlist are negated 1-indices into
-            // the silo mixed data arrays. To turn them into zero-indices, we must add
-            // 1 and negate the result. Example:
-            // indices: -1 -2 -3 -4 ...
-            // become:   0  1  2  3 ...
-
-            int mix_id = -1 * (matlist_entry + 1);
-            int curr_size = 0;
-
-            // when matset_ptr->mix_next[mix_id] is 0, we are on the last one
-            while (mix_id >= 0)
-            {
-                material_ids.push_back(matset_ptr->mix_mat[mix_id]);
-
-                // mix_vf is a void ptr so we must cast
-                if (matset_ptr->datatype == DB_DOUBLE)
-                {
-                    volume_fractions.push_back(static_cast<double *>(matset_ptr->mix_vf)[mix_id]);
-                }
-                else if (matset_ptr->datatype == DB_FLOAT)
-                {
-                    volume_fractions.push_back(static_cast<float *>(matset_ptr->mix_vf)[mix_id]);
-                }
-                else
-                {
-                    CONDUIT_ERROR("Volume fractions must be doubles or floats." <<
-                        "Unknown type for volume fractions for " << matset_name);
-                }
-                field_reconstruction_recipe.push_back(mix_id);
-
-                curr_size ++;
-                // since mix_id is a 1-index, we must subtract one
-                // this makes sure that mix_id = 0 is the last case,
-                // since it will make our mix_id == -1, which ends
-                // the while loop.
-                mix_id = matset_ptr->mix_next[mix_id] - 1;
-            }
-
-            sizes.push_back(curr_size);
-            offsets.push_back(curr_offset);
-            curr_offset += curr_size;
+            // we have verified up above that this is a float
+            return read_matlist<float>(matset_ptr,
+                                       volume_fractions,
+                                       material_ids,
+                                       sizes,
+                                       offsets,
+                                       field_reconstruction_recipe);
         }
-    };
-
-    const int nx = matset_ptr->dims[0];
-    const int ny = (matset_ptr->ndims > 1) ? matset_ptr->dims[1] : 1;
-    const int nz = (matset_ptr->ndims > 2) ? matset_ptr->dims[2] : 1;
-
-    if (matset_ptr->major_order == DB_ROWMAJOR)
-    {
-        for (int z = 0; z < nz; z ++)
-        {
-            for (int y = 0; y < ny; y ++)
-            {
-                for (int x = 0; x < nx; x ++)
-                {
-                    read_matlist_entry(x + y * nx + z * nx * ny);
-                }
-            }
-        }
-    }
-    else // COLMAJOR
-    {
-        // I'm not convinced it is ever possible to hit this case.
-        // If you have column major mesh data, you hit the strided structured
-        // case, which (for now) forces an early return at the beginning of
-        // this function. We may reenable that case later, which requires 
-        // filtering the matset down and is potentially quite challenging.
-        // The only way you can get here I think is if you have column major
-        // material data and row major mesh data. I've never seen an example
-        // file like that so far.
-        for (int x = 0; x < nx; x ++)
-        {
-            for (int y = 0; y < ny; y ++)
-            {
-                for (int z = 0; z < nz; z ++)
-                {
-                    read_matlist_entry(z + y * nz + x * nz * ny);
-                }
-            }
-        }
-    }
-
-    // TODO still need to find colmajor data to test this
+    }();
 
     // we need to save silo material information for use when reading specsets
-    const int nzones = nx * ny * nz;
-    silo_material["matlist"].set(matset_ptr->matlist, nzones);
+    silo_material["matlist"].set(matset_ptr->matlist, num_zones);
     silo_material["mix_next"].set(matset_ptr->mix_next, matset_ptr->mixlen);
     silo_material["mix_mat"].set(matset_ptr->mix_mat, matset_ptr->mixlen);
     silo_material["matnos"].set(matset_ptr->matnos, matset_ptr->nmat);
@@ -2749,13 +2902,12 @@ read_multimesh(DBfile *dbfile,
 }
 
 //-----------------------------------------------------------------------------
-bool
+void
 read_multivars(DBtoc *toc,
                DBfile *dbfile,
                const std::string &multimesh_name,
                const int &nblocks,
-               Node &root_node,
-               std::ostringstream &error_oss)
+               Node &root_node)
 {
     // iterate thru the multivars and find the ones that are associated with
     // the chosen multimesh
@@ -2767,8 +2919,8 @@ read_multivars(DBtoc *toc,
             &DBFreeMultivar};
         if (! multivar.getSiloObject())
         {
-            error_oss << "Error opening multivar " << multivar_name;
-            return false;
+            CONDUIT_INFO("Error opening MultiVar " << multivar_name << ". Skipping.");
+            continue;
         }
 
         // does this variable use nameschemes?
@@ -2776,8 +2928,8 @@ read_multivars(DBtoc *toc,
         if (!multivar.getSiloObject()->varnames || !multivar.getSiloObject()->vartypes)
         {
             nameschemes = true;
-            error_oss << "multivar " << multivar_name << " uses nameschemes which are not yet supported.";
-            return false;
+            CONDUIT_INFO("MultiVar " << multivar_name << " uses nameschemes which are not yet supported. Skipping.");
+            continue;
         }
 
         // is this multivar associated with a multimesh?
@@ -2804,7 +2956,7 @@ read_multivars(DBtoc *toc,
         if (! multimesh_assoc)
         {
             CONDUIT_INFO("MultiVar " << multivar_name << " is not associated " <<
-                "with a multimesh. Skipping.");
+                         "with a multimesh. Skipping.");
             continue;
         }
 
@@ -2835,18 +2987,15 @@ read_multivars(DBtoc *toc,
             }
         }
     }
-
-    return true;
 }
 
 //-----------------------------------------------------------------------------
-bool
+void
 read_multimats(DBtoc *toc,
                DBfile *dbfile,
                const std::string &multimesh_name,
                const int nblocks,
-               Node &root_node,
-               std::ostringstream &error_oss)
+               Node &root_node)
 {
     // iterate thru the multimats and find the ones that are associated with
     // the chosen multimesh
@@ -2859,8 +3008,8 @@ read_multimats(DBtoc *toc,
         DBmultimat *multimat_ptr = multimat_obj.getSiloObject();
         if (! multimat_ptr)
         {
-            error_oss << "Error opening multimat " << multimat_name;
-            return false;
+            CONDUIT_INFO("Error opening MultiMat " << multimat_name << ". Skipping.");
+            continue;
         }
 
         // does this variable use nameschemes?
@@ -2868,8 +3017,8 @@ read_multimats(DBtoc *toc,
         if (!multimat_ptr->matnames)
         {
             nameschemes = true;
-            error_oss << "multimat " << multimat_name << " uses nameschemes which are not yet supported.";
-            return false;
+            CONDUIT_INFO("MultiMat " << multimat_name << " uses nameschemes which are not yet supported. Skipping.");
+            continue;
         }
 
         // is this multimat associated with a multimesh?
@@ -2896,18 +3045,18 @@ read_multimats(DBtoc *toc,
         if (! multimesh_assoc)
         {
             CONDUIT_INFO("MultiMaterial " << multimat_name << " is not associated " <<
-                "with a multimesh. Skipping.");
+                         "with a multimesh. Skipping.");
             continue;
         }
 
         if (multimat_ptr->allowmat0 != 0)
         {
             CONDUIT_INFO("MultiMaterial " << multimat_name << 
-                " for multimesh " << multimesh_name << 
-                " may contain zones with no materials defined on them." << 
-                " We currently do not support this case. Either contact a Conduit developer" <<
-                " or disable DBOPT_ALLOWMAT0 in calls to DBPutMaterial()." <<
-                " Skipping this MultiMaterial.");
+                         " for multimesh " << multimesh_name << 
+                         " may contain zones with no materials defined on them." << 
+                         " We currently do not support this case. Either contact a Conduit developer" <<
+                         " or disable DBOPT_ALLOWMAT0 in calls to DBPutMaterial()." <<
+                         " Skipping this MultiMaterial.");
             continue;
         }
 
@@ -2959,18 +3108,15 @@ read_multimats(DBtoc *toc,
             }
         }
     }
-
-    return true;
 }
 
 //-----------------------------------------------------------------------------
-bool
+void
 read_multimatspecs(DBtoc *toc,
                    DBfile *dbfile,
                    const std::string &multimesh_name,
                    const int nblocks,
-                   Node &root_node,
-                   std::ostringstream &error_oss)
+                   Node &root_node)
 {
     // iterate thru the multimatspecs and find the ones that are associated with
     // the chosen multimesh
@@ -2983,8 +3129,8 @@ read_multimatspecs(DBtoc *toc,
         DBmultimatspecies *multimatspec_ptr = multimatspec_obj.getSiloObject();
         if (! multimatspec_ptr)
         {
-            error_oss << "Error opening multimatspecies " << multimatspec_name;
-            return false;
+            CONDUIT_INFO("Error opening MultiMatspecies " << multimatspec_name << ". Skipping.");
+            continue;
         }
 
         // does this variable use nameschemes?
@@ -2992,8 +3138,8 @@ read_multimatspecs(DBtoc *toc,
         if (!multimatspec_ptr->specnames)
         {
             nameschemes = true;
-            error_oss << "multimatspecies " << multimatspec_name << " uses nameschemes which are not yet supported.";
-            return false;
+            CONDUIT_INFO("MultiMatspecies " << multimatspec_name << " uses nameschemes which are not yet supported. Skipping.");
+            continue;
         }
 
         if (multimatspec_ptr->nspec != nblocks)
@@ -3052,8 +3198,6 @@ read_multimatspecs(DBtoc *toc,
             }
         }
     }
-
-    return true;
 }
 
 //-----------------------------------------------------------------------------
@@ -3357,34 +3501,21 @@ read_root_silo_index(const std::string &root_file_path,
         {
             return false;
         }
-        if (! read_multivars(toc,
-                             dbfile.getSiloObject(),
-                             mesh_name_to_read,
-                             nblocks,
-                             root_node,
-                             error_oss))
-        {
-            return false;
-        }
-        if (! read_multimats(toc,
-                             dbfile.getSiloObject(),
-                             mesh_name_to_read,
-                             nblocks,
-                             root_node,
-                             error_oss))
-        {
-            return false;
-        }
-        if (! read_multimatspecs(toc,
-                                 dbfile.getSiloObject(),
-                                 mesh_name_to_read,
-                                 nblocks,
-                                 root_node,
-                                 error_oss))
-        {
-            return false;
-        }
-
+        read_multivars(toc,
+                       dbfile.getSiloObject(),
+                       mesh_name_to_read,
+                       nblocks,
+                       root_node);
+        read_multimats(toc,
+                       dbfile.getSiloObject(),
+                       mesh_name_to_read,
+                       nblocks,
+                       root_node);
+        read_multimatspecs(toc,
+                           dbfile.getSiloObject(),
+                           mesh_name_to_read,
+                           nblocks,
+                           root_node);
         // overlink-specific
         read_var_attributes(dbfile.getSiloObject(),
                             mesh_name_to_read,
@@ -5738,6 +5869,8 @@ void silo_mesh_write(DBfile *dbfile,
                      const std::map<std::string, std::pair<std::string, std::string>> &ovl_specset_names,
                      Node &local_type_domain_info)
 {
+    // TODO audit errors and find places we can skip instead of erroring
+
     int silo_error = 0;
     char silo_prev_dir[256];
     if (!silo_obj_path.empty())

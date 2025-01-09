@@ -36,15 +36,10 @@ TEST(conduit_relay_io_silo, conduit_silo_cold_storage)
     EXPECT_EQ(n["b"].as_uint32(), b_val);
     EXPECT_EQ(n["c"].as_uint32(), c_val);
 
-    n.print();
-
     io::silo_write(n,"tout_cold_storage_test.silo:myobj");
 
     Node n_load;
     io::silo_read("tout_cold_storage_test.silo:myobj",n_load);
-
-    std::cout << "round trip" << std::endl;
-    n_load.print();
 
     EXPECT_EQ(n_load["a"].as_uint32(), a_val);
     EXPECT_EQ(n_load["b"].as_uint32(), b_val);
@@ -91,6 +86,7 @@ TEST(conduit_relay_io_silo, round_trip_basic)
         std::make_pair("hexs", "3"),
         std::make_pair("wedges", "3"),
         std::make_pair("pyramids", "3"),
+        // TODO
         // std::make_pair("polyhedra", "3")
     };
     for (int i = 0; i < mesh_types.size(); ++i)
@@ -139,7 +135,7 @@ TEST(conduit_relay_io_silo, round_trip_avoid_name_collisions)
     save_mesh["specsets"]["specset"]["matset"].set("matset");
 
     const std::string basename = "silo_round_trip_avoid_name_collisions";
-    const std::string filename = basename + ".cycle_000100.root";;
+    const std::string filename = basename + ".cycle_000100.root";
 
     Node read_opts;
     read_opts["matset_style"] = "multi_buffer_full";
@@ -565,14 +561,13 @@ TEST(conduit_relay_io_silo, round_trip_grid_adjset)
 TEST(conduit_relay_io_silo, round_trip_specsets)
 {
     Node save_mesh, load_mesh, info;
-    // TODO do 10 x 10 ... why? I guess that would be good
-    blueprint::mesh::examples::misc("specsets", 3, 3, 1, save_mesh);
+    blueprint::mesh::examples::misc("specsets", 10, 10, 1, save_mesh);
     save_mesh["matsets"].rename_child("mesh", "matset");
     save_mesh["specsets"].rename_child("mesh", "specset");
     save_mesh["specsets"]["specset"]["matset"].set("matset");
 
     const std::string basename = "silo_round_trip_specsets";
-    const std::string filename = basename + ".cycle_000100.root";;
+    const std::string filename = basename + ".cycle_000100.root";
 
     Node read_opts;
     read_opts["matset_style"] = "multi_buffer_full";
@@ -2035,7 +2030,7 @@ TEST(conduit_relay_io_silo, read_silo)
         {
             remove_path_if_exists(out_name + "_write_overlink");
             write_opts["file_style"] = "overlink";
-            write_opts["ovl_topo_name"] = meshname; // TODO do I even need this
+            write_opts["ovl_topo_name"] = meshname;
             io::silo::save_mesh(load_mesh, out_name + "_write_overlink", write_opts);
         }
     }
@@ -2082,7 +2077,7 @@ TEST(conduit_relay_io_silo, read_simple_silo)
             {
                 remove_path_if_exists(out_name + "_write_overlink");
                 write_opts["file_style"] = "overlink";
-                write_opts["ovl_topo_name"] = "MMESH"; // TODO do I even need this
+                write_opts["ovl_topo_name"] = "MMESH";
                 io::silo::save_mesh(load_mesh, out_name + "_write_overlink", write_opts);
             }
         }
@@ -2096,12 +2091,12 @@ TEST(conduit_relay_io_silo, read_fake_overlink)
     const std::vector<std::vector<std::string>> file_info = {
      // {"ev_0_0_100",              "OvlTop", ".silo", ""     }, // test default case
      // {"ev_0_0_100",              "OvlTop", ".silo", "MMESH"},
-        // uncomment once silo ucdmesh phzones are supported
+        // TODO uncomment once silo ucdmesh phzones are supported
         {"hl18spec",                "OvlTop", ".silo", ""     }, // test default case
         {"hl18spec",                "OvlTop", ".silo", "MMESH"},
      // {"regrovl_qh_1000_10001_4", "OvlTop", ".silo", ""     }, // test default case
      // {"regrovl_qh_1000_10001_4", "OvlTop", ".silo", "MMESH"},
-        // uncomment once silo ucdmesh phzones are supported
+        // TODO uncomment once silo ucdmesh phzones are supported
         {"utpyr4",                  "OvlTop", ".silo", ""     }, // test default case
         {"utpyr4",                  "OvlTop", ".silo", "MMESH"},
     };
@@ -2258,14 +2253,10 @@ TEST(conduit_relay_io_silo, read_overlink_directly)
     }
 }
 
-// TODO add tests for...
-//  - polytopal meshes once they are supported
-
-// TODO add tetra8 and c36_m5 to all the overlink i/o tests
+// TODO add tests for polytopal meshes once they are supported
 
 // TODO somewhere I need to error on overlink when there are different var or mesh types across domains
 
-// TODO add tests for cube20b and hl18spec (new valid overlink files with species)
-// TODO make sure all overlink files are being used in tests
-
 // TODO exception tests?
+
+// TODO specset overlink test
