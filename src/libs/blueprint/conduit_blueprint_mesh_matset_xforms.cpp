@@ -1554,7 +1554,6 @@ to_silo(const conduit::Node &specset,
         CONDUIT_ERROR("blueprint::mesh::specset::to_silo passed matset node "
                       "must be a valid matset tree or a valid intermediate silo "
                       "representation of a matset.");
-        // TODO well, not entirely true...
     }
 
     // need to check if passed matset is already in the silo rep
@@ -1639,6 +1638,9 @@ to_silo(const conduit::Node &specset,
     // to avoid writing unneeded data
     // that could be expensive though
 
+    // The function silo_write_specset() in conduit_relay_io_silo.cpp
+    // depends on this being a float64. If we change this here,
+    // we must also change it there.
     std::vector<float64> species_mf;
     
     // need to iterate across all species for all materials at once
@@ -1696,12 +1698,15 @@ to_silo(const conduit::Node &specset,
         // So if mat0 has 2 species and mat1 has 3 species, then
         // the 1-index start of mat2 will be 2 + 3 + 1 = 6.
 
-        int sum = 1;
-        for (index_t i = 0; i < mat_index; i ++)
+        const int local_index = [&]()
         {
-            sum += nmatspec[i];
-        }
-        const int &local_index = sum;
+            int sum = 1;
+            for (index_t i = 0; i < mat_index; i ++)
+            {
+                sum += nmatspec[i];
+            }
+            return sum;
+        }();
 
         // we save the final index for this zone
         return outer_index + local_index;
