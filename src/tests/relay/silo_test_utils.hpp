@@ -80,8 +80,8 @@ silo_name_changer(const std::string &mmesh_name,
 
             old_to_new_names[topo_name] = new_topo_name;
 
-            std::string coordset_name = n_topo["coordset"].as_string();
-            std::string new_coordset_name = mmesh_name + "_" + topo_name;
+            const std::string coordset_name = n_topo["coordset"].as_string();
+            const std::string new_coordset_name = mmesh_name + "_" + topo_name;
 
             // change the coordset this topo refers to
             save_mesh["topologies"][topo_name]["coordset"].reset();
@@ -126,7 +126,7 @@ silo_name_changer(const std::string &mmesh_name,
             Node &n_matset = matset_itr.next();
             const std::string matset_name = matset_itr.name();
 
-            const std::string old_matset_name = n_matset["topology"].as_string();
+            const std::string old_topo_name = n_matset["topology"].as_string();
 
             if (old_to_new_names.find(old_matset_name) == old_to_new_names.end())
             {
@@ -135,7 +135,7 @@ silo_name_changer(const std::string &mmesh_name,
                 // But our job in this function is just to rename things, so we 
                 // will just skip.
             }
-            const std::string new_topo_name = old_to_new_names[old_matset_name];
+            const std::string new_topo_name = old_to_new_names[old_topo_name];
 
             // use new topo name
             n_matset["topology"].reset();
@@ -226,7 +226,7 @@ silo_name_changer(const std::string &mmesh_name,
         while (field_itr.has_next())
         {
             Node &n_field = field_itr.next();
-            std::string field_name = field_itr.name();
+            const std::string field_name = field_itr.name();
 
             const std::string old_topo_name = n_field["topology"].as_string();
             if (old_to_new_names.find(old_topo_name) == old_to_new_names.end())
@@ -314,8 +314,8 @@ overlink_name_changer(conduit::Node &save_mesh)
     Node &topologies = save_mesh["topologies"];
 
     // we assume only 1 child for each
-    std::string coordset_name = coordsets.children().next().name();
-    std::string topo_name = topologies.children().next().name();
+    const std::string coordset_name = coordsets.children().next().name();
+    const std::string topo_name = topologies.children().next().name();
 
     // add default labels if they don't exist already
     if (! save_mesh["coordsets"][coordset_name].has_child("labels") &&

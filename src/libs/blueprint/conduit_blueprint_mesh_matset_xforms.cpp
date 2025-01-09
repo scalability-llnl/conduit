@@ -1731,7 +1731,6 @@ to_silo(const conduit::Node &specset,
         // So if mat0 has 2 species and mat1 has 3 species, then
         // the 1-index start of mat2 will be 2 + 3 + 1 = 6.
 
-        
         const int local_index = [&]()
         {
             int sum = 1;
