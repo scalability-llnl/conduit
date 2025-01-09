@@ -2210,10 +2210,10 @@ read_matset_domain(DBfile* matset_domain_file_to_use,
         }
     }
 
-    if (matset_ptr->datatype != DB_DOUBLE || matset_ptr->datatype != DB_FLOAT)
+    if (matset_ptr->datatype != DB_DOUBLE && matset_ptr->datatype != DB_FLOAT)
     {
         CONDUIT_INFO("Volume fractions must be doubles or floats." <<
-                     "Unknown type for volume fractions for " << matset_name);
+                     " Unknown type for volume fractions for " << matset_name);
         return false;
     }
 
