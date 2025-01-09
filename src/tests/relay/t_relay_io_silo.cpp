@@ -180,7 +180,7 @@ TEST(conduit_relay_io_silo, round_trip_braid)
         // std::make_pair("mixed_2d", "2"),
         // std::make_pair("mixed", "3"),
     };
-    for (int i = 0; i < mesh_types.size(); ++i)
+    for (int i = 0; i < mesh_types.size(); i ++)
     {
         std::string dim = mesh_types[i].second;
         index_t nx = 3;
