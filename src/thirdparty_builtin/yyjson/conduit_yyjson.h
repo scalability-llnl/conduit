@@ -503,10 +503,13 @@ namespace conduit_yyjson
  * Compile Hint Begin
  *============================================================================*/
 
-/* extern "C" begin */
-#ifdef __cplusplus
-extern "C" {
-#endif
+/*==============================================================================
+ * Conduit change avoid c linkage to get namespaced symbols
+ *============================================================================*/
+// /* extern "C" begin */
+// #ifdef __cplusplus
+// extern "C" {
+// #endif
 
 /* warning suppress begin */
 #if defined(__clang__)
@@ -7946,8 +7949,11 @@ yyjson_api_inline yyjson_mut_val *unsafe_yyjson_mut_get_pointer(
 #   pragma warning(pop)
 #endif /* warning suppress end */
 
-#ifdef __cplusplus
-}
-#endif /* extern "C" end */
+/*==============================================================================
+ * Conduit change avoid c linkage to get namespaced symbols
+ *============================================================================*/
+// #ifdef __cplusplus
+// }
+// #endif /* extern "C" end */
 
 #endif /* YYJSON_H */
