@@ -9,8 +9,15 @@
 message(STATUS "Adding thirdparty lib unit tests")
 
 
-add_cpp_test(TEST t_rapidjson_smoke
-             FOLDER tests/thirdparty)
+if(ENABLE_YYJSON)
+    add_cpp_test(TEST t_yyjson_smoke
+                 SOURCES $<TARGET_OBJECTS:conduit_yyjson>
+                 FOLDER tests/thirdparty)
+else()
+    add_cpp_test(TEST t_rapidjson_smoke
+                 FOLDER tests/thirdparty)
+endif()
+
 
 add_cpp_test(TEST t_libb64_smoke
                  SOURCES $<TARGET_OBJECTS:conduit_b64>

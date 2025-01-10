@@ -4,7 +4,7 @@
 
 //-----------------------------------------------------------------------------
 ///
-/// file: conduit_node.cpp
+/// file: t_conduit_node.cpp
 ///
 //-----------------------------------------------------------------------------
 
@@ -12,8 +12,16 @@
 
 #include <iostream>
 #include "gtest/gtest.h"
-#include "conduit_json.hpp"
 using namespace conduit;
+
+#ifdef CONDUIT_USE_YYJSON
+  #include "conduit_yyjson_interface.h"
+  namespace conduit_json = conduit_yyjson;
+#else
+  #include "rapidjson/document.h"
+  #include "rapidjson/error/en.h"
+  namespace conduit_json = conduit_rapidjson;
+#endif
 
 //-----------------------------------------------------------------------------
 TEST(conduit_node, simple)

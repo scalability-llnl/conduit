@@ -66,7 +66,6 @@ set(conduit_headers
     ${CMAKE_CURRENT_BINARY_DIR}/conduit_config.h
     conduit_config.hpp
     ${CMAKE_CURRENT_BINARY_DIR}/conduit_bitwidth_style_types.h
-    conduit_json.hpp
     )
 
 #
@@ -158,6 +157,10 @@ endif()
 
 if(OPENMP_FOUND)
     list(APPEND conduit_thirdparty_libs ${conduit_blt_openmp_deps})
+endif()
+
+if(ENABLE_YYJSON)
+    list(APPEND conduit_sources $<TARGET_OBJECTS:conduit_yyjson>)
 endif()
 
 #

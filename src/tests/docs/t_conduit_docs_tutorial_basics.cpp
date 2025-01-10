@@ -15,7 +15,6 @@
 
 #include <iostream>
 #include "gtest/gtest.h"
-#include "conduit_json.hpp"
 
 using namespace conduit;
 

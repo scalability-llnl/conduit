@@ -4,19 +4,19 @@
 
 //-----------------------------------------------------------------------------
 ///
-/// file: rapidjson_smoke.cpp
+/// file: t_rapidjson_smoke.cpp
 ///
 //-----------------------------------------------------------------------------
 
-#include "conduit_json.hpp"
+#include "rapidjson/document.h"
 #include "gtest/gtest.h"
 
 //-----------------------------------------------------------------------------
-TEST(json_smoke, basic_use)
+TEST(rapidjson_smoke, basic_use)
 {
     const char json[] = "{ \"hello\" : \"world\" }";
 
-    conduit_json::Document d;
+    conduit_rapidjson::Document d;
     d.Parse<0>(json);
 
     ASSERT_STREQ(d["hello"].GetString(),"world");

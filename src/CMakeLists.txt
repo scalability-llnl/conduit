@@ -32,6 +32,7 @@ option(ENABLE_UTILS            "Build Utilities"                ON)
 option(ENABLE_DOCS             "Build conduit documentation"    ON)
 option(ENABLE_RELAY_WEBSERVER  "Build Relay Web Server Support" ON)
 
+
 option(ENABLE_COVERAGE    "Build with coverage flags"   OFF)
 
 option(ENABLE_PYTHON      "Build Python Support"        OFF)
@@ -39,6 +40,8 @@ option(ENABLE_FORTRAN     "Build Fortran Support"       OFF)
 
 option(ENABLE_MPI         "Build MPI Support"           OFF)
 option(ENABLE_OPENMP      "Build OpenMP Support"        OFF)
+
+option(ENABLE_YYJSON      "Use yyjson for JSON Parsing" ON)
 
 option(USE_SYSTEM_YYJSON "Use yyjson as a replacement for rapidjson." OFF)
 if(${USE_SYSTEM_YYJSON})

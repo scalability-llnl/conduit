@@ -8,7 +8,7 @@
 ///
 //-----------------------------------------------------------------------------
 #include "conduit_generator.hpp"
-
+#include "conduit_config.hpp"
 
 //-----------------------------------------------------------------------------
 // -- standard lib includes -- 
@@ -17,9 +17,18 @@
 #include <cstdlib>
 
 //-----------------------------------------------------------------------------
-// -- rapidjson includes -- 
+// -- json includes and namespace --
 //-----------------------------------------------------------------------------
-#include "conduit_json.hpp"
+
+#ifdef CONDUIT_USE_YYJSON
+  #include "conduit_yyjson_interface.h"
+  namespace conduit_json = conduit_yyjson;
+#else
+  #include "rapidjson/document.h"
+  #include "rapidjson/error/en.h"
+  namespace conduit_json = conduit_rapidjson;
+#endif
+
 
 //-----------------------------------------------------------------------------
 // -- libyaml includes -- 
