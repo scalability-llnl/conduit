@@ -1790,6 +1790,12 @@ to_silo(const conduit::Node &specset,
             }
             else
             {
+                // Either there are multiple species for this material or there 
+                // are none. If there are none, then the value computed here
+                // will ultimately not be used by Silo readers. There must be 
+                // a value here though even when there are no species for the
+                // material because we must have entries in the different silo
+                // species arrays for each material.
                 speclist[zone_id] = calculate_species_index(zone_id, mat_index);
             }
         }
@@ -1825,6 +1831,12 @@ to_silo(const conduit::Node &specset,
                 }
                 else
                 {
+                    // Either there are multiple species for this material or there 
+                    // are none. If there are none, then the value computed here
+                    // will ultimately not be used by Silo readers. There must be 
+                    // a value here though even when there are no species for the
+                    // material because we must have entries in the different silo
+                    // species arrays for each material.
                     mix_spec.push_back(calculate_species_index(zone_id, mat_index));
                 }
 
