@@ -1709,8 +1709,6 @@ to_silo(const conduit::Node &specset,
         }
     }
 
-    // TODO justin I left off here. plus the matmap_map stuff needs to be redone too
-
     const int nspecies_mf = static_cast<int>(species_mf.size());
 
     // get pointers to the silo material representation data
@@ -1774,9 +1772,9 @@ to_silo(const conduit::Node &specset,
     std::vector<int> mix_spec;
 
     // now we create the speclist and mix_spec arrays, traversing through the zones
-    for (int zoneId = 0; zoneId < num_zones; zoneId ++)
+    for (int zone_id = 0; zone_id < num_zones; zone_id ++)
     {
-        const int matlist_entry = silo_matlist[zoneId];
+        const int matlist_entry = silo_matlist[zone_id];
         // is this zone clean?
         if (matlist_entry >= 0) // this relies on matset_ptr->allowmat0 == 0
         {
@@ -1785,7 +1783,7 @@ to_silo(const conduit::Node &specset,
             // I can use the material number to determine which part of the speclist to index into
             const int &matno = matlist_entry;
             const int mat_index = mat_id_to_array_index[matno];
-            speclist[zoneId] = calculate_species_index(zoneId, mat_index);
+            speclist[zone_id] = calculate_species_index(zone_id, mat_index);
         }
         else
         {
@@ -1794,7 +1792,7 @@ to_silo(const conduit::Node &specset,
             // TODO isn't this value the same as the one in the silo_matlist?
             // can't we just copy it over? TODO
             // we save the negated 1-index into the mix_spec array
-            speclist[zoneId] = mix_start_index;
+            speclist[zone_id] = mix_start_index;
 
             // for mixed zones, the numbers in the matlist are negated 1-indices into
             // the silo mixed data arrays. To turn them into zero-indices, we must add
@@ -1810,7 +1808,7 @@ to_silo(const conduit::Node &specset,
                 // I can use the material number to determine which part of the speclist to index into
                 const int matno = silo_mix_mat[mix_id];
                 const int mat_index = mat_id_to_array_index[matno];
-                mix_spec.push_back(calculate_species_index(zoneId, mat_index));
+                mix_spec.push_back(calculate_species_index(zone_id, mat_index));
 
                 // since mix_id is a 1-index, we must subtract one
                 // this makes sure that mix_id = 0 is the last case,
