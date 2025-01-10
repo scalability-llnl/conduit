@@ -1,8 +1,13 @@
+// Copyright (c) Lawrence Livermore National Security, LLC and other Conduit
+// Project developers. See top-level LICENSE AND COPYRIGHT files for dates and
+// other details. No copyright assignment is required to contribute to Conduit.
 #ifndef CONDUIT_YYJSON_INTERFACE_H
 #define CONDUIT_YYJSON_INTERFACE_H
 
 #include <string>
 #include <sstream>
+// always export, we only use these interfaces at compile time.
+#define YYJSON_EXPORTS
 #include <conduit_yyjson.h>
 
 using namespace conduit_yyjson;
