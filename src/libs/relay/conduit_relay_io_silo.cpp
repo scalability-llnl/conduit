@@ -2321,23 +2321,28 @@ read_speclist_entry(const DBmatspecies* specset_ptr,
         const int &mat_id = matlist_entry;
         const std::string &matname = reverse_matmap.at(mat_id);
 
-        // read mass fractions for this material in this zone
-        const std::vector<std::string> &specnames_for_mat = matset_values[matname].child_names();
-        const int num_spec_for_mat = matset_values[matname].number_of_children();
-        // speclist_entry is a 1-index into species_mf
-        const int species_mf_index = speclist_entry - 1;
-        for (int spec_id = 0; spec_id < num_spec_for_mat; spec_id ++)
+        // if this material has species
+        if (matset_values.has_child(matname))
         {
-            const std::string &specname = specnames_for_mat[spec_id];
-            float64_array mass_fractions = matset_values[matname][specname].value();
-            // species_mf is a void ptr so we must cast
-            mass_fractions[zone_id] = static_cast<T *>(specset_ptr->species_mf)[species_mf_index + spec_id];
-        }
+            // read mass fractions for this material in this zone
+            const std::vector<std::string> &specnames_for_mat = matset_values[matname].child_names();
+            const int num_spec_for_mat = matset_values[matname].number_of_children();
+            // speclist_entry is a 1-index into species_mf
+            const int species_mf_index = speclist_entry - 1;
+            for (int spec_id = 0; spec_id < num_spec_for_mat; spec_id ++)
+            {
+                const std::string &specname = specnames_for_mat[spec_id];
+                float64_array mass_fractions = matset_values[matname][specname].value();
+                // species_mf is a void ptr so we must cast
+                mass_fractions[zone_id] = static_cast<T *>(specset_ptr->species_mf)[species_mf_index + spec_id];
+            }
 
-        // we don't have to do anything for the other materials because
-        // we used data_array fill up above to set everything to all zeros
-        // mass fractions should be zero for all species that belong to
-        // materials that are not in the zone.
+            // we don't have to do anything for the other materials because
+            // we used data_array fill up above to set everything to all zeros
+            // mass fractions should be zero for all species that belong to
+            // materials that are not in the zone.
+        }
+        // else... if this material has no species, then there is nothing to do here
     }
     else
     {
@@ -2354,18 +2359,25 @@ read_speclist_entry(const DBmatspecies* specset_ptr,
         {
             const int mat_id = silo_mix_mat[mix_id];
             const std::string &matname = reverse_matmap.at(mat_id);
-            // read mass fractions for this material in this zone
-            const std::vector<std::string> &specnames_for_mat = matset_values[matname].child_names();
-            const int num_spec_for_mat = matset_values[matname].number_of_children();
-            // mix_speclist entry is a 1-index into species_mf
-            const int species_mf_index = specset_ptr->mix_speclist[mix_id] - 1;
-            for (int spec_id = 0; spec_id < num_spec_for_mat; spec_id ++)
+
+            // if this material has species
+            if (matset_values.has_child(matname))
             {
-                const std::string &specname = specnames_for_mat[spec_id];
-                float64_array mass_fractions = matset_values[matname][specname].value();
-                // species_mf is a void ptr so we must cast
-                mass_fractions[zone_id] = static_cast<T *>(specset_ptr->species_mf)[species_mf_index + spec_id];
+                // read mass fractions for this material in this zone
+                const std::vector<std::string> &specnames_for_mat = matset_values[matname].child_names();
+                const int num_spec_for_mat = matset_values[matname].number_of_children();
+                // mix_speclist entry is a 1-index into species_mf
+                const int species_mf_index = specset_ptr->mix_speclist[mix_id] - 1;
+                for (int spec_id = 0; spec_id < num_spec_for_mat; spec_id ++)
+                {
+                    const std::string &specname = specnames_for_mat[spec_id];
+                    float64_array mass_fractions = matset_values[matname][specname].value();
+                    // species_mf is a void ptr so we must cast
+                    mass_fractions[zone_id] = static_cast<T *>(specset_ptr->species_mf)[species_mf_index + spec_id];
+                }
             }
+            // else... if this material has no species, then there is nothing to do here
+
             // since mix_id is a 1-index, we must subtract one
             // this makes sure that mix_id = 0 is the last case,
             // since it will make our mix_id == -1, which ends
@@ -2576,6 +2588,8 @@ read_specset_domain(DBfile* specset_domain_file_to_use,
             const int mat_id = silo_matnos[mat_idx];
             const std::string &matname = reverse_matmap[mat_id];
             const int num_spec_for_mat = nmatspec[mat_idx];
+            // if species are not present for a material, no entry for the material
+            // will be added to the specset
             for (int specname_id = 0; specname_id < num_spec_for_mat; specname_id ++)
             {
                 const std::string spec_name = get_spec_name(running_index + specname_id);
