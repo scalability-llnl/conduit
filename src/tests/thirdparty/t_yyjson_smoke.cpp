@@ -8,8 +8,8 @@
 ///
 //-----------------------------------------------------------------------------
 
-#include "conduit_yyjson.h"
 #include "gtest/gtest.h"
+#include "conduit_yyjson.h"
 
 using namespace conduit_yyjson;
 

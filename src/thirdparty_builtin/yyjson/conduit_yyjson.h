@@ -372,12 +372,6 @@
 #   define yyjson_api_inline static yyjson_inline
 #endif
 
-/*==============================================================================
- * BEGIN CONDUIT ADDED C++ NAMESPACE ::conduit_yyjson
- *============================================================================*/
-namespace conduit_yyjson
-{
-/*============================================================================*/
 
 /** stdint (C89 compatible) */
 #if (defined(YYJSON_HAS_STDINT_H) && YYJSON_HAS_STDINT_H) || \
@@ -547,6 +541,13 @@ namespace conduit_yyjson
 
 /** The version string of yyjson. */
 #define YYJSON_VERSION_STRING "0.10.0"
+
+/*==============================================================================
+ * BEGIN CONDUIT ADDED C++ NAMESPACE ::conduit_yyjson
+ *============================================================================*/
+namespace conduit_yyjson
+{
+/*============================================================================*/
 
 /** The version of yyjson in hex, same as `YYJSON_VERSION_HEX`. */
 yyjson_api uint32_t yyjson_version(void);
