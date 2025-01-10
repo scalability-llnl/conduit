@@ -623,7 +623,7 @@ TEST(conduit_blueprint_mesh_matset_xforms, mesh_util_to_silo_misc)
 }
 
 //-----------------------------------------------------------------------------
-TEST(conduit_blueprint_mesh_matset_xforms, mesh_util_to_silo_specset_missing_mats)
+TEST(conduit_blueprint_mesh_matset_xforms, mesh_util_to_silo_specset_edge_cases)
 {
     CONDUIT_INFO("Case 1: Missing materials and material order is reversed in the specset.");
     {
