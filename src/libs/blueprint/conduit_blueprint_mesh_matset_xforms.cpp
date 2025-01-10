@@ -1583,6 +1583,10 @@ to_silo(const conduit::Node &specset,
     }
 
     // TODO change this once we write specset converters
+    // I think the right path will be to rewrite this function using the 
+    // sparse by element (uni_buffer element_dominant) specset flavor.
+    // So we will convert all specsets to that form and then convert to silo.
+    // Should be simpler and get rid of a lot of the indexing madness.
     if (silo_matset["buffer_style"].as_string() != "multi")
     {
         CONDUIT_ERROR("TODO cannot handle uni buffer specsets");
