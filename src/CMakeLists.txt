@@ -43,11 +43,6 @@ option(ENABLE_OPENMP      "Build OpenMP Support"        OFF)
 
 option(ENABLE_YYJSON      "Use yyjson for JSON Parsing" ON)
 
-option(USE_SYSTEM_YYJSON "Use yyjson as a replacement for rapidjson." OFF)
-if(${USE_SYSTEM_YYJSON})
-    add_compile_definitions(USE_YYJSON)
-endif()
-
 # Add another option that provides extra 
 # control over conduit tests for cases where 
 # conduit is brought in as a submodule
