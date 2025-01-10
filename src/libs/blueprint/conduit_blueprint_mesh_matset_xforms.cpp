@@ -1748,6 +1748,28 @@ to_silo(const conduit::Node &specset,
             return sum;
         }();
 
+        // WARNING: this can produce indices that are out of bounds in specific cases:
+        // example:
+        //   nmatspec: [0, 2, 2, 0]
+        //   specnames: 
+        //     - "a_spec1"
+        //     - "a_spec2"
+        //     - "b_spec1"
+        //     - "b_spec2"
+        //   speclist: [1, 5, 9, -1]
+        //   nmat: 4
+        //   nspecies_mf: 16
+        //   species_mf: [0.0, 1.0, 0.0, 1.0, 0.5, 0.5, 0.0, 1.0, 0.0, 1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5]
+        //   mix_spec: [13, 15, 17]
+        //   mixlen: 3
+
+        // mix_spec has 17 at the end of the list. 17 is out of bounds for species_mf. But 17 is 
+        // the correct index given our method of calculation. The third entry in the mix_spec
+        // array corresponds to a material circle_c which is present in the zone but has no
+        // species. If circle_c had species, then 17 would be the right index for it.
+        // I don't think downstream silo data consumers will read
+
+
         // we save the final index for this zone
         return outer_index + local_index;
 
