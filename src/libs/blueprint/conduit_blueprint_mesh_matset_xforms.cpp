@@ -1455,14 +1455,14 @@ to_multi_buffer_full(const conduit::Node &src_matset,
 
 //-----------------------------------------------------------------------------
 void
-to_sparse_by_element(const conduit::Node &src_matset,
-                     conduit::Node &dest_matset,
-                     const float64 epsilon)
+to_uni_buffer_by_element(const conduit::Node &src_matset,
+                         conduit::Node &dest_matset,
+                         const float64 epsilon)
 {
     // extra seat belt here
     if (! src_matset.dtype().is_object())
     {
-        CONDUIT_ERROR("blueprint::mesh::matset::to_sparse_by_element"
+        CONDUIT_ERROR("blueprint::mesh::matset::to_uni_buffer_by_element"
                       " passed matset node must be a valid matset tree.");
     }
 
@@ -1928,22 +1928,22 @@ to_multi_buffer_full(const conduit::Node &src_matset,
 
 //-----------------------------------------------------------------------------
 void
-to_sparse_by_element(const conduit::Node &src_matset,
-                     const conduit::Node &src_field,
-                     const std::string &dest_matset_name,
-                     conduit::Node &dest_field,
-                     const float64 epsilon)
+to_uni_buffer_by_element(const conduit::Node &src_matset,
+                         const conduit::Node &src_field,
+                         const std::string &dest_matset_name,
+                         conduit::Node &dest_field,
+                         const float64 epsilon)
 {
     // extra seat belt here
     if (! src_matset.dtype().is_object())
     {
-        CONDUIT_ERROR("blueprint::mesh::field::to_sparse_by_element"
+        CONDUIT_ERROR("blueprint::mesh::field::to_uni_buffer_by_element"
                       " passed matset node must be a valid matset tree.");
     }
 
     if (! src_field.dtype().is_object())
     {
-        CONDUIT_ERROR("blueprint::mesh::field::to_sparse_by_element"
+        CONDUIT_ERROR("blueprint::mesh::field::to_uni_buffer_by_element"
                       " passed field node must be a valid field tree.");
     }
 
