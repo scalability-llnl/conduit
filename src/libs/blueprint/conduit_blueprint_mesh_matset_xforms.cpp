@@ -1597,7 +1597,6 @@ to_silo(const conduit::Node &specset,
         "blueprint::mesh::specset::to_silo number of materials in the matset "
         "must be greater than or equal to the number of materials in the specset.");
 
-    auto matset_vals_itr = specset["matset_values"].children();
     auto matmap_itr = silo_matset["material_map"].children();
     int matmap_index = 0;
     // Map actual material numbers to indicies into the material map
@@ -1605,14 +1604,9 @@ to_silo(const conduit::Node &specset,
     // we can figure out their order in the material map for when we calculate
     // species indices.
     std::map<int, int> mat_id_to_array_index;
-    while (matset_vals_itr.has_next() && matmap_itr.has_next())
+    while (matmap_itr.has_next())
     {
-        matset_vals_itr.next();
         const Node &matmap_entry = matmap_itr.next();
-        // Make sure that materials are in the same order across the specset and matset
-        CONDUIT_ASSERT(matset_vals_itr.name() == matmap_itr.name(), 
-            "blueprint::mesh::specset::to_silo materials must be in the same order "
-            "between passed specset and passed matset.");
         mat_id_to_array_index[matmap_entry.as_int()] = matmap_index;
         matmap_index ++;
     }
@@ -1764,9 +1758,6 @@ to_silo(const conduit::Node &specset,
         // species_mf array. If I want to do this then I should explore that as well.
     };
 
-    // our negative 1-index into the mix_spec array
-    int mix_start_index = -1;
-
     dest["speclist"].set(DataType::int64(num_zones));
     int64_array speclist = dest["speclist"].value();
     std::vector<int> mix_spec;
@@ -1789,12 +1780,12 @@ to_silo(const conduit::Node &specset,
         {
             // mixed
 
-            // TODO isn't this value the same as the one in the silo_matlist?
-            // can't we just copy it over? TODO
-            // we save the negated 1-index into the mix_spec array
-            speclist[zone_id] = mix_start_index;
+            // We don't need to compute this as it is the same as the 
+            // matlist entry.
+            // We save the negated 1-index into the mix_spec array
+            speclist[zone_id] = matlist_entry;
 
-            // for mixed zones, the numbers in the matlist are negated 1-indices into
+            // for mixed zones, the numbers in the speclist are negated 1-indices into
             // the silo mixed data arrays. To turn them into zero-indices, we must add
             // 1 and negate the result. Example:
             // indices: -1 -2 -3 -4 ...
@@ -1815,9 +1806,6 @@ to_silo(const conduit::Node &specset,
                 // since it will make our mix_id == -1, which ends
                 // the while loop.
                 mix_id = silo_mix_next[mix_id] - 1;
-
-                // decrement this index every time we write another index to the mix_spec
-                mix_start_index --;
             }
         }
     }
@@ -1829,10 +1817,10 @@ to_silo(const conduit::Node &specset,
     dest["nmat"] = nmat;
     
     // number of species associated with each material
-    // we already saved nmatspec
+    // we already saved dest["nmatspec"]
     
     // indices into species_mf and mix_spec
-    // we already saved speclist
+    // we already saved dest["speclist"]
     
     // length of the species_mf array
     dest["nspecies_mf"] = nspecies_mf;

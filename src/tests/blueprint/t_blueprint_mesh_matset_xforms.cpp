@@ -607,9 +607,23 @@ TEST(conduit_blueprint_mesh_matset_xforms, mesh_util_to_silo_misc)
 TEST(conduit_blueprint_mesh_matset_xforms, mesh_util_to_silo_specset_missing_mats)
 {
     Node mesh;
-    blueprint::mesh::examples::venn_specsets("sparse_by_material", 4, 4, 0.25, mesh);
+    blueprint::mesh::examples::venn_specsets("sparse_by_material", 2, 2, 0.25, mesh);
 
+    // remove some of the materials from the specset
     mesh["specsets"]["specset"]["matset_values"].remove_child("background");
+    mesh["specsets"]["specset"]["matset_values"].remove_child("circle_b");
+    // create a new specset that has the materials in reverse order
+    mesh["specsets"]["specset2"]["matset"] = "matset";
+    mesh["specsets"]["specset2"]["matset_values"]["circle_c"].set(
+        mesh["specsets"]["specset"]["matset_values"]["circle_c"]);
+    mesh["specsets"]["specset2"]["matset_values"]["circle_a"].set(
+        mesh["specsets"]["specset"]["matset_values"]["circle_a"]);
+    // remove the original specset and replace it with the new one
+    mesh["specsets"].remove_child("specset");
+    mesh["specsets"].rename_child("specset2", "specset");
+
+    mesh.print();
+
 
     const Node &matset = mesh["matsets/matset"];
     const Node &specset = mesh["specsets/specset"];
