@@ -1709,6 +1709,8 @@ to_silo(const conduit::Node &specset,
         }
     }
 
+    // TODO justin I left off here. plus the matmap_map stuff needs to be redone too
+
     const int nspecies_mf = static_cast<int>(species_mf.size());
 
     // get pointers to the silo material representation data
@@ -1789,6 +1791,8 @@ to_silo(const conduit::Node &specset,
         {
             // mixed
 
+            // TODO isn't this value the same as the one in the silo_matlist?
+            // can't we just copy it over? TODO
             // we save the negated 1-index into the mix_spec array
             speclist[zoneId] = mix_start_index;
 
