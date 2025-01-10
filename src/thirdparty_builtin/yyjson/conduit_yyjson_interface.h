@@ -7,7 +7,7 @@
 #include <string>
 #include <sstream>
 // always export, we only use these interfaces at compile time.
-#define YYJSON_EXPORTS
+#define YYJSON_EXPORTS 1
 #include <conduit_yyjson.h>
 
 using namespace conduit_yyjson;
