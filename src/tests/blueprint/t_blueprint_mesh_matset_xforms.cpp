@@ -646,9 +646,8 @@ TEST(conduit_blueprint_mesh_matset_xforms, mesh_util_to_silo_specset_missing_mat
         const Node &matset = mesh["matsets/matset"];
         const Node &specset = mesh["specsets/specset"];
 
-        Node silo_rep, silo_rep_matset;
+        Node silo_rep;
 
-        // first test transforming specset to silo rep with a regular matset
         blueprint::mesh::specset::to_silo(specset, matset, silo_rep);
 
         std::cout << specset.to_yaml() << std::endl;
@@ -696,9 +695,8 @@ TEST(conduit_blueprint_mesh_matset_xforms, mesh_util_to_silo_specset_missing_mat
         const Node &matset = mesh["matsets/matset"];
         const Node &specset = mesh["specsets/specset"];
 
-        Node silo_rep, silo_rep_matset;
+        Node silo_rep;
 
-        // first test transforming specset to silo rep with a regular matset
         blueprint::mesh::specset::to_silo(specset, matset, silo_rep);
 
         std::cout << specset.to_yaml() << std::endl;
@@ -715,7 +713,7 @@ TEST(conduit_blueprint_mesh_matset_xforms, mesh_util_to_silo_specset_missing_mat
             "  - \"c_spec1\"\n"
             "  - \"c_spec2\"\n"
             "  - \"c_spec3\"\n"
-            "speclist: [1, 9, 17, -1]\n"
+            "speclist: [0, 0, 0, -1]\n"
             "nmat: 4\n"
             "nspecies_mf: 32\n"
             "species_mf: [1.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.5, 0.5, 0.0, 1.0, 0.75, 0.1875, 0.0625, 1.0, 0.0, 1.0, 0.5, 0.5, 0.75, 0.1875, 0.0625, 1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.375, 0.125]\n"
@@ -749,9 +747,8 @@ TEST(conduit_blueprint_mesh_matset_xforms, mesh_util_to_silo_specset_missing_mat
         const Node &matset = mesh["matsets/matset"];
         const Node &specset = mesh["specsets/specset"];
 
-        Node silo_rep, silo_rep_matset;
+        Node silo_rep;
 
-        // first test transforming specset to silo rep with a regular matset
         blueprint::mesh::specset::to_silo(specset, matset, silo_rep);
 
         std::cout << specset.to_yaml() << std::endl;
@@ -768,7 +765,7 @@ TEST(conduit_blueprint_mesh_matset_xforms, mesh_util_to_silo_specset_missing_mat
             "  - \"b_spec2\"\n"
             "  - \"a_spec1\"\n"
             "  - \"a_spec2\"\n"
-            "speclist: [4, 12, 20, -1]\n"
+            "speclist: [0, 0, 0, -1]\n"
             "nmat: 4\n"
             "nspecies_mf: 32\n"
             "species_mf: [1.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.75, 0.1875, 0.0625, 1.0, 0.0, 1.0, 0.5, 0.5, 0.75, 0.1875, 0.0625, 1.0, 0.5, 0.5, 0.0, 1.0, 0.5, 0.375, 0.125, 1.0, 0.5, 0.5, 0.5, 0.5]\n"
@@ -801,31 +798,29 @@ TEST(conduit_blueprint_mesh_matset_xforms, mesh_util_to_silo_specset_missing_mat
         const Node &matset = mesh["matsets/matset"];
         const Node &specset = mesh["specsets/specset"];
 
-        Node silo_rep, silo_rep_matset;
+        Node silo_rep;
 
-        // first test transforming specset to silo rep with a regular matset
         blueprint::mesh::specset::to_silo(specset, matset, silo_rep);
 
         std::cout << specset.to_yaml() << std::endl;
         std::cout << silo_rep.to_yaml() << std::endl;
 
-        // const std::string yaml_text = 
-        //     "nmatspec: [0, 2, 0, 3]\n"
-        //     "specnames: \n"
-        //       "- \"a_spec1\"\n"
-        //       "- \"a_spec2\"\n"
-        //       "- \"c_spec1\"\n"
-        //       "- \"c_spec2\"\n"
-        //       "- \"c_spec3\"\n"
-        //     "speclist: [1, 6, 11, -1]\n"
-        //     "nmat: 4\n"
-        //     "nspecies_mf: 20\n"
-        //     "species_mf: [0.0, 1.0, 1.0, 0.0, 0.0, 0.5, 0.5, 0.75, 0.1875, 0.0625, 0.0, 1.0, 0.75, 0.1875, 0.0625, 0.5, 0.5, 0.5, 0.375, 0.125]\n"
-        //     "mix_spec: [16, 18, 18]\n"
-        //     "mixlen: 3\n";
-        // Node baseline;
-        // baseline.parse(yaml_text, "yaml");
+        const std::string yaml_text = 
+            "nmatspec: [0, 2, 2, 0]\n"
+            "specnames: \n"
+            "  - \"a_spec1\"\n"
+            "  - \"a_spec2\"\n"
+            "  - \"b_spec1\"\n"
+            "  - \"b_spec2\"\n"
+            "speclist: [1, 5, 9, -1]\n"
+            "nmat: 4\n"
+            "nspecies_mf: 16\n"
+            "species_mf: [0.0, 1.0, 0.0, 1.0, 0.5, 0.5, 0.0, 1.0, 0.0, 1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5]\n"
+            "mix_spec: [13, 15, 17]\n"
+            "mixlen: 3\n";
+        Node baseline;
+        baseline.parse(yaml_text, "yaml");
 
-        // EXPECT_FALSE(silo_rep.diff(baseline, info, CONDUIT_EPSILON, true));
+        EXPECT_FALSE(silo_rep.diff(baseline, info, CONDUIT_EPSILON, true));
     }
 }

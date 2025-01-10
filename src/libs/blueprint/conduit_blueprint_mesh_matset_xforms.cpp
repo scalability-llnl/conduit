@@ -1748,36 +1748,17 @@ to_silo(const conduit::Node &specset,
             return sum;
         }();
 
-        // WARNING: this can produce indices that are out of bounds in specific cases:
-        // example:
-        //   nmatspec: [0, 2, 2, 0]
-        //   specnames: 
-        //     - "a_spec1"
-        //     - "a_spec2"
-        //     - "b_spec1"
-        //     - "b_spec2"
-        //   speclist: [1, 5, 9, -1]
-        //   nmat: 4
-        //   nspecies_mf: 16
-        //   species_mf: [0.0, 1.0, 0.0, 1.0, 0.5, 0.5, 0.0, 1.0, 0.0, 1.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5]
-        //   mix_spec: [13, 15, 17]
-        //   mixlen: 3
-
-        // mix_spec has 17 at the end of the list. 17 is out of bounds for species_mf. But 17 is 
-        // the correct index given our method of calculation. The third entry in the mix_spec
-        // array corresponds to a material circle_c which is present in the zone but has no
-        // species. If circle_c had species, then 17 would be the right index for it.
-        // I don't think downstream silo data consumers will read
-
-
         // we save the final index for this zone
         return outer_index + local_index;
 
-        // TODO return a zero here if the material in the zone contains only 1 species.
-        // This is a further optimization. It doesn't matter for now since we are
-        // treating our output like we have all species and all materials in all zones.
-        // I think the point of this optimization is to also leave stuff out of the 
-        // species_mf array. If I want to do this then I should explore that as well.
+        // This can produce an out of bounds index in very specific cases.
+        // If a material has no species, the index produced by this function is 
+        // useless, but downstream data consumers shouldn't be reading the index
+        // anyway. If a material has no species and it is the last one in the 
+        // material map and the final zone is mixed and contains that material,
+        // then we can get an index that is out of bounds. This is ok because 
+        // downstream tools like VisIt read based on the number of species, so
+        // even though the index is garbage it goes unused.
     };
 
     dest["speclist"].set(DataType::int64(num_zones));
@@ -1796,7 +1777,17 @@ to_silo(const conduit::Node &specset,
             // I can use the material number to determine which part of the speclist to index into
             const int &matno = matlist_entry;
             const int mat_index = mat_id_to_array_index[matno];
-            speclist[zone_id] = calculate_species_index(zone_id, mat_index);
+            if (nmatspec[mat_index] == 1)
+            {
+                // This is an optimization for if the material has only one
+                // species. See MIR.C in VisIt in the MIR::SpeciesSelect() 
+                // function to see how this optimization is used.
+                speclist[zone_id] = 0;
+            }
+            else
+            {
+                speclist[zone_id] = calculate_species_index(zone_id, mat_index);
+            }
         }
         else
         {
@@ -1821,7 +1812,17 @@ to_silo(const conduit::Node &specset,
                 // I can use the material number to determine which part of the speclist to index into
                 const int matno = silo_mix_mat[mix_id];
                 const int mat_index = mat_id_to_array_index[matno];
-                mix_spec.push_back(calculate_species_index(zone_id, mat_index));
+                if (nmatspec[mat_index] == 1)
+                {
+                    // This is an optimization for if the material has only one
+                    // species. See MIR.C in VisIt in the MIR::SpeciesSelect() 
+                    // function to see how this optimization is used.
+                    mix_spec.push_back(0);
+                }
+                else
+                {
+                    mix_spec.push_back(calculate_species_index(zone_id, mat_index));
+                }
 
                 // since mix_id is a 1-index, we must subtract one
                 // this makes sure that mix_id = 0 is the last case,
