@@ -1172,7 +1172,7 @@ read_ucdmesh_domain(DBucdmesh *ucdmesh_ptr,
     // TODO the following statement should be the gold standard for everything that is
     // read from silo. Make it happen.
     // I don't want to create these entries in the output unless no errors have 
-    // been encountered. Errors will trigger an early return.
+    // been encountered. Errors will trigger an early return, not a crash.
     mesh_domain["topologies"][multimesh_name].move(intermediate_topo);
     mesh_domain["coordsets"][multimesh_name].move(intermediate_coordset);
 
@@ -1339,7 +1339,7 @@ read_quadmesh_domain(DBquadmesh *quadmesh_ptr,
     detail::set_units_or_labels(quadmesh_ptr->labels, ndims, labels, intermediate_coordset, "labels");
 
     // I don't want to create these entries in the output unless no errors have 
-    // been encountered. Errors will trigger an early return.
+    // been encountered. Errors will trigger an early return, not a crash.
     mesh_domain["topologies"][multimesh_name].move(intermediate_topo);
     mesh_domain["coordsets"][multimesh_name].move(intermediate_coordset);
 
@@ -1395,7 +1395,7 @@ read_pointmesh_domain(DBpointmesh *pointmesh_ptr,
     detail::set_units_or_labels(pointmesh_ptr->labels, ndims, labels, intermediate_coordset, "labels");
 
     // I don't want to create these entries in the output unless no errors have 
-    // been encountered. Errors will trigger an early return.
+    // been encountered. Errors will trigger an early return, not a crash.
     mesh_domain["topologies"][multimesh_name].move(intermediate_topo);
     mesh_domain["coordsets"][multimesh_name].move(intermediate_coordset);
 
@@ -1979,7 +1979,7 @@ read_matlist_entry(const DBmaterial* matset_ptr,
 
 //-----------------------------------------------------------------------------
 template <typename T>
-int
+void
 read_matlist(const DBmaterial* matset_ptr,
              const int nx,
              const int ny,
@@ -2044,9 +2044,6 @@ read_matlist(const DBmaterial* matset_ptr,
     }
 
     // TODO still need to find colmajor data to test this
-
-    // return num_zones
-    return nx * ny * nz;
 }
 
 //-----------------------------------------------------------------------------
@@ -2232,33 +2229,30 @@ read_matset_domain(DBfile* matset_domain_file_to_use,
     const int ny = (matset_ptr->ndims > 1) ? matset_ptr->dims[1] : 1;
     const int nz = (matset_ptr->ndims > 2) ? matset_ptr->dims[2] : 1;
 
-    const int num_zones = [&]()
+    if (matset_ptr->datatype == DB_DOUBLE)
     {
-        if (matset_ptr->datatype == DB_DOUBLE)
-        {
-            return read_matlist<double>(matset_ptr,
-                                        nx, ny, nz,
-                                        volume_fractions,
-                                        material_ids,
-                                        sizes,
-                                        offsets,
-                                        field_reconstruction_recipe);
-        }
-        else
-        {
-            // we have verified up above that this is a float
-            return read_matlist<float>(matset_ptr,
-                                       nx, ny, nz,
-                                       volume_fractions,
-                                       material_ids,
-                                       sizes,
-                                       offsets,
-                                       field_reconstruction_recipe);
-        }
-    }();
+        read_matlist<double>(matset_ptr,
+                             nx, ny, nz,
+                             volume_fractions,
+                             material_ids,
+                             sizes,
+                             offsets,
+                             field_reconstruction_recipe);
+    }
+    else
+    {
+        // we have verified up above that this is a float
+        read_matlist<float>(matset_ptr,
+                            nx, ny, nz,
+                            volume_fractions,
+                            material_ids,
+                            sizes,
+                            offsets,
+                            field_reconstruction_recipe);
+    }
 
     // we need to save silo material information for use when reading specsets
-    silo_material["matlist"].set(matset_ptr->matlist, num_zones);
+    silo_material["matlist"].set(matset_ptr->matlist, static_cast<int>(sizes.size()));
     silo_material["mix_next"].set(matset_ptr->mix_next, matset_ptr->mixlen);
     silo_material["mix_mat"].set(matset_ptr->mix_mat, matset_ptr->mixlen);
     silo_material["matnos"].set(matset_ptr->matnos, matset_ptr->nmat);
@@ -2266,9 +2260,9 @@ read_matset_domain(DBfile* matset_domain_file_to_use,
     silo_material["num_zones"].set(static_cast<int>(sizes.size()));
     silo_material["matset_path"].set(matset_name);
     silo_material["matset_name"].set(multimat_name);
-    silo_material["nx"].set(nx);
-    silo_material["ny"].set(ny);
-    silo_material["nz"].set(nz);
+    silo_material["dims/nx"].set(nx);
+    silo_material["dims/ny"].set(ny);
+    silo_material["dims/nz"].set(nz);
     silo_material["major_order"].set(matset_ptr->major_order);
 
     intermediate_matset["material_ids"].set(material_ids);
@@ -2467,9 +2461,18 @@ read_specset_domain(DBfile* specset_domain_file_to_use,
                     const Node &n_specset,
                     const std::string &specset_name,
                     const std::string &multimatspecies_name,
+                    const std::string &opts_matset_style,
                     const Node &silo_material,
                     Node &mesh_out)
 {
+    // TODO remove this once we support specset converters
+    if (opts_matset_style != "multi_buffer_full")
+    {
+        CONDUIT_INFO("TODO if a the matset flavor is not multi_buffer + "
+                     "element_dominant, we currently cannot read species "
+                     "from silo. Please contact a Conduit developer.");
+    }
+
     if (! DBInqVarExists(specset_domain_file_to_use, specset_name.c_str()))
     {
         // This specset is missing
@@ -2501,9 +2504,9 @@ read_specset_domain(DBfile* specset_domain_file_to_use,
         ! silo_material.has_child("matnos") ||
         ! silo_material.has_child("num_zones") ||
         ! silo_material.has_child("matset_path") ||
-        ! silo_material.has_child("nx") ||
-        ! silo_material.has_child("ny") ||
-        ! silo_material.has_child("nz") ||
+        ! silo_material.has_path("dims/nx") ||
+        ! silo_material.has_path("dims/ny") ||
+        ! silo_material.has_path("dims/nz") ||
         ! silo_material.has_child("major_order"))
     {
         CONDUIT_INFO("Attempting to read DBmatspecies " + specset_name +
@@ -2600,9 +2603,9 @@ read_specset_domain(DBfile* specset_domain_file_to_use,
     const int ny = (specset_ptr->ndims > 1) ? specset_ptr->dims[1] : 1;
     const int nz = (specset_ptr->ndims > 2) ? specset_ptr->dims[2] : 1;
 
-    if (nx != silo_material["nx"].as_int() || 
-        ny != silo_material["ny"].as_int() ||
-        nz != silo_material["nz"].as_int())
+    if (nx != silo_material["dims/nx"].as_int() || 
+        ny != silo_material["dims/ny"].as_int() ||
+        nz != silo_material["dims/nz"].as_int())
     {
         CONDUIT_INFO("Species object dimensions must match the dimensions "
                      "of the associated material object.");
@@ -2680,9 +2683,10 @@ read_specset_domain(DBfile* specset_domain_file_to_use,
 
     // we read into full (element_dominant and multi_buffer)
 
-    // TODO does it make sense to not read into full? but instead come up with some kind
-    // of sparse by element specset representation? and then write converters like we did
-    // for matsets?
+    // TODO:
+    // 1. write specset flavor converters
+    // 2. read species data into uni_buffer element_dominant
+    // 3. convert as necessary, following what we do for matsets.
 
     if (specset_ptr->datatype == DB_DOUBLE)
     {
@@ -4068,6 +4072,7 @@ read_mesh(const std::string &root_file_path,
                                     n_specset, 
                                     specset_name,
                                     multimatspec_name, 
+                                    opts_matset_style,
                                     silo_material, 
                                     mesh_out);
             }
