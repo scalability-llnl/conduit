@@ -14,15 +14,6 @@
 #include "gtest/gtest.h"
 using namespace conduit;
 
-#ifdef CONDUIT_USE_YYJSON
-  #include "conduit_yyjson_interface.h"
-  namespace conduit_json = conduit_yyjson;
-#else
-  #include "rapidjson/document.h"
-  #include "rapidjson/error/en.h"
-  namespace conduit_json = conduit_rapidjson;
-#endif
-
 //-----------------------------------------------------------------------------
 TEST(conduit_node, simple)
 {
@@ -206,12 +197,13 @@ TEST(conduit_node, simple_schema)
 
     std::string res = n.schema().to_json();
     std::cout << res;
-    conduit_json::Document d;
-    d.Parse<0>(res.c_str());
-
-    EXPECT_TRUE(d.HasMember("a"));
-    EXPECT_TRUE(d.HasMember("b"));
-    EXPECT_TRUE(d.HasMember("c"));
+    // parse schema output to check for children
+    Node n_load;
+    n.parse(res,"json");
+    
+    res.has_child("a");
+    res.has_child("b");
+    res.has_child("c");
 }
 
 //-----------------------------------------------------------------------------
