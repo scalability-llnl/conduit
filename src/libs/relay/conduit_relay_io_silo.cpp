@@ -2468,9 +2468,10 @@ read_specset_domain(DBfile* specset_domain_file_to_use,
     // TODO remove this once we support specset converters
     if (opts_matset_style != "multi_buffer_full")
     {
-        CONDUIT_INFO("TODO if a the matset flavor is not multi_buffer + "
+        CONDUIT_INFO("TODO if the matset flavor is not multi_buffer + "
                      "element_dominant, we currently cannot read species "
                      "from silo. Please contact a Conduit developer.");
+        return false;
     }
 
     if (! DBInqVarExists(specset_domain_file_to_use, specset_name.c_str()))
