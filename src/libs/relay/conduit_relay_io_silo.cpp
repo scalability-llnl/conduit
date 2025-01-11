@@ -5882,7 +5882,7 @@ void silo_write_specset(DBfile *dbfile,
     {
         CONDUIT_INFO("TODO Currently specsets can only be saved to silo if "
                      "they are multi_buffer + element_dominant.");
-        return false;
+        return;
     }
 
     Node silo_specset;
