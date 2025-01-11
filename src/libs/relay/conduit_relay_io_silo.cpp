@@ -5834,9 +5834,6 @@ void silo_write_specset(DBfile *dbfile,
                         std::set<std::string> &used_names,
                         Node &local_type_domain_info)
 {
-    // TODO we only handle the fully blown out case
-    // what to do for the others?
-
     if (! detail::check_alphanumeric(specset_name))
     {
         CONDUIT_INFO("Specset name " << specset_name << " contains " << 
@@ -5878,6 +5875,16 @@ void silo_write_specset(DBfile *dbfile,
     }
 
     const Node &silo_matset = n_mesh_info["matsets"][matset_name]["silo_matset_compact"];
+
+    // TODO remove this once we add support for all specset flavors to to_silo
+    if (silo_matset["buffer_style"].as_string() != "multi" ||
+        silo_matset["dominance"].as_string() != "element")
+    {
+        CONDUIT_INFO("TODO Currently specsets can only be saved to silo if "
+                     "they are multi_buffer + element_dominant.");
+        return false;
+    }
+
     Node silo_specset;
     conduit::blueprint::mesh::specset::to_silo(n_specset, silo_matset, silo_specset);
 
