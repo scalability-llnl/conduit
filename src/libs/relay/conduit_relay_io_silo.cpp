@@ -1981,6 +1981,9 @@ read_matlist_entry(const DBmaterial* matset_ptr,
 template <typename T>
 int
 read_matlist(const DBmaterial* matset_ptr,
+             const int nx,
+             const int ny,
+             const int nz,
              std::vector<double> &volume_fractions,
              std::vector<int> &material_ids,
              std::vector<int> &sizes,
@@ -1988,10 +1991,6 @@ read_matlist(const DBmaterial* matset_ptr,
              std::vector<int> &field_reconstruction_recipe)
 {
     int curr_offset = 0;
-
-    const int nx = matset_ptr->dims[0];
-    const int ny = (matset_ptr->ndims > 1) ? matset_ptr->dims[1] : 1;
-    const int nz = (matset_ptr->ndims > 2) ? matset_ptr->dims[2] : 1;
 
     if (matset_ptr->major_order == DB_ROWMAJOR)
     {
@@ -2124,7 +2123,7 @@ read_matset_domain(DBfile* matset_domain_file_to_use,
     // we can only succeed here if the data is regularly strided
     const std::string irregular_striding_warn_msg = "DBmaterial " + matset_name + 
         " has irregular striding, which makes it impossible to correctly convert"
-        " to Blueprint.";
+        " to Blueprint. Skipping.";
     if (1 == matset_ptr->ndims)
     {
         if (matset_ptr->stride[0] != 1)
@@ -2229,11 +2228,16 @@ read_matset_domain(DBfile* matset_domain_file_to_use,
     // supposed to read from the mixvals from silo.
     std::vector<int> field_reconstruction_recipe;
 
+    const int nx = matset_ptr->dims[0];
+    const int ny = (matset_ptr->ndims > 1) ? matset_ptr->dims[1] : 1;
+    const int nz = (matset_ptr->ndims > 2) ? matset_ptr->dims[2] : 1;
+
     const int num_zones = [&]()
     {
         if (matset_ptr->datatype == DB_DOUBLE)
         {
             return read_matlist<double>(matset_ptr,
+                                        nx, ny, nz,
                                         volume_fractions,
                                         material_ids,
                                         sizes,
@@ -2244,6 +2248,7 @@ read_matset_domain(DBfile* matset_domain_file_to_use,
         {
             // we have verified up above that this is a float
             return read_matlist<float>(matset_ptr,
+                                       nx, ny, nz,
                                        volume_fractions,
                                        material_ids,
                                        sizes,
@@ -2261,6 +2266,10 @@ read_matset_domain(DBfile* matset_domain_file_to_use,
     silo_material["num_zones"].set(static_cast<int>(sizes.size()));
     silo_material["matset_path"].set(matset_name);
     silo_material["matset_name"].set(multimat_name);
+    silo_material["nx"].set(nx);
+    silo_material["ny"].set(ny);
+    silo_material["nz"].set(nz);
+    silo_material["major_order"].set(matset_ptr->major_order);
 
     intermediate_matset["material_ids"].set(material_ids);
     intermediate_matset["volume_fractions"].set(volume_fractions);
@@ -2391,18 +2400,15 @@ read_speclist_entry(const DBmatspecies* specset_ptr,
 template <typename T>
 void
 read_speclist(const DBmatspecies* specset_ptr,
+              const int nx,
+              const int ny,
+              const int nz,
               const int_accessor &silo_matlist,
               const int_accessor &silo_mix_mat,
               const int_accessor &silo_mix_next,
               const std::map<int, std::string> &reverse_matmap,
               Node &matset_values)
 {
-    // TODO ensure dims match matset?
-
-    const int nx = specset_ptr->dims[0];
-    const int ny = (specset_ptr->ndims > 1) ? specset_ptr->dims[1] : 1;
-    const int nz = (specset_ptr->ndims > 2) ? specset_ptr->dims[2] : 1;
-
     if (specset_ptr->major_order == DB_ROWMAJOR)
     {
         for (int z = 0; z < nz; z ++)
@@ -2494,7 +2500,11 @@ read_specset_domain(DBfile* specset_domain_file_to_use,
         ! silo_material.has_child("material_map") ||
         ! silo_material.has_child("matnos") ||
         ! silo_material.has_child("num_zones") ||
-        ! silo_material.has_child("matset_path"))
+        ! silo_material.has_child("matset_path") ||
+        ! silo_material.has_child("nx") ||
+        ! silo_material.has_child("ny") ||
+        ! silo_material.has_child("nz") ||
+        ! silo_material.has_child("major_order"))
     {
         CONDUIT_INFO("Attempting to read DBmatspecies " + specset_name +
                      " but required DBmaterial information is missing. Skipping.");
@@ -2521,27 +2531,35 @@ read_specset_domain(DBfile* specset_domain_file_to_use,
     }
 
     // we can only succeed here if the data is regularly strided
-    const std::string irregular_striding_err_msg = "DBmatspecies " + specset_name + 
+    const std::string irregular_striding_warn_msg = "DBmatspecies " + specset_name + 
         " has irregular striding, which makes it impossible to correctly convert"
-        " to Blueprint.";
+        " to Blueprint. Skipping.";
     if (1 == specset_ptr->ndims)
     {
-        // TODO these don't have to be errors, just skips. not just for species too
-        CONDUIT_ASSERT(specset_ptr->stride[0] == 1,
-                       irregular_striding_err_msg);
+        if (specset_ptr->stride[0] != 1)
+        {
+            CONDUIT_INFO(irregular_striding_warn_msg);
+            return false;
+        }
     }
     else if (2 == specset_ptr->ndims)
     {
-        CONDUIT_ASSERT(specset_ptr->stride[0] == 1 && 
-                       specset_ptr->stride[1] == specset_ptr->dims[0],
-                       irregular_striding_err_msg);
+        if (specset_ptr->stride[0] != 1 || 
+            specset_ptr->stride[1] != specset_ptr->dims[0])
+        {
+            CONDUIT_INFO(irregular_striding_warn_msg);
+            return false;
+        }
     }
     else // (3 == specset_ptr->ndims)
     {
-        CONDUIT_ASSERT(specset_ptr->stride[0] == 1 && 
-                       specset_ptr->stride[1] == specset_ptr->dims[0] &&
-                       specset_ptr->stride[2] == specset_ptr->dims[0] * specset_ptr->dims[1],
-                       irregular_striding_err_msg);
+        if (specset_ptr->stride[0] != 1 || 
+            specset_ptr->stride[1] != specset_ptr->dims[0] ||
+            specset_ptr->stride[2] != specset_ptr->dims[0] * specset_ptr->dims[1])
+        {
+            CONDUIT_INFO(irregular_striding_warn_msg);
+            return false;
+        }
     }
 
     const int_accessor silo_matlist = silo_material["matlist"].value();
@@ -2568,6 +2586,33 @@ read_specset_domain(DBfile* specset_domain_file_to_use,
     {
         CONDUIT_INFO("Attempting to read DBmatspecies " + specset_name +
                      " but there is a mismatch with nmat in the associated DBmaterial. Skipping.");
+        return false;
+    }
+
+    if (specset_ptr->datatype != DB_DOUBLE && specset_ptr->datatype != DB_FLOAT)
+    {
+        CONDUIT_INFO("Species mass fractions must be doubles or floats." <<
+                     " Unknown type for mass fractions for " << specset_name);
+        return false;
+    }
+
+    const int nx = specset_ptr->dims[0];
+    const int ny = (specset_ptr->ndims > 1) ? specset_ptr->dims[1] : 1;
+    const int nz = (specset_ptr->ndims > 2) ? specset_ptr->dims[2] : 1;
+
+    if (nx != silo_material["nx"].as_int() || 
+        ny != silo_material["ny"].as_int() ||
+        nz != silo_material["nz"].as_int())
+    {
+        CONDUIT_INFO("Species object dimensions must match the dimensions "
+                     "of the associated material object.");
+        return false;
+    }
+
+    if (specset_ptr->major_order != silo_material["major_order"].as_int())
+    {
+        CONDUIT_INFO("Species object major order must match the major order "
+                     "of the associated material object.");
         return false;
     }
 
@@ -2639,16 +2684,10 @@ read_specset_domain(DBfile* specset_domain_file_to_use,
     // of sparse by element specset representation? and then write converters like we did
     // for matsets?
 
-    if (specset_ptr->datatype != DB_DOUBLE && specset_ptr->datatype != DB_FLOAT)
-    {
-        CONDUIT_INFO("Species mass fractions must be doubles or floats." <<
-                     " Unknown type for mass fractions for " << specset_name);
-        return false;
-    }
-
     if (specset_ptr->datatype == DB_DOUBLE)
     {
         read_speclist<double>(specset_ptr,
+                              nx, ny, nz,
                               silo_matlist,
                               silo_mix_mat,
                               silo_mix_next,
@@ -2659,6 +2698,7 @@ read_specset_domain(DBfile* specset_domain_file_to_use,
     {
         // we have verified up above that this is a float
         read_speclist<float>(specset_ptr,
+                             nx, ny, nz,
                              silo_matlist,
                              silo_mix_mat,
                              silo_mix_next,
