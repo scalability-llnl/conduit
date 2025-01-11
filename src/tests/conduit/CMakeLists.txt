@@ -60,6 +60,12 @@ foreach(TEST ${BASIC_TESTS})
                  FOLDER tests/conduit)
 endforeach()
 
+if(ENABLE_YYJSON)
+    # t_conduit_node direclty uses the yyjson parsing api
+    # so we need to link with the conduit_yyjson target lib
+    target_sources(t_conduit_node PRIVATE $<TARGET_OBJECTS:conduit_yyjson>)
+endif()
+
 ################################
 # Add c interface tests
 ################################
