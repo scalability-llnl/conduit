@@ -748,9 +748,9 @@ namespace matset
 
     //-------------------------------------------------------------------------
     // creates a unibuffer case with 1st index into elements
-    void CONDUIT_BLUEPRINT_API to_sparse_by_element(const conduit::Node &src_matset,
-                                                    conduit::Node &dest_matset,
-                                                    const float64 epsilon = CONDUIT_EPSILON);
+    void CONDUIT_BLUEPRINT_API to_uni_buffer_by_element(const conduit::Node &src_matset,
+                                                        conduit::Node &dest_matset,
+                                                        const float64 epsilon = CONDUIT_EPSILON);
 
     //-------------------------------------------------------------------------
     // covers both the sparse and non sparse case
@@ -817,11 +817,11 @@ namespace field
 
     //-------------------------------------------------------------------------
     // creates a unibuffer case with 1st index into elements
-    void CONDUIT_BLUEPRINT_API to_sparse_by_element(const conduit::Node &src_matset,
-                                                    const conduit::Node &src_field,
-                                                    const std::string &dest_matset_name,
-                                                    conduit::Node &dest_field,
-                                                    const float64 epsilon = CONDUIT_EPSILON);
+    void CONDUIT_BLUEPRINT_API to_uni_buffer_by_element(const conduit::Node &src_matset,
+                                                        const conduit::Node &src_field,
+                                                        const std::string &dest_matset_name,
+                                                        conduit::Node &dest_field,
+                                                        const float64 epsilon = CONDUIT_EPSILON);
 
     //-------------------------------------------------------------------------
     // covers both the sparse and non sparse case
