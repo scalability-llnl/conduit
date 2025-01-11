@@ -14,6 +14,8 @@ and this project aspires to adhere to [Semantic Versioning](https://semver.org/s
 - Added python API support for `conduit::blueprint::mesh::examples:generate` and `conduit::blueprint::mesh::examples:generate_default_options`.
 - Added `gyre` example mesh, which provides a simple velocity vector field. 
 
+#### Relay
+- Added limited support for species sets for Silo/Overlink I/O. Multi-buffer element-dominant species sets can be written to Silo and the same can be read from Silo. Additional species set flavors will come online in a later release.
 
 ### Changed
 
