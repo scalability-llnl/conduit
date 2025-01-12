@@ -4,7 +4,7 @@
 
 //-----------------------------------------------------------------------------
 ///
-/// file: conduit_node.cpp
+/// file: t_conduit_node.cpp
 ///
 //-----------------------------------------------------------------------------
 
@@ -12,7 +12,6 @@
 
 #include <iostream>
 #include "gtest/gtest.h"
-#include "rapidjson/document.h"
 using namespace conduit;
 
 //-----------------------------------------------------------------------------
@@ -198,12 +197,13 @@ TEST(conduit_node, simple_schema)
 
     std::string res = n.schema().to_json();
     std::cout << res;
-    conduit_rapidjson::Document d;
-    d.Parse<0>(res.c_str());
-
-    EXPECT_TRUE(d.HasMember("a"));
-    EXPECT_TRUE(d.HasMember("b"));
-    EXPECT_TRUE(d.HasMember("c"));
+    // parse schema output to check for children
+    Node n_load;
+    n_load.parse(res,"json");
+    
+    EXPECT_TRUE(n_load.has_child("a"));
+    EXPECT_TRUE(n_load.has_child("b"));
+    EXPECT_TRUE(n_load.has_child("c"));
 }
 
 //-----------------------------------------------------------------------------

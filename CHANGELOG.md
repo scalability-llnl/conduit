@@ -19,6 +19,7 @@ and this project aspires to adhere to [Semantic Versioning](https://semver.org/s
 
 #### Conduit
 - Changed the MPI CMake target used by conduit from `MPI:MPI_CXX` to `MPI:MPI_C` to provide better compatibility with downstream tools.
+- Added vendored yyjson v0.10.0 as new and default JSON parser. yyjson has an MIT license that is compatible with Debian's Free Software Guidelines, where RapidJSON is not  (https://wiki.debian.org/qa.debian.org/jsonevil). You can still use RapidJSON by setting the new CMake option `ENABLE_YYJSON` to `FALSE`.
 
 #### Blueprint
 - Certain algorithms that use MPI tags had their tag values lowered since some MPI implementations do not support large values.
