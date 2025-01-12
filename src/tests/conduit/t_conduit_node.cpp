@@ -199,11 +199,11 @@ TEST(conduit_node, simple_schema)
     std::cout << res;
     // parse schema output to check for children
     Node n_load;
-    n.parse(res,"json");
+    n_load.parse(res,"json");
     
-    res.has_child("a");
-    res.has_child("b");
-    res.has_child("c");
+    EXPECT_TRUE(n_load.has_child("a"));
+    EXPECT_TRUE(n_load.has_child("b"));
+    EXPECT_TRUE(n_load.has_child("c"));
 }
 
 //-----------------------------------------------------------------------------
