@@ -551,8 +551,8 @@ class Test_Conduit_Node(unittest.TestCase):
         # are properly exposed via the numpy array views
         # we return 
         s = Schema()
-        s["a"] = conduit.DataType.float64(4)
-        s["b"] = conduit.DataType.float64(2,0,16)
+        s["a"] = DataType.float64(4)
+        s["b"] = DataType.float64(2,0,16)
         n = Node()
         n.set(s)
         v_a = n.fetch("a").value()
