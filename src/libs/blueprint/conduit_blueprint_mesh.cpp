@@ -2365,20 +2365,34 @@ mesh::generate_index_for_single_domain(const Node &mesh,
 
             idx_specset["matset"] = specset["matset"].as_string();
 
-            NodeConstIterator matset_vals_itr = specset["matset_values"].children();
-            while(matset_vals_itr.has_next())
+            if (specset.has_child("species_names"))
             {
-                const Node &matset_val = matset_vals_itr.next();
-                const std::string matname = matset_vals_itr.name();
-
-                NodeConstIterator specs_itr = matset_val.children();
-                while(specs_itr.has_next())
+                idx_specset["species"] = specset["species_names"];
+            }
+            else if (specset.has_child("matset_values"))
+            {
+                NodeConstIterator matset_vals_itr = specset["matset_values"].children();
+                while(matset_vals_itr.has_next())
                 {
-                    specs_itr.next();
-                    const std::string specname = specs_itr.name();
-                    idx_specset["species"][matname][specname];
+                    const Node &matset_val = matset_vals_itr.next();
+                    const std::string matname = matset_vals_itr.name();
+
+                    NodeConstIterator specs_itr = matset_val.children();
+                    while(specs_itr.has_next())
+                    {
+                        specs_itr.next();
+                        const std::string specname = specs_itr.name();
+                        idx_specset["species"][matname][specname];
+                    }
                 }
             }
+            else // surprise!
+            {
+                CONDUIT_ERROR("blueprint::mesh::generate_index: "
+                              "Invalid specset flavor."
+                              "Input node does not conform to mesh blueprint.");
+            }
+
             std::string ms_ref_path = join_path(ref_path, "specsets");
             ms_ref_path = join_path(ms_ref_path, specset_name);
             idx_specset["path"] = ms_ref_path;
@@ -6629,54 +6643,169 @@ mesh::field::index::verify(const Node &field_idx,
 //-----------------------------------------------------------------------------
 
 //-----------------------------------------------------------------------------
+// helper to verify a specset species_names
+//-----------------------------------------------------------------------------
+bool verify_specset_species_names(const std::string &protocol,
+                                  const conduit::Node &specset,
+                                  conduit::Node &info)
+{
+    bool res = verify_object_field(protocol, specset, info, "species_names");
+
+    if (res)
+    {
+        // we already know we have an object, children should be
+        // objects
+        NodeConstIterator itr = specset["species_names"].children();
+        while (itr.has_next())
+        {
+            const Node &curr_child = itr.next();
+            if (!curr_child.dtype().is_object())
+            {
+                log::error(info,
+                           protocol,
+                           log::quote("species_names") +
+                           "child " +
+                           log::quote(itr.name()) +
+                           " is not an object.");
+                res = false;
+            }
+        }
+    }
+
+    log::validation(info, res);
+
+    return res;
+}
+
+//-----------------------------------------------------------------------------
 bool
 mesh::specset::verify(const Node &specset,
                       Node &info)
 {
     const std::string protocol = "mesh::specset";
-    bool res = true;
+    bool res = true, mvs_res = true;
+    bool specnames_are_optional = true;
     info.reset();
 
     res &= verify_string_field(protocol, specset, info, "matset");
-    if(!verify_object_field(protocol, specset, info, "matset_values"))
+    res &= mvs_res &= verify_field_exists(protocol, specset, info, "matset_values");
+
+    if (mvs_res)
     {
+        if (!specset["matset_values"].dtype().is_number() &&
+            !specset["matset_values"].dtype().is_object())
+        {
+            log::error(info, protocol, "'matset_values' isn't the correct type");
+            res &= mvs_res &= false;
+        }
+        else if (specset["matset_values"].dtype().is_number() &&
+                 verify_number_field(protocol, specset, info, "matset_values"))
+        {
+            log::info(info, protocol, "detected uni-buffer specset");
+            // species_names is not optional in this case, signal
+            // for opt check down the line
+            specnames_are_optional = false;
+
+            mvs_res &= blueprint::o2mrelation::verify(specset, info);
+
+            res &= mvs_res;
+        }
+        else if (specset["matset_values"].dtype().is_object() &&
+                 verify_object_field(protocol, specset, info, "matset_values"))
+        {
+            log::info(info, protocol, "detected multi-buffer specset");
+
+            const Node &mfs = specset["matset_values"];
+            Node &mfs_info = info["matset_values"];
+
+            NodeConstIterator mat_it = mfs.children();
+            while (mat_it.has_next())
+            {
+                const Node &mat = mat_it.next();
+                const std::string &mat_name = mat_it.name();
+
+                if (!mat.dtype().is_object())
+                {
+                    log::error(info, protocol,
+                               "each material name must be the parent of species names (required for multi-buffer specsets) ");
+                    res &= mvs_res &= false;
+                }
+                else
+                {
+                    Node &mat_info = mfs_info[mat_name];
+                    NodeConstIterator spec_it = mat.children();
+                    while (spec_it.has_next())
+                    {
+                        const Node &spec = spec_it.next();
+                        const std::string &spec_name = spec_it.name();
+
+                        if (spec.dtype().is_object())
+                        {
+                            mvs_res &= verify_o2mrelation_field(protocol, mat, mat_info, spec_name);
+                        }
+                        else
+                        {
+                            mvs_res &= verify_number_field(protocol, mat, mat_info, spec_name);
+                        }
+                    }
+
+                    res &= mvs_res;
+                    log::validation(mat_info, mvs_res);
+                }
+            }
+
+            res &= mvs_res;
+            log::validation(mfs_info, mvs_res);
+        }
+    }
+
+    if (!specnames_are_optional && !specset.has_child("species_names"))
+    {
+        log::error(info, protocol,
+            "'species_names' is missing (required for uni-buffer specsets) ");
         res &= false;
     }
-    else
-    {
-        bool specmats_res = true;
-        index_t specmats_len = 0;
 
-        const Node &specmats = specset["matset_values"];
-        Node &specmats_info = info["matset_values"];
-        NodeConstIterator specmats_it = specmats.children();
-        while(specmats_it.has_next())
+    if (specset.has_child("species_names"))
+    {
+        if (specnames_are_optional)
         {
-            const Node &specmat = specmats_it.next();
-            const std::string specmat_name = specmat.name();
-            if(!verify_mcarray_field(protocol, specmats, specmats_info, specmat_name))
+            log::optional(info, protocol, "includes species_names");
+        }
+
+        res &= verify_specset_species_names(protocol,specset,info);
+
+        // for cases where matset_values are an object, we expect the species_names child
+        // names to be a subset of the matset_values child names
+        if (specset.has_child("matset_values") &&
+            specset["matset_values"].dtype().is_object())
+        {
+            NodeConstIterator specnames_mat_itr = specset["species_names"].children();
+            while (specnames_mat_itr.has_next())
             {
-                specmats_res &= false;
-            }
-            else
-            {
-                const index_t specmat_len = specmat.child(0).dtype().number_of_elements();
-                if(specmats_len == 0)
+                const Node &specnames_mat = specnames_mat_itr.next();
+                const std::string mat_name = specnames_mat_itr.name();
+
+                NodeConstIterator specnames_mat_specnames_itr = specnames_mat.children();
+                while (specnames_mat_specnames_itr.has_next())
                 {
-                    specmats_len = specmat_len;
-                }
-                else if(specmats_len != specmat_len)
-                {
-                    log::error(specmats_info, protocol,
-                        log::quote(specmat_name) + " has mismatched length " +
-                        "relative to other material mcarrays in this specset");
-                    specmats_res &= false;
+                    specnames_mat_specnames_itr.next();
+                    const std::string spec_name = specnames_mat_specnames_itr.name();
+
+                    if (! specset["matset_values"].has_path(mat_name + "/" + spec_name))
+                    {
+                        std::ostringstream oss;
+                        oss << "'species_names' hierarchy must be a subset of "
+                               "'matset_values'. "
+                               " 'matset_values' is missing child '"
+                               << mat_name << "/" << spec_name
+                               <<"' which exists in 'species_names`" ;
+                        log::error(info, protocol,oss.str());
+                        res &= false;
+                    }
                 }
             }
         }
-
-        log::validation(specmats_info, specmats_res);
-        res &= specmats_res;
     }
 
     log::validation(info, res);

@@ -2077,6 +2077,11 @@ diff_to_silo(const conduit::Node &baseline, const conduit::Node &matset,
     conduit::Node test_silo;
     conduit::blueprint::mesh::matset::to_silo(matset["matsets/matset"], test_silo);
 
+    base_silo.remove_child("buffer_style");
+    base_silo.remove_child("dominance");
+    test_silo.remove_child("buffer_style");
+    test_silo.remove_child("dominance");
+
     info.reset();
     return base_silo.diff(test_silo, info, CONDUIT_EPSILON, true);
 }
