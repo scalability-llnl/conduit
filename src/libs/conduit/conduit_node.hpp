@@ -3778,13 +3778,7 @@ public:
     const DataType   &dtype() const
                         { return m_schema->dtype();}
 
-    // TODO we'd like to have this function be const
-    // just like the reference version of it is.
-    // Then we also would have a private version of this
-    // that is not const. But that cause causes
-    // problems for us.
-    // https://github.com/LLNL/conduit/issues/1320
-    Schema           *schema_ptr()
+    Schema          *schema_ptr()
                         {return m_schema;}
 
     // check if data owned by this node is externally
