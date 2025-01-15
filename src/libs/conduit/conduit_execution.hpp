@@ -33,33 +33,121 @@ namespace conduit
 namespace execution
 {
 
-//---------------------------------------------------------------------------
-enum class policy { Serial, Device, Cuda, Hip, OpenMP };
-//---------------------------------------------------------------------------
-
-//---------------------------------------------------------------------------
-struct EmptyPolicy
-{};
-//---------------------------------------------------------------------------
-
-//---------------------------------------------------------------------------//
-// Runtime Policy Object
-//---------------------------------------------------------------------------//
-class ExecPolicy
+//-----------------------------------------------------------------------------
+// -- begin conduit::execution::ExecutionPolicy --
+//-----------------------------------------------------------------------------
+///
+/// class: conduit::execution::ExecutionPolicy
+///
+/// description:
+///  ExecutionPolicy is a runtime policy object.
+///
+//-----------------------------------------------------------------------------
+class CONDUIT_API ExecutionPolicy
 {
 public:
-    ExecPolicy(policy _id): id(_id) {}
-    policy id;
+//-----------------------------------------------------------------------------
+/// Policy is an Enumeration used to describe the policy cases supported
+///  by conduit:
+//-----------------------------------------------------------------------------
+    enum class PolicyID
+    {
+        EMPTY_ID,
+        SERIAL_ID,
+        DEVICE_ID,
+        CUDA_ID,
+        HIP_ID,
+        OPENMP_ID
+    };
 
-    // cyrus wants static methods that return exec policies to make things cleaner
-    // like the strawman
+//-----------------------------------------------------------------------------
+// -- begin conduit::execution::ExecutionPolicy Constructor Helpers --
+//-----------------------------------------------------------------------------
+    static ExecutionPolicy empty();
 
-    // look at datatype for inspiration
-    // enum members should have "_ID" at the end
-    // helpers that give you string of name
-    // helpers that give you ids
-    // helpers that take string of name and construct
+    static ExecutionPolicy serial();
+    
+    static ExecutionPolicy device();
+    
+    static ExecutionPolicy cuda();
+    
+    static ExecutionPolicy hip();
+    
+    static ExecutionPolicy openmp();
+
+//-----------------------------------------------------------------------------
+// -- end conduit::execution::ExecutionPolicy Constructor Helpers --
+//-----------------------------------------------------------------------------
+
+//-----------------------------------------------------------------------------
+//
+// -- conduit::execution::ExecutionPolicy public methods --
+//
+//-----------------------------------------------------------------------------
+
+//-----------------------------------------------------------------------------
+// Construction and Destruction
+//-----------------------------------------------------------------------------
+    /// standard constructor
+    ExecutionPolicy();
+    /// copy constructor
+    ExecutionPolicy(const ExecutionPolicy& exec_policy);
+    /// Assignment operator
+    ExecutionPolicy& operator=(const ExecutionPolicy& exec_policy);
+    /// Construct from given policy id
+    ExecutionPolicy(PolicyID policy_id);
+    /// Construct from policy name
+    ExecutionPolicy(const std::string &policy_name);
+    /// destructor
+    ~ExecutionPolicy();
+
+//-----------------------------------------------------------------------------
+// Setters
+//-----------------------------------------------------------------------------
+    void set_policy(PolicyID policy_id)
+        { m_policy_id = policy_id; }
+
+//-----------------------------------------------------------------------------
+// Getters and info methods.
+//-----------------------------------------------------------------------------
+    PolicyID    policy_id()    const { return m_policy_id; }
+    std::string policy_name()  const { return policy_id_to_name(m_policy_id); }
+
+    bool        is_empty()  const;
+    bool        is_empty()  const;
+    bool        is_serial() const;
+    bool        is_device() const;
+    bool        is_cuda()   const;
+    bool        is_hip()    const;
+    bool        is_openmp() const;
+
+//-----------------------------------------------------------------------------
+// Helpers to convert PolicyID Enum Values to human readable strings and 
+// vice versa.
+//-----------------------------------------------------------------------------
+
+    static conduit::index_t name_to_policy_id(const std::string &name);
+    static std::string      policy_id_to_name(conduit::index_t dtype);
+
+private:
+//-----------------------------------------------------------------------------
+//
+// -- conduit::execution::ExecutionPolicy private data members --
+//
+//-----------------------------------------------------------------------------
+    PolicyID m_policy_id;
 };
+//-----------------------------------------------------------------------------
+// -- end conduit::execution::ExecutionPolicy --
+//-----------------------------------------------------------------------------
+
+
+
+
+
+
+
+
 
 // TODO
 // registers the fancy conduit memory handlers for
@@ -180,7 +268,7 @@ inline void invoke(ExecPolicyTag &exec, Function&& func) noexcept
 // runtime to concrete template tag dispatch of a functor
 //---------------------------------------------------------------------------//
 template <typename Function>
-void dispatch(ExecPolicy policy, Function&& func)
+void dispatch(ExecutionPolicy policy, Function&& func)
 {
     switch(policy.id)
     {
@@ -225,37 +313,37 @@ void dispatch(ExecPolicy policy, Function&& func)
 //---------------------------------------------------------------------------//
 // mock up of a raja like forall implementation 
 //---------------------------------------------------------------------------//
-template <typename ExecPolicy,typename Kernel>
+template <typename ExecutionPolicy,typename Kernel>
 inline void new_forall_exec(const int& begin,
                             const int& end,
                             Kernel&& kernel) noexcept
 {
 
-    std::cout << typeid(ExecPolicy).name() << "  START" << std::endl;
+    std::cout << typeid(ExecutionPolicy).name() << "  START" << std::endl;
     for(int i=begin;i<end;i++)
     {
         kernel(i);
     }
-    std::cout << typeid(ExecPolicy).name() << "  END" << std::endl;
+    std::cout << typeid(ExecutionPolicy).name() << "  END" << std::endl;
 }
 
 
 //---------------------------------------------------------------------------//
 // invoke forall with concrete template tag
 //---------------------------------------------------------------------------//
-template <typename ExecPolicy, typename Kernel>
+template <typename ExecutionPolicy, typename Kernel>
 inline void new_forall(const int& begin,
                        const int& end,
                        Kernel&& kernel) noexcept
 {
-    new_forall_exec<ExecPolicy>(begin,end, std::forward<Kernel>(kernel));
+    new_forall_exec<ExecutionPolicy>(begin,end, std::forward<Kernel>(kernel));
 }
 
 //---------------------------------------------------------------------------//
 // runtime to concrete template tag dispatch of a forall
 //---------------------------------------------------------------------------//
 template <typename Kernel>
-inline void new_forall(ExecPolicy &policy,
+inline void new_forall(ExecutionPolicy &policy,
                        const int& begin,
                        const int& end,
                        Kernel&& kernel) noexcept
