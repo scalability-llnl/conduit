@@ -50,7 +50,21 @@ class ExecPolicy
 public:
     ExecPolicy(policy _id): id(_id) {}
     policy id;
+
+    // cyrus wants static methods that return exec policies to make things cleaner
+    // like the strawman
+
+    // look at datatype for inspiration
+    // enum members should have "_ID" at the end
+    // helpers that give you string of name
+    // helpers that give you ids
+    // helpers that take string of name and construct
 };
+
+// TODO
+// registers the fancy conduit memory handlers for
+// magic memset and memcpy
+static void init_device_memory_handlers();
 
 #if defined(CONDUIT_USE_RAJA)
 //---------------------------------------------------------------------------//

@@ -27,6 +27,20 @@ namespace conduit
 /// Interfaces for host and device memory allocation / deallocation.
 ///
 
+    // TODO everything here should be in the execution namespace
+
+//-----------------------------------------------------------------------------
+void
+AllocationManager::set_conduit_mem_handlers()
+{
+#if defined(ASCENT_DEVICE_ENABLED)
+  // we only need to override the mem handlers in the
+  // presence of cuda or hip
+  conduit::utils::set_memcpy_handler(MagicMemory::copy);
+  conduit::utils::set_memset_handler(MagicMemory::set);
+#endif
+}
+
 
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------

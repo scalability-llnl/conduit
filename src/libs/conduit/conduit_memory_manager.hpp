@@ -29,6 +29,7 @@ namespace conduit
 ///
 
 
+// TODO we don't want the AllocationManager
 //-----------------------------------------------------------------------------
 /// Interface to set allocator ids (singleton)
 //-----------------------------------------------------------------------------

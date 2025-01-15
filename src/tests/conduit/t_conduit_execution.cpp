@@ -35,6 +35,13 @@ void device_free(void *ptr)
 #endif
 }
 
+void conduit_device_prepare()
+{
+    AllocationManager::set_conduit_mem_handlers();
+}
+
+// TODO someday we want allocator to make sense for nodes when we are done with them
+
 //---------------------------------------------------------------------------//
 // example functor 
 //---------------------------------------------------------------------------//
@@ -107,6 +114,7 @@ struct MySpecialFunctor
 //-----------------------------------------------------------------------------
 TEST(conduit_execution, test_forall)
 {
+    conduit_device_prepare();
     const index_t size = 10;
 
     index_t host_vals[size];
