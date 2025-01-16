@@ -1,39 +1,39 @@
-// // Copyright (c) Lawrence Livermore National Security, LLC and other Conduit
-// // Project developers. See top-level LICENSE AND COPYRIGHT files for dates and
-// // other details. No copyright assignment is required to contribute to Conduit.
+// Copyright (c) Lawrence Livermore National Security, LLC and other Conduit
+// Project developers. See top-level LICENSE AND COPYRIGHT files for dates and
+// other details. No copyright assignment is required to contribute to Conduit.
 
-// //-----------------------------------------------------------------------------
-// ///
-// /// file: t_conduit_execution.cpp
-// ///
-// //-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+///
+/// file: t_conduit_execution.cpp
+///
+//-----------------------------------------------------------------------------
 
-// #include "conduit.hpp"
-// #include "conduit_execution.hpp"
-// #include "conduit_memory_manager.hpp"
+#include "conduit.hpp"
+#include "conduit_execution.hpp"
+#include "conduit_memory_manager.hpp"
 
-// #include <iostream>
-// #include "gtest/gtest.h"
+#include <iostream>
+#include "gtest/gtest.h"
 
-// using namespace conduit;
+using namespace conduit;
 
-// void *device_alloc(index_t bytes)
-// {
-// #if defined(CONDUIT_USE_RAJA)
-//     return DeviceMemory::allocate(bytes);
-// #else
-//     return HostMemory::allocate(bytes);
-// #endif
-// }
+void *device_alloc(index_t bytes)
+{
+#if defined(CONDUIT_USE_RAJA)
+    return execution::DeviceMemory::allocate(bytes);
+#else
+    return execution::HostMemory::allocate(bytes);
+#endif
+}
 
-// void device_free(void *ptr)
-// {
-// #if defined(CONDUIT_USE_RAJA)
-//     return DeviceMemory::deallocate(ptr);
-// #else
-//     return HostMemory::deallocate(ptr);
-// #endif
-// }
+void device_free(void *ptr)
+{
+#if defined(CONDUIT_USE_RAJA)
+    return execution::DeviceMemory::deallocate(ptr);
+#else
+    return execution::HostMemory::deallocate(ptr);
+#endif
+}
 
 // void conduit_device_prepare()
 // {
