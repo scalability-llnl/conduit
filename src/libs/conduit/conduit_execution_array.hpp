@@ -35,6 +35,8 @@ namespace conduit
 class Node;
 template <typename T>
 class DataArray;
+template <typename T>
+class ExecutionAccessor;
 
 //-----------------------------------------------------------------------------
 // -- begin conduit::ExecutionArray --
@@ -134,14 +136,14 @@ public:
     /// counts number of occurrences of given value
     index_t         count(T value) const;
 
-//-----------------------------------------------------------------------------
-// Cool Stuff
-//-----------------------------------------------------------------------------
-    void            use_with(conduit::execution::policy policy);
+// //-----------------------------------------------------------------------------
+// // Cool Stuff
+// //-----------------------------------------------------------------------------
+//     void            use_with(conduit::execution::ExecutionPolicy policy);
 
-    void            sync();
+//     void            sync();
 
-    void            assume();
+//     void            assume();
 
 //-----------------------------------------------------------------------------
 // Setters

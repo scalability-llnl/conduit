@@ -50,7 +50,7 @@ public:
 /// Policy is an Enumeration used to describe the policy cases supported
 ///  by conduit:
 //-----------------------------------------------------------------------------
-    enum class PolicyID
+    enum class PolicyID : conduit::index_t
     {
         EMPTY_ID,
         SERIAL_ID,
@@ -60,30 +60,30 @@ public:
         OPENMP_ID
     };
 
-//-----------------------------------------------------------------------------
-// -- begin conduit::execution::ExecutionPolicy Constructor Helpers --
-//-----------------------------------------------------------------------------
-    static ExecutionPolicy empty();
+// //-----------------------------------------------------------------------------
+// // -- begin conduit::execution::ExecutionPolicy Constructor Helpers --
+// //-----------------------------------------------------------------------------
+//     static ExecutionPolicy empty();
 
-    static ExecutionPolicy serial();
+//     static ExecutionPolicy serial();
     
-    static ExecutionPolicy device();
+//     static ExecutionPolicy device();
     
-    static ExecutionPolicy cuda();
+//     static ExecutionPolicy cuda();
     
-    static ExecutionPolicy hip();
+//     static ExecutionPolicy hip();
     
-    static ExecutionPolicy openmp();
+//     static ExecutionPolicy openmp();
 
-//-----------------------------------------------------------------------------
-// -- end conduit::execution::ExecutionPolicy Constructor Helpers --
-//-----------------------------------------------------------------------------
+// //-----------------------------------------------------------------------------
+// // -- end conduit::execution::ExecutionPolicy Constructor Helpers --
+// //-----------------------------------------------------------------------------
 
-//-----------------------------------------------------------------------------
-//
-// -- conduit::execution::ExecutionPolicy public methods --
-//
-//-----------------------------------------------------------------------------
+// //-----------------------------------------------------------------------------
+// //
+// // -- conduit::execution::ExecutionPolicy public methods --
+// //
+// //-----------------------------------------------------------------------------
 
 //-----------------------------------------------------------------------------
 // Construction and Destruction
@@ -101,32 +101,32 @@ public:
     /// destructor
     ~ExecutionPolicy();
 
-//-----------------------------------------------------------------------------
-// Setters
-//-----------------------------------------------------------------------------
-    void set_policy(PolicyID policy_id)
-        { m_policy_id = policy_id; }
+// //-----------------------------------------------------------------------------
+// // Setters
+// //-----------------------------------------------------------------------------
+//     void set_policy(PolicyID policy_id)
+//         { m_policy_id = policy_id; }
 
-//-----------------------------------------------------------------------------
-// Getters and info methods.
-//-----------------------------------------------------------------------------
-    PolicyID    policy_id()    const { return m_policy_id; }
-    std::string policy_name()  const { return policy_id_to_name(m_policy_id); }
+// //-----------------------------------------------------------------------------
+// // Getters and info methods.
+// //-----------------------------------------------------------------------------
+//     PolicyID    policy_id()    const { return m_policy_id; }
+//     std::string policy_name()  const { return policy_id_to_name(m_policy_id); }
 
-    bool        is_empty()     const;
-    bool        is_serial()    const;
-    bool        is_device()    const;
-    bool        is_cuda()      const;
-    bool        is_hip()       const;
-    bool        is_openmp()    const;
+//     bool        is_empty()     const;
+//     bool        is_serial()    const;
+//     bool        is_device()    const;
+//     bool        is_cuda()      const;
+//     bool        is_hip()       const;
+//     bool        is_openmp()    const;
 
-//-----------------------------------------------------------------------------
-// Helpers to convert PolicyID Enum Values to human readable strings and 
-// vice versa.
-//-----------------------------------------------------------------------------
+// //-----------------------------------------------------------------------------
+// // Helpers to convert PolicyID Enum Values to human readable strings and 
+// // vice versa.
+// //-----------------------------------------------------------------------------
 
-    static conduit::index_t name_to_policy_id(const std::string &name);
-    static std::string      policy_id_to_name(conduit::index_t dtype);
+//     static conduit::index_t name_to_policy_id(const std::string &name);
+//     static std::string      policy_id_to_name(const PolicyID policy_id);
 
 private:
 //-----------------------------------------------------------------------------
@@ -140,13 +140,14 @@ private:
 // -- end conduit::execution::ExecutionPolicy --
 //-----------------------------------------------------------------------------
 
-// registers the fancy conduit memory handlers for
-// magic memset and memcpy
-static void init_device_memory_handlers();
+// // registers the fancy conduit memory handlers for
+// // magic memset and memcpy
+// static void init_device_memory_handlers();
 
 
 
-
+struct EmptyPolicy
+{};
 
 #if defined(CONDUIT_USE_RAJA)
 //---------------------------------------------------------------------------//
@@ -249,182 +250,182 @@ struct OpenMPExec
 
 #endif
 
-//---------------------------------------------------------------------------//
-// invoke functor with concrete template tag
-//---------------------------------------------------------------------------//
-template <typename ExecPolicyTag, typename Function>
-inline void invoke(ExecPolicyTag &exec, Function&& func) noexcept
-{
-    func(exec);
-}
+// //---------------------------------------------------------------------------//
+// // invoke functor with concrete template tag
+// //---------------------------------------------------------------------------//
+// template <typename ExecPolicyTag, typename Function>
+// inline void invoke(ExecPolicyTag &exec, Function&& func) noexcept
+// {
+//     func(exec);
+// }
 
-//---------------------------------------------------------------------------//
-// runtime to concrete template tag dispatch of a functor
-//---------------------------------------------------------------------------//
-template <typename Function>
-void
-dispatch(ExecutionPolicy policy, Function&& func)
-{
-    if (policy.is_serial())
-    {
-        SerialExec se;
-        invoke(se, func);
-    }
-    else if (policy.is_device())
-    {
-#if defined(CONDUIT_USE_RAJA) && defined(CONDUIT_USE_CUDA)
-        CudaExec ce;
-        invoke(ce, func);
-#elif defined(CONDUIT_USE_RAJA) && defined(CONDUIT_USE_HIP)
-        HipExec he;
-        invoke(he, func);
-#else
-        CONDUIT_ERROR("Conduit was built with neither CUDA nor HIP.");
-#endif
-    }
-    else if (policy.is_cuda())
-    {
-#if defined(CONDUIT_USE_RAJA) && defined(CONDUIT_USE_CUDA)
-        CudaExec ce;
-        invoke(ce, func);
-#else
-        CONDUIT_ERROR("Conduit was not built with CUDA.");
-#endif
-    }
-    else if (policy.is_hip())
-    {
-#if defined(CONDUIT_USE_RAJA) && defined(CONDUIT_USE_HIP)
-        HipExec he;
-        invoke(he, func);
-#else
-        CONDUIT_ERROR("Conduit was not built with HIP.");
-#endif
-    }
-    else if (policy.is_openmp())
-    {
-#if defined(CONDUIT_USE_OPENMP)
-        OpenMPExec ompe;
-        invoke(ompe, func);
-#else
-        CONDUIT_ERROR("Conduit was not built with OpenMP.");
-#endif
-    }
-    else // policy.is_empty()
-    {
-        CONDUIT_ERROR("Cannot invoke with an empty policy.");
-    }
-}
+// //---------------------------------------------------------------------------//
+// // runtime to concrete template tag dispatch of a functor
+// //---------------------------------------------------------------------------//
+// template <typename Function>
+// void
+// dispatch(ExecutionPolicy policy, Function&& func)
+// {
+//     if (policy.is_serial())
+//     {
+//         SerialExec se;
+//         invoke(se, func);
+//     }
+//     else if (policy.is_device())
+//     {
+// #if defined(CONDUIT_USE_RAJA) && defined(CONDUIT_USE_CUDA)
+//         CudaExec ce;
+//         invoke(ce, func);
+// #elif defined(CONDUIT_USE_RAJA) && defined(CONDUIT_USE_HIP)
+//         HipExec he;
+//         invoke(he, func);
+// #else
+//         CONDUIT_ERROR("Conduit was built with neither CUDA nor HIP.");
+// #endif
+//     }
+//     else if (policy.is_cuda())
+//     {
+// #if defined(CONDUIT_USE_RAJA) && defined(CONDUIT_USE_CUDA)
+//         CudaExec ce;
+//         invoke(ce, func);
+// #else
+//         CONDUIT_ERROR("Conduit was not built with CUDA.");
+// #endif
+//     }
+//     else if (policy.is_hip())
+//     {
+// #if defined(CONDUIT_USE_RAJA) && defined(CONDUIT_USE_HIP)
+//         HipExec he;
+//         invoke(he, func);
+// #else
+//         CONDUIT_ERROR("Conduit was not built with HIP.");
+// #endif
+//     }
+//     else if (policy.is_openmp())
+//     {
+// #if defined(CONDUIT_USE_OPENMP)
+//         OpenMPExec ompe;
+//         invoke(ompe, func);
+// #else
+//         CONDUIT_ERROR("Conduit was not built with OpenMP.");
+// #endif
+//     }
+//     else // policy.is_empty()
+//     {
+//         CONDUIT_ERROR("Cannot invoke with an empty policy.");
+//     }
+// }
 
-//---------------------------------------------------------------------------//
-// mock up of a raja like forall implementation 
-//---------------------------------------------------------------------------//
-template <typename ExecutionPolicy,typename Kernel>
-inline void
-new_forall_exec(const int& begin,
-                const int& end,
-                Kernel&& kernel) noexcept
-{
-    std::cout << typeid(ExecutionPolicy).name() << "  START" << std::endl;
-    for (int i = begin; i < end; i ++)
-    {
-        kernel(i);
-    }
-    std::cout << typeid(ExecutionPolicy).name() << "  END" << std::endl;
-}
+// //---------------------------------------------------------------------------//
+// // mock up of a raja like forall implementation 
+// //---------------------------------------------------------------------------//
+// template <typename ExecutionPolicy,typename Kernel>
+// inline void
+// new_forall_exec(const int& begin,
+//                 const int& end,
+//                 Kernel&& kernel) noexcept
+// {
+//     std::cout << typeid(ExecutionPolicy).name() << "  START" << std::endl;
+//     for (int i = begin; i < end; i ++)
+//     {
+//         kernel(i);
+//     }
+//     std::cout << typeid(ExecutionPolicy).name() << "  END" << std::endl;
+// }
 
 
-//---------------------------------------------------------------------------//
-// invoke forall with concrete template tag
-//---------------------------------------------------------------------------//
-template <typename ExecutionPolicy, typename Kernel>
-inline void
-new_forall(const int& begin,
-           const int& end,
-           Kernel&& kernel) noexcept
-{
-    new_forall_exec<ExecutionPolicy>(begin, end, std::forward<Kernel>(kernel));
-}
+// //---------------------------------------------------------------------------//
+// // invoke forall with concrete template tag
+// //---------------------------------------------------------------------------//
+// template <typename ExecutionPolicy, typename Kernel>
+// inline void
+// new_forall(const int& begin,
+//            const int& end,
+//            Kernel&& kernel) noexcept
+// {
+//     new_forall_exec<ExecutionPolicy>(begin, end, std::forward<Kernel>(kernel));
+// }
 
-//---------------------------------------------------------------------------//
-// runtime to concrete template tag dispatch of a forall
-//---------------------------------------------------------------------------//
-template <typename Kernel>
-inline void
-new_forall(ExecutionPolicy &policy,
-           const int& begin,
-           const int& end,
-           Kernel&& kernel) noexcept
-{
-    if (policy.is_serial())
-    {
-        new_forall<SerialExec>(begin, end, std::forward<Kernel>(kernel));
-    }
-    else if (policy.is_device())
-    {
-#if defined(CONDUIT_USE_RAJA) && defined(CONDUIT_USE_CUDA)
-        new_forall<CudaExec>(begin, end, std::forward<Kernel>(kernel));
-#elif defined(CONDUIT_USE_RAJA) && defined(CONDUIT_USE_HIP)
-        new_forall<HipExec>(begin, end, std::forward<Kernel>(kernel));
-#else
-        CONDUIT_ERROR("Conduit was built with neither CUDA nor HIP.");
-#endif
-    }
-    else if (policy.is_cuda())
-    {
-#if defined(CONDUIT_USE_RAJA) && defined(CONDUIT_USE_CUDA)
-        new_forall<CudaExec>(begin, end, std::forward<Kernel>(kernel));
-#else
-        CONDUIT_ERROR("Conduit was not built with CUDA.");
-#endif
-    }
-    else if (policy.is_hip())
-    {
-#if defined(CONDUIT_USE_RAJA) && defined(CONDUIT_USE_HIP)
-        new_forall<HipExec>(begin, end, std::forward<Kernel>(kernel));
-#else
-        CONDUIT_ERROR("Conduit was not built with HIP.");
-#endif
-    }
-    else if (policy.is_openmp())
-    {
-#if defined(CONDUIT_USE_OPENMP)
-        new_forall<HipExec>(begin, end, std::forward<Kernel>(kernel));
-#else
-        CONDUIT_ERROR("Conduit was not built with OpenMP.");
-#endif
-    }
-    else // policy.is_empty()
-    {
-        CONDUIT_ERROR("Cannot call for_all with an empty policy.");
-    }
-}
+// //---------------------------------------------------------------------------//
+// // runtime to concrete template tag dispatch of a forall
+// //---------------------------------------------------------------------------//
+// template <typename Kernel>
+// inline void
+// new_forall(ExecutionPolicy &policy,
+//            const int& begin,
+//            const int& end,
+//            Kernel&& kernel) noexcept
+// {
+//     if (policy.is_serial())
+//     {
+//         new_forall<SerialExec>(begin, end, std::forward<Kernel>(kernel));
+//     }
+//     else if (policy.is_device())
+//     {
+// #if defined(CONDUIT_USE_RAJA) && defined(CONDUIT_USE_CUDA)
+//         new_forall<CudaExec>(begin, end, std::forward<Kernel>(kernel));
+// #elif defined(CONDUIT_USE_RAJA) && defined(CONDUIT_USE_HIP)
+//         new_forall<HipExec>(begin, end, std::forward<Kernel>(kernel));
+// #else
+//         CONDUIT_ERROR("Conduit was built with neither CUDA nor HIP.");
+// #endif
+//     }
+//     else if (policy.is_cuda())
+//     {
+// #if defined(CONDUIT_USE_RAJA) && defined(CONDUIT_USE_CUDA)
+//         new_forall<CudaExec>(begin, end, std::forward<Kernel>(kernel));
+// #else
+//         CONDUIT_ERROR("Conduit was not built with CUDA.");
+// #endif
+//     }
+//     else if (policy.is_hip())
+//     {
+// #if defined(CONDUIT_USE_RAJA) && defined(CONDUIT_USE_HIP)
+//         new_forall<HipExec>(begin, end, std::forward<Kernel>(kernel));
+// #else
+//         CONDUIT_ERROR("Conduit was not built with HIP.");
+// #endif
+//     }
+//     else if (policy.is_openmp())
+//     {
+// #if defined(CONDUIT_USE_OPENMP)
+//         new_forall<HipExec>(begin, end, std::forward<Kernel>(kernel));
+// #else
+//         CONDUIT_ERROR("Conduit was not built with OpenMP.");
+// #endif
+//     }
+//     else // policy.is_empty()
+//     {
+//         CONDUIT_ERROR("Cannot call for_all with an empty policy.");
+//     }
+// }
 
 // OLD BRAD STUFF below
 
 //---------------------------------------------------------------------------
-template <typename ExecutionPolicy, typename Func>
+template <typename ExecPolicy, typename Func>
 inline void
 for_all(size_t begin, size_t end, Func &&func)
 {
-    using policy = typename ExecutionPolicy::for_policy;
+    using policy = typename ExecPolicy::for_policy;
     policy exec;
     exec(begin, end, func);
 }
 
-template <typename ExecutionPolicy, typename Iterator>
+template <typename ExecPolicy, typename Iterator>
 inline void
 sort(Iterator begin, Iterator end)
 {
-    using policy = typename ExecutionPolicy::sort_policy;
+    using policy = typename ExecPolicy::sort_policy;
     policy exec;
     exec(begin, end);
 }
 
-template <typename ExecutionPolicy, typename Iterator, typename Predicate>
+template <typename ExecPolicy, typename Iterator, typename Predicate>
 inline void
 sort(Iterator begin, Iterator end, Predicate &&predicate)
 {
-    using policy = typename ExecutionPolicy::sort_policy;
+    using policy = typename ExecPolicy::sort_policy;
     policy exec;
     exec(begin, end, predicate);
 }
