@@ -15,7 +15,20 @@
 #include "conduit_config.h"
 #include "conduit_utils.hpp"
 
+#if defined(CONDUIT_UMPIRE_ENABLED)
+#include <umpire/Umpire.hpp>
+#include <umpire/util/MemoryResourceTraits.hpp>
+#include <umpire/strategy/DynamicPoolList.hpp>
+#endif
 #include <cstring> // memcpy
+
+#if defined(CONDUIT_HIP_ENABLED)
+#if HIP_VERSION_MAJOR >= 6
+#define TYPE_ATTR type
+#else
+#define TYPE_ATTR memoryType
+#endif
+#endif
 
 //-----------------------------------------------------------------------------
 // -- begin conduit --
@@ -23,23 +36,15 @@
 namespace conduit
 {
 
+//-----------------------------------------------------------------------------
+// -- begin conduit::execution --
+//-----------------------------------------------------------------------------
+namespace execution
+{
+
 ///
 /// Interfaces for host and device memory allocation / deallocation.
 ///
-
-    // TODO everything here should be in the execution namespace
-
-//-----------------------------------------------------------------------------
-void
-AllocationManager::set_conduit_mem_handlers()
-{
-#if defined(ASCENT_DEVICE_ENABLED)
-  // we only need to override the mem handlers in the
-  // presence of cuda or hip
-  conduit::utils::set_memcpy_handler(MagicMemory::copy);
-  conduit::utils::set_memset_handler(MagicMemory::set);
-#endif
-}
 
 
 //-----------------------------------------------------------------------------
@@ -57,14 +62,21 @@ HostMemory::allocate(size_t bytes)
 {
     m_total_bytes_alloced += bytes;
     m_alloc_count ++;
-// #if defined(ASCENT_UMPIRE_ENABLED)
-//     auto &rm = umpire::ResourceManager::getInstance ();
-//     const int allocator_id = AllocationManager::host_allocator_id();
-//     umpire::Allocator host_allocator = rm.getAllocator (allocator_id);
-//     return host_allocator.allocate(bytes);
-// #else
+#if defined(CONDUIT_UMPIRE_ENABLED)
+    auto &rm = umpire::ResourceManager::getInstance ();
+    const int allocator_id = AllocationManager::host_allocator_id();
+    umpire::Allocator host_allocator = rm.getAllocator (allocator_id);
+    return host_allocator.allocate(bytes);
+#else
     return malloc(bytes);
-// #endif
+#endif
+}
+
+//-----------------------------------------------------------------------------
+void *
+HostMemory::allocate(size_t items, size_t item_size)
+{
+    return allocate(items * item_size);
 }
 
 //-----------------------------------------------------------------------------
@@ -72,14 +84,14 @@ void
 HostMemory::deallocate(void *data_ptr)
 {
     m_free_count ++;
-// #if defined(ASCENT_UMPIRE_ENABLED)
-//     auto &rm = umpire::ResourceManager::getInstance ();
-//     const int allocator_id = AllocationManager::host_allocator_id();
-//     umpire::Allocator host_allocator = rm.getAllocator (allocator_id);
-//     host_allocator.deallocate(data_ptr);
-// #else
+#if defined(CONDUIT_UMPIRE_ENABLED)
+    auto &rm = umpire::ResourceManager::getInstance ();
+    const int allocator_id = AllocationManager::host_allocator_id();
+    umpire::Allocator host_allocator = rm.getAllocator (allocator_id);
+    host_allocator.deallocate(data_ptr);
+#else
     return free(data_ptr);
-// #endif
+#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -115,6 +127,13 @@ DeviceMemory::allocate(size_t bytes)
 }
 
 //-----------------------------------------------------------------------------
+void *
+DeviceMemory::allocate(size_t items, size_t item_size)
+{
+    return allocate(items * item_size);
+}
+
+//-----------------------------------------------------------------------------
 void
 DeviceMemory::deallocate(void *data_ptr)
 {
@@ -136,12 +155,51 @@ DeviceMemory::deallocate(void *data_ptr)
 }
 
 //-----------------------------------------------------------------------------
+void
+DeviceMemory::is_device_ptr(const void *ptr, bool &is_gpu, bool &is_unified)
+{
+    is_gpu = false;
+    is_unified = false;
+#if defined(CONDUIT_CUDA_ENABLED)
+    cudaPointerAttributes atts;
+    const cudaError_t perr = cudaPointerGetAttributes(&atts, ptr);
+
+    is_gpu = false;
+    is_unified = false;
+
+    // clear last error so other error checking does
+    // not pick it up
+    cudaError_t error = cudaGetLastError();
+    is_gpu = (perr == cudaSuccess) &&
+             (atts.type == cudaMemoryTypeDevice ||
+              atts.type == cudaMemoryTypeManaged   );
+
+    is_unified = cudaSuccess && atts.type == cudaMemoryTypeDevice;
+#elif defined(CONDUIT_HIP_ENABLED)
+    hipPointerAttribute_t atts;
+    const hipError_t perr = hipPointerGetAttributes(&atts, ptr);
+
+    is_gpu = false;
+    is_unified = false;
+
+    // clear last error so other error checking does
+    // not pick it up
+    hipError_t error = hipGetLastError();
+    is_gpu = (perr == hipSuccess) &&
+             (atts.TYPE_ATTR == hipMemoryTypeDevice ||
+              atts.TYPE_ATTR ==  hipMemoryTypeUnified );
+    // CYRUSH: this doens't look right:
+    is_unified = (hipSuccess && atts.TYPE_ATTR == hipMemoryTypeDevice);
+#endif
+}
+
+//-----------------------------------------------------------------------------
 // Adapted from:
 // https://gitlab.kitware.com/third-party/nvpipe/blob/master/encode.c
 bool
 DeviceMemory::is_device_ptr(const void *ptr)
 {
-#if defined(CONDUIT_USE_CUDA)
+#if defined(CONDUIT_CUDA_ENABLED)
     cudaPointerAttributes atts;
     const cudaError_t perr = cudaPointerGetAttributes(&atts, ptr);
     // clear last error so other error checking does
@@ -151,7 +209,7 @@ DeviceMemory::is_device_ptr(const void *ptr)
                 (atts.type == cudaMemoryTypeDevice ||
                  atts.type == cudaMemoryTypeManaged);
 
-#elif defined(CONDUIT_USE_HIP)
+#elif defined(CONDUIT_HIP_ENABLED)
     hipPointerAttribute_t atts;
     const hipError_t perr = hipPointerGetAttributes(&atts, ptr);
     // clear last error so other error checking does
@@ -180,9 +238,9 @@ MagicMemory::set(void * ptr, int value, size_t num )
     bool is_device = DeviceMemory::is_device_ptr(ptr);
     if (is_device)
     {
-#if defined(CONDUIT_USE_CUDA)
+#if defined(CONDUIT_CUDA_ENABLED)
         cudaMemset(ptr,value,num);
-#elif defined(CONDUIT_USE_HIP)
+#elif defined(CONDUIT_HIP_ENABLED)
         hipMemset(ptr,value,num);
 #endif
     }
@@ -204,25 +262,25 @@ MagicMemory::copy(void * destination, const void * source, size_t num)
     bool dst_is_gpu = DeviceMemory::is_device_ptr(destination);
     if (src_is_gpu && dst_is_gpu)
     {
-#if defined(CONDUIT_USE_CUDA)
+#if defined(CONDUIT_CUDA_ENABLED)
         cudaMemcpy(destination, source, num, cudaMemcpyDeviceToDevice);
-#elif defined(CONDUIT_USE_HIP)
+#elif defined(CONDUIT_HIP_ENABLED)
         hipMemcpy(destination, source, num, hipMemcpyDeviceToDevice);
 #endif
     }
     else if (src_is_gpu && !dst_is_gpu)
     {
-#if defined(CONDUIT_USE_CUDA)
+#if defined(CONDUIT_CUDA_ENABLED)
         cudaMemcpy(destination, source, num, cudaMemcpyDeviceToHost);
-#elif defined(CONDUIT_USE_HIP)
+#elif defined(CONDUIT_HIP_ENABLED)
         hipMemcpy(destination, source, num, hipMemcpyDeviceToHost);
 #endif
     }
     else if (!src_is_gpu && dst_is_gpu)
     {
-#if defined(CONDUIT_USE_CUDA)
+#if defined(CONDUIT_CUDA_ENABLED)
         cudaMemcpy(destination, source, num, cudaMemcpyHostToDevice);
-#elif defined(CONDUIT_USE_HIP)
+#elif defined(CONDUIT_HIP_ENABLED)
         hipMemcpy(destination, source, num, hipMemcpyHostToDevice);
 #endif
     }
@@ -236,6 +294,11 @@ MagicMemory::copy(void * destination, const void * source, size_t num)
     memcpy(destination,source,num);
 #endif
 }
+
+}
+//-----------------------------------------------------------------------------
+// -- end conduit::execution --
+//-----------------------------------------------------------------------------
 
 }
 //-----------------------------------------------------------------------------

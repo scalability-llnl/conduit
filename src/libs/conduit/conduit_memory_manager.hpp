@@ -24,57 +24,15 @@
 namespace conduit
 {
 
+//-----------------------------------------------------------------------------
+// -- begin conduit::execution --
+//-----------------------------------------------------------------------------
+namespace execution
+{
+
 ///
 /// Interfaces for host and device memory allocation / deallocation.
 ///
-
-
-// TODO we don't want the AllocationManager
-//-----------------------------------------------------------------------------
-/// Interface to set allocator ids (singleton)
-//-----------------------------------------------------------------------------
-class AllocationManager
-{
-public:
-    /// Return host allocator id
-    ///  If Umpire is enabled and no allocator has been set,
-    ///  an Umpire "HOST_POOL" allocator is created, set, and returned.
-    static int  host_allocator_id();
-
-    /// Return device allocator id
-    ///  If Umpire is enabled and no allocator has been set,
-    ///  an Umpire "GPU_POOL" allocator is created, set, and returned.
-    /// If Umpire is disabled, an error is thrown
-    static int  device_allocator_id();
-
-    /// set umpire host allocator from outside ascent via id
-    /// Throws an error if Umpire is disabled
-    static bool set_host_allocator_id(int id);
-
-    /// set umpire device allocator from outside ascent via id
-    /// Throws an error if Umpire is disabled
-    static bool set_device_allocator_id(int id);
-
-    // registered conduit magic memory allocator id for host memory
-    static int  conduit_host_allocator_id();
-    // registered conduit magic memory allocator id for device memory
-    static int  conduit_device_allocator_id();
-
-    // registers the fancy conduit memory handlers for
-    // magic memset and memcpy
-    static void set_conduit_mem_handlers();
-
-private:
-    static int  m_host_allocator_id;
-    static int  m_device_allocator_id;
-    
-    static int  m_conduit_host_allocator_id;
-    static int  m_conduit_device_allocator_id;
-
-    static bool m_external_host_allocator;
-    static bool m_external_device_allocator;
-
-};
 
 //-----------------------------------------------------------------------------
 /// Host Memory allocation / deallocation interface (singleton)
@@ -119,6 +77,11 @@ struct MagicMemory
     static void set(void *ptr, int value, size_t num);
     static void copy(void *destination, const void *source, size_t num);
 };
+
+}
+//-----------------------------------------------------------------------------
+// -- end conduit::execution --
+//-----------------------------------------------------------------------------
 
 }
 //-----------------------------------------------------------------------------

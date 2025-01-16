@@ -113,13 +113,13 @@ public:
     PolicyID    policy_id()    const { return m_policy_id; }
     std::string policy_name()  const { return policy_id_to_name(m_policy_id); }
 
-    bool        is_empty()  const;
-    bool        is_empty()  const;
-    bool        is_serial() const;
-    bool        is_device() const;
-    bool        is_cuda()   const;
-    bool        is_hip()    const;
-    bool        is_openmp() const;
+    bool        is_empty()     const;
+    bool        is_empty()     const;
+    bool        is_serial()    const;
+    bool        is_device()    const;
+    bool        is_cuda()      const;
+    bool        is_hip()       const;
+    bool        is_openmp()    const;
 
 //-----------------------------------------------------------------------------
 // Helpers to convert PolicyID Enum Values to human readable strings and 
@@ -141,18 +141,13 @@ private:
 // -- end conduit::execution::ExecutionPolicy --
 //-----------------------------------------------------------------------------
 
-
-
-
-
-
-
-
-
-// TODO
 // registers the fancy conduit memory handlers for
 // magic memset and memcpy
 static void init_device_memory_handlers();
+
+
+
+
 
 #if defined(CONDUIT_USE_RAJA)
 //---------------------------------------------------------------------------//

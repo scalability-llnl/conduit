@@ -180,7 +180,7 @@ ExecutionPolicy::name_to_id(const std::string &policy_name)
 
 //---------------------------------------------------------------------------//
 std::string 
-DataType::id_to_name(conduit::index_t policy_id)
+ExecutionPolicy::id_to_name(conduit::index_t policy_id)
 {
     if (policy_id      == EMPTY_ID)  return "empty";
     else if (policy_id == SERIAL_ID) return "serial";
@@ -189,6 +189,18 @@ DataType::id_to_name(conduit::index_t policy_id)
     else if (policy_id == HIP_ID)    return "hip";
     else if (policy_id == OPENMP_ID) return "openmp";
     return "empty";
+}
+
+//---------------------------------------------------------------------------//
+void
+init_device_memory_handlers()
+{
+#if defined(CONDUIT_DEVICE_ENABLED)
+    // we only need to override the mem handlers in the
+    // presence of cuda or hip
+    conduit::utils::set_memcpy_handler(MagicMemory::copy);
+    conduit::utils::set_memset_handler(MagicMemory::set);
+#endif
 }
 
 }
