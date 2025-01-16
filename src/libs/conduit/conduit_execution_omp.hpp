@@ -14,8 +14,7 @@
 //-----------------------------------------------------------------------------
 // conduit lib includes
 //-----------------------------------------------------------------------------
-#include "conduit.hpp"
-#include "conduit_config.h"
+#include "conduit_core.hpp"
 
 #if defined(CONDUIT_USE_OPENMP)
 #include <omp.h>
