@@ -137,7 +137,7 @@ ExecutionPolicy::is_serial() const
 bool
 ExecutionPolicy::is_device() const
 {
-    return m_policy_id == DEVICE_ID;
+    return m_policy_id == DEVICE_ID || is_cuda() || is_hip();
 }
 
 //---------------------------------------------------------------------------//

@@ -103,13 +103,13 @@ ExecutionAccessor<T>::~ExecutionAccessor()
 {
     if (m_do_i_own_it)
     {
-        if (DeviceMemory::is_device_ptr(m_other_ptr))
+        if (execution::DeviceMemory::is_device_ptr(m_other_ptr))
         {
-            DeviceMemory::deallocate(m_other_ptr);
+            execution::DeviceMemory::deallocate(m_other_ptr);
         }
         else
         {
-            HostMemory::deallocate(m_other_ptr);
+            execution::HostMemory::deallocate(m_other_ptr);
         }
     }
 }
@@ -461,13 +461,13 @@ ExecutionAccessor<T>::other_dtype() const
 //---------------------------------------------------------------------------//
 template <typename T>
 void
-ExecutionAccessor<T>::use_with(conduit::execution::policy policy)
+ExecutionAccessor<T>::use_with(conduit::execution::ExecutionPolicy policy)
 {
     // we are being asked to execute on the device
-    if (policy == conduit::execution::policy::Device)
+    if (policy.is_device())
     {
         // data is already on the device
-        if (DeviceMemory::is_device_ptr(m_data))
+        if (execution::DeviceMemory::is_device_ptr(m_data))
         {
             // Do nothing
         }
@@ -477,10 +477,11 @@ ExecutionAccessor<T>::use_with(conduit::execution::policy policy)
             if (m_node_ptr->data_ptr() == m_data)
             {
                 CONDUIT_ASSERT(m_other_ptr == nullptr,
-                    "Using accessor in this way will result in a memory leak.");
+                    "Using execution accessor in this way will result in a memory leak.");
 
                 // allocate new memory and create a new dtype
-                m_other_ptr = DeviceMemory::allocate(dtype().element_bytes() * number_of_elements());
+                m_other_ptr = execution::DeviceMemory::allocate(
+                    dtype().element_bytes() * number_of_elements());
                 m_do_i_own_it = true;
                 m_other_dtype = DataType(dtype().id(),
                                          number_of_elements(),
@@ -504,13 +505,14 @@ ExecutionAccessor<T>::use_with(conduit::execution::policy policy)
             }
             else // we started out on the device
             {
-                CONDUIT_ASSERT(m_data == m_other_ptr, "TODO");
+                CONDUIT_ASSERT(m_data == m_other_ptr,
+                    "Using execution accessor in this way will result in a memory leak.");
 
                 // call sync to bring our copy of the data on the host back to the device
                 sync();
 
                 // dealloc the ptr on the host now that we have copied back
-                HostMemory::deallocate(m_data);
+                execution::HostMemory::deallocate(m_data);
                 m_do_i_own_it = false;
                 m_other_dtype = DataType::empty();
 
@@ -526,11 +528,10 @@ ExecutionAccessor<T>::use_with(conduit::execution::policy policy)
             }
         }
     }
-    // TODO do we support other cases here? Serial, Device, Cuda, Hip, OpenMP
     else // we are being asked to execute on the host
     {
         // data is already on the host
-        if (! DeviceMemory::is_device_ptr(m_data))
+        if (! execution::DeviceMemory::is_device_ptr(m_data))
         {
             // Do nothing
         }
@@ -540,10 +541,11 @@ ExecutionAccessor<T>::use_with(conduit::execution::policy policy)
             if (m_node_ptr->data_ptr() == m_data)
             {
                 CONDUIT_ASSERT(m_other_ptr == nullptr,
-                    "Using accessor in this way will result in a memory leak.");
+                    "Using execution accessor in this way will result in a memory leak.");
 
                 // allocate new memory and create a new dtype
-                m_other_ptr = HostMemory::allocate(dtype().element_bytes() * number_of_elements());
+                m_other_ptr = execution::HostMemory::allocate(
+                    dtype().element_bytes() * number_of_elements());
                 m_do_i_own_it = true;
                 m_other_dtype = DataType(dtype().id(),
                                          number_of_elements(),
@@ -567,13 +569,14 @@ ExecutionAccessor<T>::use_with(conduit::execution::policy policy)
             }
             else // we started out on the host
             {
-                CONDUIT_ASSERT(m_data == m_other_ptr, "TODO");
+                CONDUIT_ASSERT(m_data == m_other_ptr,
+                    "Using execution accessor in this way will result in a memory leak.");
 
                 // call sync to bring our copy of the data on the device back to the host
                 sync();
 
                 // dealloc the ptr on the host now that we have copied back
-                DeviceMemory::deallocate(m_data);
+                execution::DeviceMemory::deallocate(m_data);
                 m_do_i_own_it = false;
                 m_other_dtype = DataType::empty();
 
@@ -620,7 +623,8 @@ ExecutionAccessor<T>::assume()
     // if the ptrs don't point to the same place
     if (m_data != m_node_ptr->data_ptr())
     {
-        CONDUIT_ASSERT(m_data == m_other_ptr, "TODO");
+        CONDUIT_ASSERT(m_data == m_other_ptr,
+            "Using execution accessor in this way will result in a memory leak.");
 
         // reset will deallocate the data the node points to
         m_node_ptr->reset();

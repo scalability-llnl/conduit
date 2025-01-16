@@ -154,6 +154,8 @@ DeviceMemory::deallocate(void *data_ptr)
 #endif
 }
 
+// HIP and CUDA are mutually exclusive
+
 //-----------------------------------------------------------------------------
 void
 DeviceMemory::is_device_ptr(const void *ptr, bool &is_gpu, bool &is_unified)

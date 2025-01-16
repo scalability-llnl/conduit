@@ -114,7 +114,6 @@ public:
     std::string policy_name()  const { return policy_id_to_name(m_policy_id); }
 
     bool        is_empty()     const;
-    bool        is_empty()     const;
     bool        is_serial()    const;
     bool        is_device()    const;
     bool        is_cuda()      const;
@@ -263,45 +262,56 @@ inline void invoke(ExecPolicyTag &exec, Function&& func) noexcept
 // runtime to concrete template tag dispatch of a functor
 //---------------------------------------------------------------------------//
 template <typename Function>
-void dispatch(ExecutionPolicy policy, Function&& func)
+void
+dispatch(ExecutionPolicy policy, Function&& func)
 {
-    switch(policy.id)
+    if (policy.is_serial())
     {
-        case policy::Device: // TODO I have made device prefer cuda over hip if both are available
+        SerialExec se;
+        invoke(se, func);
+    }
+    else if (policy.is_device())
+    {
 #if defined(CONDUIT_USE_RAJA) && defined(CONDUIT_USE_CUDA)
-            CudaExec ce;
-            return invoke(ce, func);
+        CudaExec ce;
+        invoke(ce, func);
 #elif defined(CONDUIT_USE_RAJA) && defined(CONDUIT_USE_HIP)
-            HipExec he;
-            return invoke(he, func);
+        HipExec he;
+        invoke(he, func);
 #else
-            CONDUIT_ERROR("Conduit was built with neither CUDA nor HIP.");
+        CONDUIT_ERROR("Conduit was built with neither CUDA nor HIP.");
 #endif
-        case policy::Cuda:
+    }
+    else if (policy.is_cuda())
+    {
 #if defined(CONDUIT_USE_RAJA) && defined(CONDUIT_USE_CUDA)
-            CudaExec ce;
-            return invoke(ce, func);
+        CudaExec ce;
+        invoke(ce, func);
 #else
-            CONDUIT_ERROR("Conduit was not built with CUDA.");
+        CONDUIT_ERROR("Conduit was not built with CUDA.");
 #endif
-        case policy::Hip:
+    }
+    else if (policy.is_hip())
+    {
 #if defined(CONDUIT_USE_RAJA) && defined(CONDUIT_USE_HIP)
-            HipExec he;
-            return invoke(he, func);
+        HipExec he;
+        invoke(he, func);
 #else
-            CONDUIT_ERROR("Conduit was not built with HIP.");
+        CONDUIT_ERROR("Conduit was not built with HIP.");
 #endif
-        case policy::OpenMP:
+    }
+    else if (policy.is_openmp())
+    {
 #if defined(CONDUIT_USE_OPENMP)
-            OpenMPExec ompe;
-            return invoke(ompe, func);
+        OpenMPExec ompe;
+        invoke(ompe, func);
 #else
-            CONDUIT_ERROR("Conduit was not built with OpenMP.");
+        CONDUIT_ERROR("Conduit was not built with OpenMP.");
 #endif
-        case policy::Serial:
-        default:
-            SerialExec se;
-            return invoke(se, func);
+    }
+    else // policy.is_empty()
+    {
+        CONDUIT_ERROR("Cannot invoke with an empty policy.");
     }
 }
 
@@ -309,13 +319,13 @@ void dispatch(ExecutionPolicy policy, Function&& func)
 // mock up of a raja like forall implementation 
 //---------------------------------------------------------------------------//
 template <typename ExecutionPolicy,typename Kernel>
-inline void new_forall_exec(const int& begin,
-                            const int& end,
-                            Kernel&& kernel) noexcept
+inline void
+new_forall_exec(const int& begin,
+                const int& end,
+                Kernel&& kernel) noexcept
 {
-
     std::cout << typeid(ExecutionPolicy).name() << "  START" << std::endl;
-    for(int i=begin;i<end;i++)
+    for (int i = begin; i < end; i ++)
     {
         kernel(i);
     }
@@ -327,59 +337,65 @@ inline void new_forall_exec(const int& begin,
 // invoke forall with concrete template tag
 //---------------------------------------------------------------------------//
 template <typename ExecutionPolicy, typename Kernel>
-inline void new_forall(const int& begin,
-                       const int& end,
-                       Kernel&& kernel) noexcept
+inline void
+new_forall(const int& begin,
+           const int& end,
+           Kernel&& kernel) noexcept
 {
-    new_forall_exec<ExecutionPolicy>(begin,end, std::forward<Kernel>(kernel));
+    new_forall_exec<ExecutionPolicy>(begin, end, std::forward<Kernel>(kernel));
 }
 
 //---------------------------------------------------------------------------//
 // runtime to concrete template tag dispatch of a forall
 //---------------------------------------------------------------------------//
 template <typename Kernel>
-inline void new_forall(ExecutionPolicy &policy,
-                       const int& begin,
-                       const int& end,
-                       Kernel&& kernel) noexcept
+inline void
+new_forall(ExecutionPolicy &policy,
+           const int& begin,
+           const int& end,
+           Kernel&& kernel) noexcept
 {
-    switch(policy.id)
+    if (policy.is_serial())
     {
-        case policy::Device: // TODO I have made device prefer cuda over hip if both are available
+        new_forall<SerialExec>(begin, end, std::forward<Kernel>(kernel));
+    }
+    else if (policy.is_device())
+    {
 #if defined(CONDUIT_USE_RAJA) && defined(CONDUIT_USE_CUDA)
-            new_forall<CudaExec>(begin,end,std::forward<Kernel>(kernel));
-            break;
+        new_forall<CudaExec>(begin, end, std::forward<Kernel>(kernel));
 #elif defined(CONDUIT_USE_RAJA) && defined(CONDUIT_USE_HIP)
-            new_forall<HipExec>(begin,end,std::forward<Kernel>(kernel));
-            break;
+        new_forall<HipExec>(begin, end, std::forward<Kernel>(kernel));
 #else
-            CONDUIT_ERROR("Conduit was built with neither CUDA nor HIP.");
+        CONDUIT_ERROR("Conduit was built with neither CUDA nor HIP.");
 #endif
-        case policy::Cuda:
+    }
+    else if (policy.is_cuda())
+    {
 #if defined(CONDUIT_USE_RAJA) && defined(CONDUIT_USE_CUDA)
-            new_forall<CudaExec>(begin,end,std::forward<Kernel>(kernel));
-            break;
+        new_forall<CudaExec>(begin, end, std::forward<Kernel>(kernel));
 #else
-            CONDUIT_ERROR("Conduit was not built with CUDA.");
+        CONDUIT_ERROR("Conduit was not built with CUDA.");
 #endif
-        case policy::Hip:
+    }
+    else if (policy.is_hip())
+    {
 #if defined(CONDUIT_USE_RAJA) && defined(CONDUIT_USE_HIP)
-            new_forall<HipExec>(begin,end,std::forward<Kernel>(kernel));
-            break;
+        new_forall<HipExec>(begin, end, std::forward<Kernel>(kernel));
 #else
-            CONDUIT_ERROR("Conduit was not built with HIP.");
+        CONDUIT_ERROR("Conduit was not built with HIP.");
 #endif
-        case policy::OpenMP:
+    }
+    else if (policy.is_openmp())
+    {
 #if defined(CONDUIT_USE_OPENMP)
-            new_forall<HipExec>(begin,end,std::forward<Kernel>(kernel));
-            break;
+        new_forall<HipExec>(begin, end, std::forward<Kernel>(kernel));
 #else
-            CONDUIT_ERROR("Conduit was not built with OpenMP.");
+        CONDUIT_ERROR("Conduit was not built with OpenMP.");
 #endif
-        case policy::Serial:
-        default:
-            new_forall<SerialExec>(begin,end,std::forward<Kernel>(kernel));
-            break;
+    }
+    else // policy.is_empty()
+    {
+        CONDUIT_ERROR("Cannot call for_all with an empty policy.");
     }
 }
 
