@@ -37,7 +37,9 @@ add_cpp_test(TEST t_fmt_smoke
 
 if(ZLIB_FOUND)
     message(STATUS "Adding zlib smoke test")
-    add_cpp_test(TEST t_zlib_smoke DEPENDS_ON ZLIB::ZLIB)
+    add_cpp_test(TEST t_zlib_smoke
+                 DEPENDS_ON ZLIB::ZLIB
+                 FOLDER tests/thirdparty)
 endif()
 
 if(ENABLE_RELAY_WEBSERVER)
@@ -115,7 +117,8 @@ endif()
 
 if(FORTRAN_FOUND)
     message(STATUS "Fortran enabled: Adding related unit tests")
-    add_fortran_test(TEST t_fortran_smoke)
+    add_fortran_test(TEST t_fortran_smoke
+                     FOLDER tests/thirdparty)
 else()
     message(STATUS "Fortran disabled: Skipping related tests")
 endif()
