@@ -126,8 +126,8 @@ public:
 // vice versa.
 //-----------------------------------------------------------------------------
 
-    static conduit::index_t name_to_policy_id(const std::string &name);
-    static std::string      policy_id_to_name(const PolicyID policy_id);
+    static PolicyID    name_to_policy_id(const std::string &name);
+    static std::string policy_id_to_name(const PolicyID policy_id);
 
 private:
 //-----------------------------------------------------------------------------
@@ -141,9 +141,9 @@ private:
 // -- end conduit::execution::ExecutionPolicy --
 //-----------------------------------------------------------------------------
 
-// // registers the fancy conduit memory handlers for
-// // magic memset and memcpy
-// static void init_device_memory_handlers();
+// registers the fancy conduit memory handlers for
+// magic memset and memcpy
+static void init_device_memory_handlers();
 
 
 
