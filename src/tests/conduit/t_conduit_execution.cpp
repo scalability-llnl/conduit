@@ -35,10 +35,10 @@ void device_free(void *ptr)
 #endif
 }
 
-// void conduit_device_prepare()
-// {
-//     AllocationManager::set_conduit_mem_handlers();
-// }
+void conduit_device_prepare()
+{
+    execution::init_device_memory_handlers();
+}
 
 // // TODO someday we want allocator to make sense for nodes when we are done with them
 
