@@ -175,8 +175,6 @@ struct SerialExec
     static std::string memory_space;
 };
 
-// cuda, hip, openMP, we might alias one of these to be device (cuda or hip)
-
 //---------------------------------------------------------------------------
 #if defined(CONDUIT_USE_CUDA) // TODO who is this
 struct CudaExec

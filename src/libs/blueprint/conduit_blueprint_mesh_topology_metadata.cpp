@@ -917,7 +917,7 @@ private:
         CONDUIT_ANNOTATE_MARK_BEGIN("Labeling");
         std::vector<std::pair<uint64, uint64>> faceid_to_ef(nelem_faces);
 
-        conduit::execution::ExecutionPolicy policy = ExecutionPolicy::default();
+        conduit::execution::ExecutionPolicy policy = conduit::execution::ExecutionPolicy::host();
         conduit::execution::forall(policy, 0, nelem, [&](index_t elem)
         {
             // Get the element faces, storing them all in face_pts.
@@ -1128,7 +1128,8 @@ private:
         std::vector<std::pair<uint64, uint64>> edgeid_to_ee(nelem_edges);
         std::vector<std::pair<index_t, index_t>> ee_to_edge(nelem_edges);
 
-        conduit::execution::for_all<ParallelExec>(0, nelem, [&](index_t elem)
+        conduit::execution::ExecutionPolicy policy = conduit::execution::ExecutionPolicy::host();
+        conduit::execution::forall(0, nelem, [&](index_t elem)
         {
             constexpr size_t MAX_VERTS = 32;
 
@@ -2160,11 +2161,11 @@ TopologyMetadata::Implementation::build_edge_key_to_id(
 #ifdef DEBUG_PRINT
     std::cout << "edges_key_to_id = {" << std::endl;
     // Because of the printing.
-    using Exec = SerialExec;
+    conduit::execution::ExecutionPolicy policy = conduit::execution::ExecutionPolicy::serial();
 #else
-    using Exec = ParallelExec;
+    conduit::execution::ExecutionPolicy policy = conduit::execution::ExecutionPolicy::host();
 #endif
-    conduit::execution::for_all<Exec>(0, nedges, [&](index_t edge_index)
+    conduit::execution::forall(policy, 0, nedges, [&](index_t edge_index)
     {
         // Make a key for this edge.
         index_t edge[2];
@@ -2281,7 +2282,8 @@ TopologyMetadata::Implementation::build_association_3_1_and_3_0_nonph()
     // Iterate over the elements, applying the edge template to make unique
     // edges for the element. We look up the edge in edge_key_to_id to get
     // its id.
-    conduit::execution::for_all<ParallelExec>(0, nelem, [&](index_t ei)
+    conudit::execution::ExecutionPolicy policy = conduit::execution::ExecutionPolicy::host();
+    conduit::execution::forall(policy, 0, nelem, [&](index_t ei)
     {
         index_t elem_offset = ei * points_per_elem;
 
