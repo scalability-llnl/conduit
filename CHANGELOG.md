@@ -6,6 +6,44 @@ and this project aspires to adhere to [Semantic Versioning](https://semver.org/s
 
 ## Unreleased
 
+### Added
+
+#### Blueprint
+- Added `conduit::blueprint::mesh::examples:generate` driver functions that supports creating any blueprint example mesh with options.
+- Added `conduit::blueprint::mesh::examples:generate_default_options` functions that provide default options values for `conduit::blueprint::mesh::examples:generate`.
+- Added python API support for `conduit::blueprint::mesh::examples:generate` and `conduit::blueprint::mesh::examples:generate_default_options`.
+- Added `gyre` example mesh, which provides a simple velocity vector field. 
+
+#### Relay
+- Added limited support for species sets for Silo/Overlink I/O. Multi-buffer element-dominant species sets can be written to Silo and the same can be read from Silo. Additional species set flavors will come online in a later release.
+
+### Changed
+
+#### Conduit
+- Changed the MPI CMake target used by conduit from `MPI:MPI_CXX` to `MPI:MPI_C` to provide better compatibility with downstream tools.
+- Added vendored yyjson v0.10.0 as new and default JSON parser. yyjson has an MIT license that is compatible with Debian's Free Software Guidelines, where RapidJSON is not  (https://wiki.debian.org/qa.debian.org/jsonevil). You can still use RapidJSON by setting the new CMake option `ENABLE_YYJSON` to `FALSE`.
+
+#### Blueprint
+- Certain algorithms that use MPI tags had their tag values lowered since some MPI implementations do not support large values.
+- Changed the name of `conduit::blueprint::mesh::matset::to_sparse_by_element()` to `conduit::blueprint::mesh::matset::to_uni_buffer_by_element()` to be more consistent with similar function names.
+
+#### Relay
+- User-supplied warning and error handlers are suspended during `conduit::relay::communicate_using_schema::execute()` so exceptions will be thrown properly when there is an MPI error. The handlers are restored before the execute method returns.
+- `conduit::relay::communicate_using_schema::execute()` flushes logs as they are generated, in case of error. This is mostly to facilitate internal debugging.
+- Changes were made to how Relay queries the upper limit for MPI tags to work around problems on some systems.
+
+## [0.9.2] - Released 2024-05-21
+
+### Added
+
+#### Conduit
+- Added support for YAML schema.
+
+#### Relay
+- Added support for Blueprint + Silo round trip for axis units and labels.
+- Added support for reading Silo column major data as strided structured Blueprint data.
+- Added support for reading a much wider set of Silo meshes, beyond multimeshes, multivars, etc.
+
 ### Changed
 
 #### Conduit
@@ -14,9 +52,18 @@ and this project aspires to adhere to [Semantic Versioning](https://semver.org/s
 #### Blueprint
 - Fixed partitioner so it reverses vertex order as needed in polyhedral face definitions when extracting mesh elements.
 - Changed `conduit::blueprint::mesh::partition_map_back()` function so it will attempt to reuse existing field memory when mapping fields back. This permits `partition_map_back()` to send data from a partitioned mesh into the original mesh where fields were provided from a host code using `Node::set_external()`.
+- Changed `generate_sides` to be robust to the case where no fields exist. 
+- Deprecated braid `quads_and_tris` example in favor of `mixed_2d`.
+- Deprecated braid `braid_quads_and_tris_offsets` example in favor of `mixed_2d`.
+- Deprecated braid `hexs_and_tris` example in favor of `mixed`.
 
 #### Relay
 - Changed `conduit::relay::mpi::communicate_using_schema` to avoid an invalid tag MPI error message on some MPI distributions.
+
+### Fixed
+
+#### Relay
+- Fixed Relay I/O HDF5 DataSpace handle leak.
 
 ## [0.9.1] - Released 2024-02-09
 

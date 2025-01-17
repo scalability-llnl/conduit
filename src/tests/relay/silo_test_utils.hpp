@@ -75,13 +75,13 @@ silo_name_changer(const std::string &mmesh_name,
         while(topo_itr.has_next())
         {
             Node &n_topo = topo_itr.next();
-            std::string topo_name = topo_itr.name();
-            std::string new_topo_name = mmesh_name + "_" + topo_name;
+            const std::string topo_name = topo_itr.name();
+            const std::string new_topo_name = mmesh_name + "_" + topo_name;
 
             old_to_new_names[topo_name] = new_topo_name;
 
-            std::string coordset_name = n_topo["coordset"].as_string();
-            std::string new_coordset_name = mmesh_name + "_" + topo_name;
+            const std::string coordset_name = n_topo["coordset"].as_string();
+            const std::string new_coordset_name = mmesh_name + "_" + topo_name;
 
             // change the coordset this topo refers to
             save_mesh["topologies"][topo_name]["coordset"].reset();
@@ -93,6 +93,26 @@ silo_name_changer(const std::string &mmesh_name,
             // change the name of the coordset
             if (save_mesh.has_path("coordsets/" + coordset_name))
             {
+                // add default labels if they don't exist already
+                if (! save_mesh["coordsets"][coordset_name].has_child("labels") &&
+                    save_mesh["topologies"][new_topo_name]["type"].as_string() != "points")
+                {
+                    const int ndims = save_mesh["coordsets"][coordset_name]["values"].number_of_children();
+
+                    const std::string &x_axis_label = save_mesh["coordsets"][coordset_name]["values"][0].name();
+                    save_mesh["coordsets"][coordset_name]["labels"][x_axis_label] = "X Axis";
+                    if (ndims > 1)
+                    {
+                        const std::string &y_axis_label = save_mesh["coordsets"][coordset_name]["values"][1].name();
+                        save_mesh["coordsets"][coordset_name]["labels"][y_axis_label] = "Y Axis";
+                    }
+                    if (ndims > 2)
+                    {
+                        const std::string &z_axis_label = save_mesh["coordsets"][coordset_name]["values"][2].name();
+                        save_mesh["coordsets"][coordset_name]["labels"][z_axis_label] = "Z Axis";
+                    }
+                }
+
                 save_mesh["coordsets"].rename_child(coordset_name, new_coordset_name);
             }
         }
@@ -104,9 +124,9 @@ silo_name_changer(const std::string &mmesh_name,
         while (matset_itr.has_next())
         {
             Node &n_matset = matset_itr.next();
-            std::string matset_name = matset_itr.name();
+            const std::string matset_name = matset_itr.name();
 
-            std::string old_topo_name = n_matset["topology"].as_string();
+            const std::string old_topo_name = n_matset["topology"].as_string();
 
             if (old_to_new_names.find(old_topo_name) == old_to_new_names.end())
             {
@@ -115,19 +135,88 @@ silo_name_changer(const std::string &mmesh_name,
                 // But our job in this function is just to rename things, so we 
                 // will just skip.
             }
-            std::string new_topo_name = old_to_new_names[old_topo_name];
+            const std::string new_topo_name = old_to_new_names[old_topo_name];
 
             // use new topo name
             n_matset["topology"].reset();
             n_matset["topology"] = new_topo_name;
 
             // come up with new matset name
-            std::string new_matset_name = mmesh_name + "_" + matset_name;
+            const std::string new_matset_name = mmesh_name + "_" + matset_name;
 
             old_to_new_names[matset_name] = new_matset_name;
 
             // rename the matset
             save_mesh["matsets"].rename_child(matset_name, new_matset_name);
+        }
+    }
+
+    if (save_mesh.has_child("specsets"))
+    {
+        auto specset_itr = save_mesh["specsets"].children();
+        while (specset_itr.has_next())
+        {
+            Node &n_specset = specset_itr.next();
+            const std::string specset_name = specset_itr.name();
+
+            const std::string old_matset_name = n_specset["matset"].as_string();
+
+            if (old_to_new_names.find(old_matset_name) == old_to_new_names.end())
+            {
+                continue;
+                // If this is the case, we probably need to delete this specset.
+                // But our job in this function is just to rename things, so we 
+                // will just skip.
+            }
+
+            // TODO I assume the specset is multi_buffer full
+            // we have no way to check for now
+            // and multi_buffer full is the only allowed specset variety
+            // later, we will need to add functionality here
+
+            const std::string &new_matset_name = old_to_new_names[old_matset_name];
+            const Node &n_matset = save_mesh["matsets"][new_matset_name];
+            const int num_zones = blueprint::mesh::matset::count_zones_from_matset(n_matset);
+            Node &matset_values = n_specset["matset_values"];
+
+            // we must modify the specset; see note below
+            for (int zone_id = 0; zone_id < num_zones; zone_id ++)
+            {
+                auto mat_itr = matset_values.children();
+                while (mat_itr.has_next())
+                {
+                    Node &mat = mat_itr.next();
+                    const std::string matname = mat_itr.name();
+                    if (! blueprint::mesh::matset::is_material_in_zone(n_matset, matname, zone_id))
+                    {
+                        // if this material is not present in the zone, then we need
+                        // to change the species mass fractions to all zero to pass
+                        // the diff, since Silo read will set everything to zero
+                        // for multi_buffer full.
+
+                        auto spec_itr = mat.children();
+                        while (spec_itr.has_next())
+                        {
+                            Node &spec = spec_itr.next();
+                            const std::string specname = spec_itr.name();
+                            float64_accessor mass_fractions = spec.value();
+                            mass_fractions.set(zone_id, 0.0);
+                        }
+                    }
+                }
+            }
+
+            // use new matset name
+            n_specset["matset"].reset();
+            n_specset["matset"] = new_matset_name;
+
+            // come up with new specset name
+            const std::string new_specset_name = mmesh_name + "_" + specset_name;
+
+            old_to_new_names[specset_name] = new_specset_name;
+
+            // rename the specset
+            save_mesh["specsets"].rename_child(specset_name, new_specset_name);
         }
     }
 
@@ -137,9 +226,9 @@ silo_name_changer(const std::string &mmesh_name,
         while (field_itr.has_next())
         {
             Node &n_field = field_itr.next();
-            std::string field_name = field_itr.name();
+            const std::string field_name = field_itr.name();
 
-            std::string old_topo_name = n_field["topology"].as_string();
+            const std::string old_topo_name = n_field["topology"].as_string();
             if (old_to_new_names.find(old_topo_name) == old_to_new_names.end())
             {
                 continue;
@@ -147,14 +236,14 @@ silo_name_changer(const std::string &mmesh_name,
                 // But our job in this function is just to rename things, so we 
                 // will just skip.
             }
-            std::string new_topo_name = old_to_new_names[old_topo_name];
+            const std::string new_topo_name = old_to_new_names[old_topo_name];
             // use new topo name
             n_field["topology"].reset();
             n_field["topology"] = new_topo_name;
 
             if (n_field.has_child("matset"))
             {
-                std::string old_matset_name = n_field["matset"].as_string();
+                const std::string old_matset_name = n_field["matset"].as_string();
                 if (old_to_new_names.find(old_matset_name) == old_to_new_names.end())
                 {
                     continue;
@@ -162,7 +251,7 @@ silo_name_changer(const std::string &mmesh_name,
                     // But our job in this function is just to rename things, so we 
                     // will just skip.
                 }
-                std::string new_matset_name = old_to_new_names[old_matset_name];
+                const std::string new_matset_name = old_to_new_names[old_matset_name];
                 // use new matset name
                 n_field["matset"].reset();
                 n_field["matset"] = new_matset_name;
@@ -184,7 +273,7 @@ silo_name_changer(const std::string &mmesh_name,
                     while (val_itr.has_next())
                     {
                         val_itr.next();
-                        std::string comp_name = val_itr.name();
+                        const std::string comp_name = val_itr.name();
 
                         // rename vector components
                         n_field["values"].rename_child(comp_name, std::to_string(child_index));
@@ -223,11 +312,30 @@ overlink_name_changer(conduit::Node &save_mesh)
     // we assume 1 coordset and 1 topo
     Node &coordsets = save_mesh["coordsets"];
     Node &topologies = save_mesh["topologies"];
-    
 
     // we assume only 1 child for each
-    std::string coordset_name = coordsets.children().next().name();
-    std::string topo_name = topologies.children().next().name();
+    const std::string coordset_name = coordsets.children().next().name();
+    const std::string topo_name = topologies.children().next().name();
+
+    // add default labels if they don't exist already
+    if (! save_mesh["coordsets"][coordset_name].has_child("labels") &&
+        save_mesh["topologies"][topo_name]["type"].as_string() != "points")
+    {
+        const int ndims = save_mesh["coordsets"][coordset_name]["values"].number_of_children();
+
+        const std::string &x_axis_label = save_mesh["coordsets"][coordset_name]["values"][0].name();
+        save_mesh["coordsets"][coordset_name]["labels"][x_axis_label] = "X Axis";
+        if (ndims > 1)
+        {
+            const std::string &y_axis_label = save_mesh["coordsets"][coordset_name]["values"][1].name();
+            save_mesh["coordsets"][coordset_name]["labels"][y_axis_label] = "Y Axis";
+        }
+        if (ndims > 2)
+        {
+            const std::string &z_axis_label = save_mesh["coordsets"][coordset_name]["values"][2].name();
+            save_mesh["coordsets"][coordset_name]["labels"][z_axis_label] = "Z Axis";
+        }
+    }
 
     // rename the coordset and references to it
     coordsets.rename_child(coordset_name, "MMESH");
@@ -241,7 +349,7 @@ overlink_name_changer(conduit::Node &save_mesh)
     {
         // we assume 1 adjset
         Node &n_adjset = save_mesh["adjsets"].children().next();
-        std::string adjset_name = n_adjset.name();
+        const std::string adjset_name = n_adjset.name();
 
         // use new topo name
         n_adjset["topology"].reset();
@@ -261,7 +369,7 @@ overlink_name_changer(conduit::Node &save_mesh)
         // one per topo. But if you want the diff to pass for tests, you 
         // really can only have one. So we assume one.
         Node &n_matset = save_mesh["matsets"].children().next();
-        std::string matset_name = n_matset.name();
+        const std::string matset_name = n_matset.name();
 
         // use new topo name
         n_matset["topology"].reset();
@@ -269,6 +377,69 @@ overlink_name_changer(conduit::Node &save_mesh)
 
         // rename the matset
         save_mesh["matsets"].rename_child(matset_name, "MMATERIAL");
+    }
+
+    if (save_mesh.has_child("specsets"))
+    {
+        int species_id = 0;
+
+        auto specset_itr = save_mesh["specsets"].children();
+        while (specset_itr.has_next())
+        {
+            Node &n_specset = specset_itr.next();
+            const std::string specset_name = specset_itr.name();
+
+            // TODO I assume the specset is multi_buffer full
+            // we have no way to check for now
+            // and multi_buffer full is the only allowed specset variety
+            // later, we will need to add functionality here
+
+            const Node &n_matset = save_mesh["matsets"]["MMATERIAL"];
+            const int num_zones = blueprint::mesh::matset::count_zones_from_matset(n_matset);
+            Node &matset_values = n_specset["matset_values"];
+
+            // we must modify the specset; see note below
+            for (int zone_id = 0; zone_id < num_zones; zone_id ++)
+            {
+                auto mat_itr = matset_values.children();
+                while (mat_itr.has_next())
+                {
+                    Node &mat = mat_itr.next();
+                    const std::string matname = mat_itr.name();
+                    if (! blueprint::mesh::matset::is_material_in_zone(n_matset, matname, zone_id))
+                    {
+                        // if this material is not present in the zone, then we need
+                        // to change the species mass fractions to all zero to pass
+                        // the diff, since Silo read will set everything to zero
+                        // for multi_buffer full.
+
+                        auto spec_itr = mat.children();
+                        while (spec_itr.has_next())
+                        {
+                            Node &spec = spec_itr.next();
+                            const std::string specname = spec_itr.name();
+                            float64_accessor mass_fractions = spec.value();
+                            mass_fractions.set(zone_id, 0.0);
+                        }
+                    }
+                }
+            }
+
+            // use new matset name
+            n_specset["matset"].reset();
+            n_specset["matset"] = "MMATERIAL";
+
+            // rename the specset
+            if (species_id == 0)
+            {
+                save_mesh["specsets"].rename_child(specset_name, "MSPECIES");
+            }
+            else
+            {
+                save_mesh["specsets"].rename_child(specset_name, "MSPECIES" + std::to_string(species_id));
+            }
+            species_id ++;
+        }
     }
 
     if (save_mesh.has_child("fields"))
@@ -343,6 +514,58 @@ add_matset_to_spiral(Node &n_mesh, const int ndomains)
             data[i] = 1.f;
         }
     }
+}
+
+//-----------------------------------------------------------------------------
+void
+vector_field_to_scalars_braid(Node &n_mesh, const std::string &dim)
+// TODO generalize this approach so that it works for all fields as part of overlink_name_changer
+{
+    Node &field_vel = n_mesh["fields"]["vel"];
+    
+    Node &field_vel_u = n_mesh["fields"]["vel_u"];
+    field_vel_u["topology"].set(field_vel["topology"]);
+    field_vel_u["association"].set(field_vel["association"]);
+    field_vel_u["values"].set(field_vel["values/u"]);
+    if (field_vel.has_child("units"))
+    {
+        field_vel_u["units"].set(field_vel["units"]);
+    }
+    if (field_vel.has_child("label"))
+    {
+        field_vel_u["label"].set(field_vel["label"]);
+    }
+    
+    Node &field_vel_v = n_mesh["fields"]["vel_v"];
+    field_vel_v["topology"].set(field_vel["topology"]);
+    field_vel_v["association"].set(field_vel["association"]);
+    field_vel_v["values"].set(field_vel["values/v"]);
+    if (field_vel.has_child("units"))
+    {
+        field_vel_v["units"].set(field_vel["units"]);
+    }
+    if (field_vel.has_child("label"))
+    {
+        field_vel_v["label"].set(field_vel["label"]);
+    }
+
+    if (dim == "3")
+    {
+        Node &field_vel_w = n_mesh["fields"]["vel_w"];
+        field_vel_w["topology"].set(field_vel["topology"]);
+        field_vel_w["association"].set(field_vel["association"]);
+        field_vel_w["values"].set(field_vel["values/w"]);
+        if (field_vel.has_child("units"))
+        {
+            field_vel_w["units"].set(field_vel["units"]);
+        }
+        if (field_vel.has_child("label"))
+        {
+            field_vel_w["label"].set(field_vel["label"]);
+        }
+    }
+
+    n_mesh["fields"].remove_child("vel");
 }
 
 //-----------------------------------------------------------------------------

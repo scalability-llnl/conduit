@@ -66,7 +66,6 @@ namespace examples
 //---------------------------------------------------------------------------//
 const float64 PI_VALUE = 3.14159265359;
 
-
 //---------------------------------------------------------------------------//
 struct point
 {
@@ -1828,9 +1827,13 @@ braid_bent_quads(const Node & spec, Node &res)
 //---------------------------------------------------------------------------//
 void
 braid_quads_and_tris(index_t npts_x,
-            index_t npts_y,
-            Node &res)
+                     index_t npts_y,
+                     Node &res)
 {
+    CONDUIT_INFO("This braid example is deprecated in favor of mixed_2d.")
+
+    // TODO remove in conduit 0.9.4
+
     res.reset();
 
     int32 nele_x = (int32)(npts_x - 1);
@@ -1879,7 +1882,6 @@ braid_quads_and_tris(index_t npts_x,
              ++ielem;
 
         } // END for all i
-
     } // END for all j
 
 
@@ -1948,12 +1950,16 @@ braid_quads_and_tris(index_t npts_x,
     //                                         fields["radial"]);
 }
 
+
 //---------------------------------------------------------------------------//
 void
 braid_quads_and_tris_offsets(index_t npts_x,
                              index_t npts_y,
                              Node &res)
 {
+    CONDUIT_INFO("This braid example is deprecated in favor of mixed_2d.")
+
+    // TODO remove in conduit 0.9.4
 
     res.reset();
 
@@ -2907,6 +2913,9 @@ braid_hexs_and_tets(index_t npts_x,
                     index_t npts_z,
                     Node &res)
 {
+    CONDUIT_INFO("This braid example is deprecated in favor of mixed.")
+
+    // TODO remove in conduit 0.9.4
 
     // WARNING -- The code below is UNTESTED.
     //            The SILO writer is missing an implementation for
