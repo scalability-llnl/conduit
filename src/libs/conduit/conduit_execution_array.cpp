@@ -612,7 +612,7 @@ ExecutionArray<T>::count(T val) const
 // ExecutionAccessor<T>::use_with(conduit::execution::ExecutionPolicy policy)
 // {
 //     // we are being asked to execute on the device
-//     if (policy.is_device())
+//     if (policy.is_device_policy())
 //     {
 //         // data is already on the device
 //         if (execution::DeviceMemory::is_device_ptr(m_data))

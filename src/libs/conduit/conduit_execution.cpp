@@ -37,6 +37,13 @@ ExecutionPolicy::empty()
 
 //---------------------------------------------------------------------------//
 ExecutionPolicy
+ExecutionPolicy::defaultPolicy()
+{
+    return ExecutionPolicy(PolicyID::DEFAULT_ID);
+}
+
+//---------------------------------------------------------------------------//
+ExecutionPolicy
 ExecutionPolicy::serial()
 {
     return ExecutionPolicy(PolicyID::SERIAL_ID);
@@ -128,6 +135,13 @@ ExecutionPolicy::is_empty() const
 
 //---------------------------------------------------------------------------//
 bool
+ExecutionPolicy::is_default() const
+{
+    return m_policy_id == PolicyID::DEFAULT_ID;
+}
+
+//---------------------------------------------------------------------------//
+bool
 ExecutionPolicy::is_serial() const
 {
     return m_policy_id == PolicyID::SERIAL_ID;
@@ -137,7 +151,7 @@ ExecutionPolicy::is_serial() const
 bool
 ExecutionPolicy::is_device() const
 {
-    return m_policy_id == PolicyID::DEVICE_ID || is_cuda() || is_hip();
+    return m_policy_id == PolicyID::DEVICE_ID;
 }
 
 //---------------------------------------------------------------------------//
@@ -161,6 +175,22 @@ ExecutionPolicy::is_openmp() const
     return m_policy_id == PolicyID::OPENMP_ID;
 }
 
+//---------------------------------------------------------------------------//
+bool
+ExecutionPolicy::is_host_policy() const
+{
+    // TODO DANGER - for now we are letting default be on the host
+    // we may with to change this in the future.
+    return is_serial() || is_openmp() || is_default();
+}
+
+//---------------------------------------------------------------------------//
+bool
+ExecutionPolicy::is_device_policy() const
+{
+    return is_device() || is_cuda() || is_hip();
+}
+
 //-----------------------------------------------------------------------------
 // PolicyID to string and string to PolicyID
 //-----------------------------------------------------------------------------
@@ -169,12 +199,13 @@ ExecutionPolicy::is_openmp() const
 ExecutionPolicy::PolicyID
 ExecutionPolicy::name_to_policy_id(const std::string &policy_name)
 {
-    if (policy_name      == "empty")  return PolicyID::EMPTY_ID;
-    else if (policy_name == "serial") return PolicyID::SERIAL_ID;
-    else if (policy_name == "device") return PolicyID::DEVICE_ID;
-    else if (policy_name == "cuda")   return PolicyID::CUDA_ID;
-    else if (policy_name == "hip")    return PolicyID::HIP_ID;
-    else if (policy_name == "openmp") return PolicyID::OPENMP_ID;
+    if (policy_name      == "empty")   return PolicyID::EMPTY_ID;
+    else if (policy_name == "serial")  return PolicyID::SERIAL_ID;
+    else if (policy_name == "default") return PolicyID::DEFAULT_ID;
+    else if (policy_name == "device")  return PolicyID::DEVICE_ID;
+    else if (policy_name == "cuda")    return PolicyID::CUDA_ID;
+    else if (policy_name == "hip")     return PolicyID::HIP_ID;
+    else if (policy_name == "openmp")  return PolicyID::OPENMP_ID;
     return PolicyID::EMPTY_ID;
 }
 
@@ -182,12 +213,13 @@ ExecutionPolicy::name_to_policy_id(const std::string &policy_name)
 std::string 
 ExecutionPolicy::policy_id_to_name(const PolicyID policy_id)
 {
-    if (policy_id      == PolicyID::EMPTY_ID)  return "empty";
-    else if (policy_id == PolicyID::SERIAL_ID) return "serial";
-    else if (policy_id == PolicyID::DEVICE_ID) return "device";
-    else if (policy_id == PolicyID::CUDA_ID)   return "cuda";
-    else if (policy_id == PolicyID::HIP_ID)    return "hip";
-    else if (policy_id == PolicyID::OPENMP_ID) return "openmp";
+    if (policy_id      == PolicyID::EMPTY_ID)   return "empty";
+    else if (policy_id == PolicyID::SERIAL_ID)  return "serial";
+    else if (policy_id == PolicyID::DEFAULT_ID) return "default";
+    else if (policy_id == PolicyID::DEVICE_ID)  return "device";
+    else if (policy_id == PolicyID::CUDA_ID)    return "cuda";
+    else if (policy_id == PolicyID::HIP_ID)     return "hip";
+    else if (policy_id == PolicyID::OPENMP_ID)  return "openmp";
     return "empty";
 }
 

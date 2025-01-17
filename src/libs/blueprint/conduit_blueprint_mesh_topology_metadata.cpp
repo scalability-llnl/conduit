@@ -61,6 +61,7 @@ namespace utils
 {
 
 // We may tag certain algorithms as ParallelExec if it is safe to do so.
+// TODO perhaps we add the other execution cases?
 using SerialExec = conduit::execution::SerialExec;
 #if defined(CONDUIT_USE_OPENMP)
 using ParallelExec = conduit::execution::OpenMPExec;

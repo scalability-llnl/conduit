@@ -54,8 +54,9 @@ public:
     enum class PolicyID : conduit::index_t
     {
         EMPTY_ID,
+        DEFAULT_ID, // prefer openmp to serial
         SERIAL_ID,
-        DEVICE_ID,
+        DEVICE_ID, // prefer cuda to hip
         CUDA_ID,
         HIP_ID,
         OPENMP_ID
@@ -65,15 +66,11 @@ public:
 // -- begin conduit::execution::ExecutionPolicy Constructor Helpers --
 //-----------------------------------------------------------------------------
     static ExecutionPolicy empty();
-
+    static ExecutionPolicy defaultPolicy();
     static ExecutionPolicy serial();
-    
     static ExecutionPolicy device();
-    
     static ExecutionPolicy cuda();
-    
     static ExecutionPolicy hip();
-    
     static ExecutionPolicy openmp();
 
 //-----------------------------------------------------------------------------
@@ -108,18 +105,29 @@ public:
     void set_policy(PolicyID policy_id)
         { m_policy_id = policy_id; }
 
+    // TODO consider if we want to allow fallbacks. This could be the way to 
+    // implement. (i.e. if you ask for openmp but there is no openmp it falls
+    // back to serial. If this isn't set then you get an error in that case.)
+    // void set_its_ok_to_lie(bool lies);
+
 //-----------------------------------------------------------------------------
 // Getters and info methods.
 //-----------------------------------------------------------------------------
-    PolicyID    policy_id()    const { return m_policy_id; }
-    std::string policy_name()  const { return policy_id_to_name(m_policy_id); }
+    PolicyID    policy_id()        const { return m_policy_id; }
+    std::string policy_name()      const { return policy_id_to_name(m_policy_id); }
 
-    bool        is_empty()     const;
-    bool        is_serial()    const;
-    bool        is_device()    const;
-    bool        is_cuda()      const;
-    bool        is_hip()       const;
-    bool        is_openmp()    const;
+    // these methods ask questions about the chosen policy
+    bool        is_empty()         const;
+    bool        is_default()       const;
+    bool        is_serial()        const;
+    bool        is_device()        const;
+    bool        is_cuda()          const;
+    bool        is_hip()           const;
+    bool        is_openmp()        const;
+
+    // these methods ask questions about where the policy can execute
+    bool        is_host_policy()   const;
+    bool        is_device_policy() const;
 
 //-----------------------------------------------------------------------------
 // Helpers to convert PolicyID Enum Values to human readable strings and 
@@ -143,7 +151,7 @@ private:
 
 // registers the fancy conduit memory handlers for
 // magic memset and memcpy
-static void init_device_memory_handlers();
+void init_device_memory_handlers();
 
 
 
@@ -267,7 +275,17 @@ template <typename Function>
 void
 dispatch(ExecutionPolicy policy, Function&& func)
 {
-    if (policy.is_serial())
+    if (policy.is_default())
+    {
+#if defined(CONDUIT_USE_OPENMP)
+        OpenMPExec ompe;
+        invoke(ompe, func);
+#else
+        SerialExec se;
+        invoke(se, func);
+#endif
+    }
+    else if (policy.is_serial())
     {
         SerialExec se;
         invoke(se, func);
@@ -357,7 +375,15 @@ new_forall(ExecutionPolicy &policy,
            const int& end,
            Kernel&& kernel) noexcept
 {
-    if (policy.is_serial())
+    if (policy.is_default())
+    {
+#if defined(CONDUIT_USE_OPENMP)
+        new_forall<OpenMPExec>(begin, end, std::forward<Kernel>(kernel));
+#else
+        new_forall<SerialExec>(begin, end, std::forward<Kernel>(kernel));
+#endif
+    }
+    else if (policy.is_serial())
     {
         new_forall<SerialExec>(begin, end, std::forward<Kernel>(kernel));
     }
@@ -390,7 +416,7 @@ new_forall(ExecutionPolicy &policy,
     else if (policy.is_openmp())
     {
 #if defined(CONDUIT_USE_OPENMP)
-        new_forall<HipExec>(begin, end, std::forward<Kernel>(kernel));
+        new_forall<OpenMPExec>(begin, end, std::forward<Kernel>(kernel));
 #else
         CONDUIT_ERROR("Conduit was not built with OpenMP.");
 #endif
