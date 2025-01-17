@@ -37,9 +37,13 @@ ExecutionPolicy::empty()
 
 //---------------------------------------------------------------------------//
 ExecutionPolicy
-ExecutionPolicy::defaultPolicy()
+ExecutionPolicy::host()
 {
-    return ExecutionPolicy(PolicyID::DEFAULT_ID);
+#if defined(CONDUIT_USE_OPENMP)
+    return ExecutionPolicy(PolicyID::OPENMP_ID);
+#else
+    return ExecutionPolicy(PolicyID::SERIAL_ID);
+#endif
 }
 
 //---------------------------------------------------------------------------//
@@ -53,7 +57,13 @@ ExecutionPolicy::serial()
 ExecutionPolicy
 ExecutionPolicy::device()
 {
-    return ExecutionPolicy(PolicyID::DEVICE_ID);
+#if defined(CONDUIT_USE_RAJA) && defined(CONDUIT_USE_CUDA)
+    return ExecutionPolicy(PolicyID::CUDA_ID);
+#elif defined(CONDUIT_USE_RAJA) && defined(CONDUIT_USE_HIP)
+    return ExecutionPolicy(PolicyID::HIP_ID);
+#else
+    CONDUIT_ERROR("Conduit was built with neither CUDA nor HIP.");
+#endif
 }
 
 //---------------------------------------------------------------------------//
@@ -135,23 +145,9 @@ ExecutionPolicy::is_empty() const
 
 //---------------------------------------------------------------------------//
 bool
-ExecutionPolicy::is_default() const
-{
-    return m_policy_id == PolicyID::DEFAULT_ID;
-}
-
-//---------------------------------------------------------------------------//
-bool
 ExecutionPolicy::is_serial() const
 {
     return m_policy_id == PolicyID::SERIAL_ID;
-}
-
-//---------------------------------------------------------------------------//
-bool
-ExecutionPolicy::is_device() const
-{
-    return m_policy_id == PolicyID::DEVICE_ID;
 }
 
 //---------------------------------------------------------------------------//
@@ -179,16 +175,14 @@ ExecutionPolicy::is_openmp() const
 bool
 ExecutionPolicy::is_host_policy() const
 {
-    // TODO DANGER - for now we are letting default be on the host
-    // we may with to change this in the future.
-    return is_serial() || is_openmp() || is_default();
+    return is_serial() || is_openmp();
 }
 
 //---------------------------------------------------------------------------//
 bool
 ExecutionPolicy::is_device_policy() const
 {
-    return is_device() || is_cuda() || is_hip();
+    return is_cuda() || is_hip();
 }
 
 //-----------------------------------------------------------------------------
@@ -201,8 +195,6 @@ ExecutionPolicy::name_to_policy_id(const std::string &policy_name)
 {
     if (policy_name      == "empty")   return PolicyID::EMPTY_ID;
     else if (policy_name == "serial")  return PolicyID::SERIAL_ID;
-    else if (policy_name == "default") return PolicyID::DEFAULT_ID;
-    else if (policy_name == "device")  return PolicyID::DEVICE_ID;
     else if (policy_name == "cuda")    return PolicyID::CUDA_ID;
     else if (policy_name == "hip")     return PolicyID::HIP_ID;
     else if (policy_name == "openmp")  return PolicyID::OPENMP_ID;
@@ -215,8 +207,6 @@ ExecutionPolicy::policy_id_to_name(const PolicyID policy_id)
 {
     if (policy_id      == PolicyID::EMPTY_ID)   return "empty";
     else if (policy_id == PolicyID::SERIAL_ID)  return "serial";
-    else if (policy_id == PolicyID::DEFAULT_ID) return "default";
-    else if (policy_id == PolicyID::DEVICE_ID)  return "device";
     else if (policy_id == PolicyID::CUDA_ID)    return "cuda";
     else if (policy_id == PolicyID::HIP_ID)     return "hip";
     else if (policy_id == PolicyID::OPENMP_ID)  return "openmp";

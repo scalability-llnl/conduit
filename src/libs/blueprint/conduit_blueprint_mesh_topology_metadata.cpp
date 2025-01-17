@@ -60,15 +60,6 @@ namespace mesh
 namespace utils
 {
 
-// We may tag certain algorithms as ParallelExec if it is safe to do so.
-// TODO perhaps we add the other execution cases?
-using SerialExec = conduit::execution::SerialExec;
-#if defined(CONDUIT_USE_OPENMP)
-using ParallelExec = conduit::execution::OpenMPExec;
-#else
-using ParallelExec = conduit::execution::SerialExec;
-#endif
-
 //---------------------------------------------------------------------------
 void
 yaml_print(std::ostream &os, const conduit::Node &node)
@@ -926,7 +917,8 @@ private:
         CONDUIT_ANNOTATE_MARK_BEGIN("Labeling");
         std::vector<std::pair<uint64, uint64>> faceid_to_ef(nelem_faces);
 
-        conduit::execution::for_all<ParallelExec>(0, nelem, [&](index_t elem)
+        conduit::execution::ExecutionPolicy policy = ExecutionPolicy::default();
+        conduit::execution::forall(policy, 0, nelem, [&](index_t elem)
         {
             // Get the element faces, storing them all in face_pts.
             index_t elemstart = elem * points_per_elem;

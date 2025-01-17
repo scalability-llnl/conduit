@@ -54,9 +54,7 @@ public:
     enum class PolicyID : conduit::index_t
     {
         EMPTY_ID,
-        DEFAULT_ID, // prefer openmp to serial
         SERIAL_ID,
-        DEVICE_ID, // prefer cuda to hip
         CUDA_ID,
         HIP_ID,
         OPENMP_ID
@@ -66,9 +64,9 @@ public:
 // -- begin conduit::execution::ExecutionPolicy Constructor Helpers --
 //-----------------------------------------------------------------------------
     static ExecutionPolicy empty();
-    static ExecutionPolicy defaultPolicy();
+    static ExecutionPolicy host(); // prefer openmp to serial
     static ExecutionPolicy serial();
-    static ExecutionPolicy device();
+    static ExecutionPolicy device(); // prefer cuda to hip
     static ExecutionPolicy cuda();
     static ExecutionPolicy hip();
     static ExecutionPolicy openmp();
@@ -118,9 +116,7 @@ public:
 
     // these methods ask questions about the chosen policy
     bool        is_empty()         const;
-    bool        is_default()       const;
     bool        is_serial()        const;
-    bool        is_device()        const;
     bool        is_cuda()          const;
     bool        is_hip()           const;
     bool        is_openmp()        const;
@@ -133,7 +129,6 @@ public:
 // Helpers to convert PolicyID Enum Values to human readable strings and 
 // vice versa.
 //-----------------------------------------------------------------------------
-
     static PolicyID    name_to_policy_id(const std::string &name);
     static std::string policy_id_to_name(const PolicyID policy_id);
 
@@ -275,32 +270,10 @@ template <typename Function>
 void
 dispatch(ExecutionPolicy policy, Function&& func)
 {
-    if (policy.is_default())
-    {
-#if defined(CONDUIT_USE_OPENMP)
-        OpenMPExec ompe;
-        invoke(ompe, func);
-#else
-        SerialExec se;
-        invoke(se, func);
-#endif
-    }
-    else if (policy.is_serial())
+    if (policy.is_serial())
     {
         SerialExec se;
         invoke(se, func);
-    }
-    else if (policy.is_device())
-    {
-#if defined(CONDUIT_USE_RAJA) && defined(CONDUIT_USE_CUDA)
-        CudaExec ce;
-        invoke(ce, func);
-#elif defined(CONDUIT_USE_RAJA) && defined(CONDUIT_USE_HIP)
-        HipExec he;
-        invoke(he, func);
-#else
-        CONDUIT_ERROR("Conduit was built with neither CUDA nor HIP.");
-#endif
     }
     else if (policy.is_cuda())
     {
@@ -340,9 +313,9 @@ dispatch(ExecutionPolicy policy, Function&& func)
 //---------------------------------------------------------------------------//
 template <typename ExecutionPolicy,typename Kernel>
 inline void
-new_forall_exec(const int& begin,
-                const int& end,
-                Kernel&& kernel) noexcept
+forall_exec(const int& begin,
+            const int& end,
+            Kernel&& kernel) noexcept
 {
     std::cout << typeid(ExecutionPolicy).name() << "  START" << std::endl;
     for (int i = begin; i < end; i ++)
@@ -358,11 +331,11 @@ new_forall_exec(const int& begin,
 //---------------------------------------------------------------------------//
 template <typename ExecutionPolicy, typename Kernel>
 inline void
-new_forall(const int& begin,
-           const int& end,
-           Kernel&& kernel) noexcept
+forall(const int& begin,
+       const int& end,
+       Kernel&& kernel) noexcept
 {
-    new_forall_exec<ExecutionPolicy>(begin, end, std::forward<Kernel>(kernel));
+    forall_exec<ExecutionPolicy>(begin, end, std::forward<Kernel>(kernel));
 }
 
 //---------------------------------------------------------------------------//
@@ -370,37 +343,19 @@ new_forall(const int& begin,
 //---------------------------------------------------------------------------//
 template <typename Kernel>
 inline void
-new_forall(ExecutionPolicy &policy,
-           const int& begin,
-           const int& end,
-           Kernel&& kernel) noexcept
+forall(ExecutionPolicy &policy,
+       const int& begin,
+       const int& end,
+       Kernel&& kernel) noexcept
 {
-    if (policy.is_default())
+    if (policy.is_serial())
     {
-#if defined(CONDUIT_USE_OPENMP)
-        new_forall<OpenMPExec>(begin, end, std::forward<Kernel>(kernel));
-#else
-        new_forall<SerialExec>(begin, end, std::forward<Kernel>(kernel));
-#endif
-    }
-    else if (policy.is_serial())
-    {
-        new_forall<SerialExec>(begin, end, std::forward<Kernel>(kernel));
-    }
-    else if (policy.is_device())
-    {
-#if defined(CONDUIT_USE_RAJA) && defined(CONDUIT_USE_CUDA)
-        new_forall<CudaExec>(begin, end, std::forward<Kernel>(kernel));
-#elif defined(CONDUIT_USE_RAJA) && defined(CONDUIT_USE_HIP)
-        new_forall<HipExec>(begin, end, std::forward<Kernel>(kernel));
-#else
-        CONDUIT_ERROR("Conduit was built with neither CUDA nor HIP.");
-#endif
+        forall<SerialExec>(begin, end, std::forward<Kernel>(kernel));
     }
     else if (policy.is_cuda())
     {
 #if defined(CONDUIT_USE_RAJA) && defined(CONDUIT_USE_CUDA)
-        new_forall<CudaExec>(begin, end, std::forward<Kernel>(kernel));
+        forall<CudaExec>(begin, end, std::forward<Kernel>(kernel));
 #else
         CONDUIT_ERROR("Conduit was not built with CUDA.");
 #endif
@@ -408,7 +363,7 @@ new_forall(ExecutionPolicy &policy,
     else if (policy.is_hip())
     {
 #if defined(CONDUIT_USE_RAJA) && defined(CONDUIT_USE_HIP)
-        new_forall<HipExec>(begin, end, std::forward<Kernel>(kernel));
+        forall<HipExec>(begin, end, std::forward<Kernel>(kernel));
 #else
         CONDUIT_ERROR("Conduit was not built with HIP.");
 #endif
@@ -416,7 +371,7 @@ new_forall(ExecutionPolicy &policy,
     else if (policy.is_openmp())
     {
 #if defined(CONDUIT_USE_OPENMP)
-        new_forall<OpenMPExec>(begin, end, std::forward<Kernel>(kernel));
+        forall<OpenMPExec>(begin, end, std::forward<Kernel>(kernel));
 #else
         CONDUIT_ERROR("Conduit was not built with OpenMP.");
 #endif
