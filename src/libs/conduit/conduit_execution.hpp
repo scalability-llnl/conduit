@@ -250,6 +250,48 @@ struct OpenMPExec
 };
 #endif
 
+//---------------------------------------------------------------------------//
+// mock up of a raja like forall implementation 
+//---------------------------------------------------------------------------//
+template <typename ExecutionPolicy,typename Kernel>
+inline void
+forall_exec(const int& begin,
+            const int& end,
+            Kernel&& kernel) noexcept
+{
+    std::cout << typeid(ExecutionPolicy).name() << "  START" << std::endl;
+    for (int i = begin; i < end; i ++)
+    {
+        kernel(i);
+    }
+    std::cout << typeid(ExecutionPolicy).name() << "  END" << std::endl;
+}
+
+
+//---------------------------------------------------------------------------//
+// invoke forall with concrete template tag
+//---------------------------------------------------------------------------//
+template <typename ExecutionPolicy, typename Kernel>
+inline void
+forall(const int& begin,
+       const int& end,
+       Kernel&& kernel) noexcept
+{
+    forall_exec<ExecutionPolicy>(begin, end, std::forward<Kernel>(kernel));
+}
+
+//---------------------------------------------------------------------------//
+// invoke forall with concrete template tag
+//---------------------------------------------------------------------------//
+template <typename Kernel>
+inline void
+forall<OpenMPExec, Kernel>(const int& begin,
+                   const int& end,
+                   Kernel&& kernel) noexcept
+{
+    forall_exec<ExecutionPolicy>(begin, end, std::forward<Kernel>(kernel));
+}
+
 #endif
 
 //---------------------------------------------------------------------------//
@@ -307,36 +349,6 @@ dispatch(ExecutionPolicy policy, Function&& func)
 }
 
 //---------------------------------------------------------------------------//
-// mock up of a raja like forall implementation 
-//---------------------------------------------------------------------------//
-template <typename ExecutionPolicy,typename Kernel>
-inline void
-forall_exec(const int& begin,
-            const int& end,
-            Kernel&& kernel) noexcept
-{
-    std::cout << typeid(ExecutionPolicy).name() << "  START" << std::endl;
-    for (int i = begin; i < end; i ++)
-    {
-        kernel(i);
-    }
-    std::cout << typeid(ExecutionPolicy).name() << "  END" << std::endl;
-}
-
-
-//---------------------------------------------------------------------------//
-// invoke forall with concrete template tag
-//---------------------------------------------------------------------------//
-template <typename ExecutionPolicy, typename Kernel>
-inline void
-forall(const int& begin,
-       const int& end,
-       Kernel&& kernel) noexcept
-{
-    forall_exec<ExecutionPolicy>(begin, end, std::forward<Kernel>(kernel));
-}
-
-//---------------------------------------------------------------------------//
 // runtime to concrete template tag dispatch of a forall
 //---------------------------------------------------------------------------//
 template <typename Kernel>
@@ -368,7 +380,10 @@ forall(ExecutionPolicy &policy,
     }
     else if (policy.is_openmp())
     {
-#if defined(CONDUIT_USE_OPENMP)
+        // TODO not sure if we need this
+#if defined(CONDUIT_USE_RAJA) && defined(CONDUIT_USE_OPENMP)
+        forall<OpenMPExec>(begin, end, std::forward<Kernel>(kernel));
+#elif defined(CONDUIT_USE_OPENMP)
         forall<OpenMPExec>(begin, end, std::forward<Kernel>(kernel));
 #else
         CONDUIT_ERROR("Conduit was not built with OpenMP.");
