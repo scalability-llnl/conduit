@@ -98,10 +98,6 @@ identify_protocol(const std::string &path,
     {
         io_type = "conduit_base64_json";
     }
-    else if(file_name_ext == "conduit_base64_yaml")
-    {
-        io_type = "conduit_base64_yaml";
-    }
     else if(file_name_ext == "yaml")
     {
         io_type = "yaml";
@@ -109,6 +105,14 @@ identify_protocol(const std::string &path,
     else if(file_name_ext == "yml")
     {
         io_type = "yaml";
+    }
+    else if(file_name_ext == "conduit_yaml")
+    {
+        io_type = "conduit_yaml";
+    }
+    else if(file_name_ext == "conduit_base64_yaml")
+    {
+        io_type = "conduit_base64_yaml";
     }
     else if(file_name_ext == "bp" ||
             file_name_ext == "adios")
