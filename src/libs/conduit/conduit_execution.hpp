@@ -23,6 +23,11 @@
 #endif
 
 //-----------------------------------------------------------------------------
+// cpp lib includes
+//-----------------------------------------------------------------------------
+#include <algorithm>
+
+//-----------------------------------------------------------------------------
 // -- begin conduit --
 //-----------------------------------------------------------------------------
 namespace conduit
@@ -253,7 +258,7 @@ struct OpenMPExec
 //---------------------------------------------------------------------------//
 // mock up of a raja like forall implementation 
 //---------------------------------------------------------------------------//
-template <typename ExecutionPolicy,typename Kernel>
+template <typename ExecutionPolicy, typename Kernel>
 inline void
 forall_exec(const int& begin,
             const int& end,
@@ -267,6 +272,28 @@ forall_exec(const int& begin,
     std::cout << typeid(ExecutionPolicy).name() << "  END" << std::endl;
 }
 
+//---------------------------------------------------------------------------//
+template <typename Kernel>
+inline void
+omp_forall_exec(const int& begin,
+                const int& end,
+                Kernel&& kernel) noexcept
+{
+#if defined(CONDUIT_USE_OPENMP)
+    // #pragma message("omp::for_policy -> OMP")
+    #pragma omp parallel for
+    for (index_t i = begin; i < end; i ++)
+    {
+        kernel(i);
+    }
+#else
+    // #pragma message("omp::for_policy -> serial")
+    for (index_t i = begin; i < end; i ++)
+    {
+        kernel(i);
+    }
+#endif
+}
 
 //---------------------------------------------------------------------------//
 // invoke forall with concrete template tag
@@ -289,10 +316,109 @@ forall<OpenMPExec, Kernel>(const int& begin,
                    const int& end,
                    Kernel&& kernel) noexcept
 {
-    forall_exec<ExecutionPolicy>(begin, end, std::forward<Kernel>(kernel));
+    omp_forall_exec(begin, end, std::forward<Kernel>(kernel));
+}
+
+//---------------------------------------------------------------------------//
+// mock up of a raja like sort implementation 
+//---------------------------------------------------------------------------//
+template <typename Iterator>
+inline void
+sort_exec(Iterator begin,
+          Iterator end) noexcept
+{
+    std::sort(begin, end);
+}
+
+//---------------------------------------------------------------------------//
+// mock up of a raja like sort implementation 
+//---------------------------------------------------------------------------//
+template <typename Iterator, typename Predicate>
+inline void
+sort_exec(Iterator begin,
+          Iterator end,
+          Predicate &&predicate) noexcept
+{
+    std::sort(begin, end, predicate);
+}
+
+//---------------------------------------------------------------------------//
+template <typename Iterator>
+inline void
+omp_sort_exec(Iterator begin,
+              Iterator end) noexcept
+{
+   // #pragma message("omp::sort_policy -> serial")
+    // TODO: implement an OpenMP sort like in RAJA.
+    std::sort(begin, end);
+    // This is only allowed in C++14 or later.
+    //this->operator()(begin, end, [](auto &lhs, auto &rhs) { return lhs < rhs; });
+}
+
+//---------------------------------------------------------------------------//
+template <typename Iterator, typename Predicate>
+inline void
+omp_sort_exec(Iterator begin,
+              Iterator end,
+              Predicate &&predicate) noexcept
+{
+   // #pragma message("omp::sort_policy -> serial")
+    // TODO: implement an OpenMP sort like in RAJA.
+    std::sort(begin, end);
+    // This is only allowed in C++14 or later.
+    //this->operator()(begin, end, [](auto &lhs, auto &rhs) { return lhs < rhs; });
+}
+
+//---------------------------------------------------------------------------//
+// invoke sort with concrete template tag
+//---------------------------------------------------------------------------//
+template <typename ExecutionPolicy, typename Iterator>
+inline void
+sort(Iterator begin, 
+     Iterator end) noexcept
+{
+    sort_exec(begin, end);
+}
+
+//---------------------------------------------------------------------------//
+// invoke sort with concrete template tag
+//---------------------------------------------------------------------------//
+template <typename ExecutionPolicy, typename Iterator, typename Predicate>
+inline void
+sort(Iterator begin,
+     Iterator end,
+     Predicate &&predicate) noexcept
+{
+    sort_exec(begin, end, std::forward<Predicate>(predicate));
+}
+
+//---------------------------------------------------------------------------//
+// invoke sort with concrete template tag
+//---------------------------------------------------------------------------//
+template <typename Iterator>
+inline void
+sort<OpenMPExec, Iterator>(Iterator begin, 
+                           Iterator end) noexcept
+{
+    omp_sort_exec(begin, end);
+}
+
+//---------------------------------------------------------------------------//
+// invoke sort with concrete template tag
+//---------------------------------------------------------------------------//
+template <typename Iterator, typename Predicate>
+inline void
+sort<OpenMPExec, Iterator, Predicate>(Iterator begin,
+                                      Iterator end,
+                                      Predicate &&predicate) noexcept
+{
+    omp_sort_exec(begin, end, std::forward<Predicate>(predicate));
 }
 
 #endif
+//---------------------------------------------------------------------------//
+// end RAJA_OFF
+//---------------------------------------------------------------------------//
 
 //---------------------------------------------------------------------------//
 // invoke functor with concrete template tag
@@ -380,10 +506,7 @@ forall(ExecutionPolicy &policy,
     }
     else if (policy.is_openmp())
     {
-        // TODO not sure if we need this
-#if defined(CONDUIT_USE_RAJA) && defined(CONDUIT_USE_OPENMP)
-        forall<OpenMPExec>(begin, end, std::forward<Kernel>(kernel));
-#elif defined(CONDUIT_USE_OPENMP)
+#if defined(CONDUIT_USE_OPENMP)
         forall<OpenMPExec>(begin, end, std::forward<Kernel>(kernel));
 #else
         CONDUIT_ERROR("Conduit was not built with OpenMP.");
@@ -391,7 +514,78 @@ forall(ExecutionPolicy &policy,
     }
     else // policy.is_empty()
     {
-        CONDUIT_ERROR("Cannot call for_all with an empty policy.");
+        CONDUIT_ERROR("Cannot call forall with an empty policy.");
+    }
+}
+
+//---------------------------------------------------------------------------//
+// runtime to concrete template tag dispatch of a sort
+//---------------------------------------------------------------------------//
+template <typename Iterator>
+inline void
+sort(ExecutionPolicy &policy,
+     Iterator begin,
+     Iterator end) noexcept
+{
+    if (policy.is_serial())
+    {
+        sort<SerialExec>(begin, end);
+    }
+    else if (policy.is_cuda())
+    {
+        CONDUIT_ERROR("sort does not exist for CUDA.");
+    }
+    else if (policy.is_hip())
+    {
+        CONDUIT_ERROR("sort does not exist for HIP.");
+    }
+    else if (policy.is_openmp())
+    {
+#if defined(CONDUIT_USE_OPENMP)
+        sort<OpenMPExec>(begin, end);
+#else
+        CONDUIT_ERROR("Conduit was not built with OpenMP.");
+#endif
+    }
+    else // policy.is_empty()
+    {
+        CONDUIT_ERROR("Cannot call sort with an empty policy.");
+    }
+}
+
+//---------------------------------------------------------------------------//
+// runtime to concrete template tag dispatch of a sort
+//---------------------------------------------------------------------------//
+template <typename Iterator, typename Predicate>
+inline void
+sort(ExecutionPolicy &policy,
+     Iterator begin,
+     Iterator end,
+     Predicate &&predicate) noexcept
+{
+    if (policy.is_serial())
+    {
+        sort<SerialExec>(begin, end, std::forward<Predicate>(predicate));
+    }
+    else if (policy.is_cuda())
+    {
+        CONDUIT_ERROR("sort does not exist for CUDA.");
+    }
+    else if (policy.is_hip())
+    {
+        CONDUIT_ERROR("sort does not exist for HIP.");
+    }
+    else if (policy.is_openmp())
+    {
+#if defined(CONDUIT_USE_OPENMP)
+        sort<OpenMPExec>(begin, end, std::forward<Predicate>(predicate));
+#else
+        CONDUIT_ERROR("Conduit was not built with OpenMP.");
+#endif
+    }
+    else // policy.is_empty()
+    {
+        CONDUIT_ERROR("Cannot call sort with an empty policy.");
     }
 }
 
