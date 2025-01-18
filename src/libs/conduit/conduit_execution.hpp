@@ -591,6 +591,10 @@ sort(ExecutionPolicy &policy,
 
 // OLD BRAD STUFF below
 
+// TODO finish going through and finding where these are used
+// and convert to the new system so we can strip this functionality out
+// + get rid of exec_ser and exec_omp src files.
+
 //---------------------------------------------------------------------------
 template <typename ExecPolicy, typename Func>
 inline void
