@@ -956,7 +956,8 @@ private:
         // general faceid, then by their elemface "ef", which should keep the
         // elements in order.
         CONDUIT_ANNOTATE_MARK_BEGIN("Sort labels");
-        conduit::execution::sort<ParallelExec>(faceid_to_ef.begin(), faceid_to_ef.end());
+        conduit::execution::ExecutionPolicy policy = conduit::execution::ExecutionPolicy::host();
+        conduit::execution::sort(policy, faceid_to_ef.begin(), faceid_to_ef.end());
         CONDUIT_ANNOTATE_MARK_END("Sort labels");
 #ifdef DEBUG_PRINT
         std::cout << "faceid_to_ef.sorted = " << faceid_to_ef << std::endl;
@@ -975,8 +976,8 @@ private:
 #endif
 
         // Sort on ef to get back to a ef->unique mapping.
-        conduit::execution::sort<ParallelExec>(
-            ef_to_unique.begin(), ef_to_unique.end(),
+        conduit::execution::sort(
+            policy, ef_to_unique.begin(), ef_to_unique.end(),
             [&](const std::pair<uint64, uint64> &lhs, const std::pair<uint64, uint64> &rhs)
             {
                 // Only sort using the ef value.
@@ -1167,7 +1168,8 @@ private:
 
         // Sort edgeid_to_ee so any like edges will be sorted.
         CONDUIT_ANNOTATE_MARK_BEGIN("Sort labels");
-        conduit::execution::sort<ParallelExec>(edgeid_to_ee.begin(), edgeid_to_ee.end());
+        conduit::execution::ExecutionPolicy policy = conduit::execution::ExecutionPolicy::host();
+        conduit::execution::sort(policy, edgeid_to_ee.begin(), edgeid_to_ee.end());
         CONDUIT_ANNOTATE_MARK_END("Sort labels");
 #ifdef DEBUG_PRINT
         std::cout << "edgeid_to_ee.sorted = " << edgeid_to_ee << std::endl;
@@ -1183,8 +1185,8 @@ private:
 #endif
 
         // Sort on ef to get back to a ef->unique mapping.
-        conduit::execution::sort<ParallelExec>(
-            ee_to_unique.begin(), ee_to_unique.end(),
+        conduit::execution::sort(
+            policy, ee_to_unique.begin(), ee_to_unique.end(),
             [&](const std::pair<uint64, uint64> &lhs, const std::pair<uint64, uint64> &rhs)
             {
                 // Only sort using the ee value.
@@ -2187,8 +2189,9 @@ TopologyMetadata::Implementation::build_edge_key_to_id(
 #endif
 
     // Sort the edges by the ids.
-    conduit::execution::sort<ParallelExec>(
-        edge_key_to_id.begin(), edge_key_to_id.end(),
+    conduit::execution::ExecutionPolicy policy = conduit::execution::ExecutionPolicy::host();
+    conduit::execution::sort(
+        policy, edge_key_to_id.begin(), edge_key_to_id.end(),
         [&](const std::pair<uint64, index_t> &lhs,
             const std::pair<uint64, index_t> &rhs) 
         {
@@ -2482,7 +2485,8 @@ TopologyMetadata::Implementation::build_child_to_parent_association(int e, int a
     std::cout << "p2c=" << p2c << std::endl;
 #endif
     // Sort p2c by child.
-    conduit::execution::sort<ParallelExec>(p2c.begin(), p2c.end(),
+    conduit::execution::ExecutionPolicy policy = conduit::execution::ExecutionPolicy::host();
+    conduit::execution::sort(policy, p2c.begin(), p2c.end(),
         [&](const std::pair<index_t, index_t> &lhs,
             const std::pair<index_t, index_t> &rhs)
     {
