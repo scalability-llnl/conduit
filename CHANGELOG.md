@@ -17,25 +17,31 @@ and this project aspires to adhere to [Semantic Versioning](https://semver.org/s
 - Added `conduit::blueprint::mesh::examples:generate_default_options` functions that provide default options values for `conduit::blueprint::mesh::examples:generate`.
 - Added python API support for `conduit::blueprint::mesh::examples:generate` and `conduit::blueprint::mesh::examples:generate_default_options`.
 - Added `gyre` example mesh, which provides a simple velocity vector field. 
+- Added new utilities for material sets: `conduit::blueprint::mesh::matset::count_zones_from_matset()`, `conduit::blueprint::mesh::matset::is_material_in_zone()`, and `conduit::blueprint::mesh::matset::create_reverse_material_map()`.
+- Added a new example, `conduit::blueprint::mesh::examples::venn_specsets()`, which covers the breadth of species set representations.
 
 #### Relay
 - Added limited support for species sets for Silo/Overlink I/O. Multi-buffer element-dominant species sets can be written to Silo and the same can be read from Silo. Additional species set flavors will come online in a later release.
 - Added support for `conduit_yaml` and `conduit_base64_yaml` I/O cases.
+- Standardized the way that Relay Silo Save handles name collisions and non-idiomatic Silo names.
 
 ### Changed
 
 #### Conduit
 - Changed the MPI CMake target used by conduit from `MPI:MPI_CXX` to `MPI:MPI_C` to provide better compatibility with downstream tools.
 - Added vendored yyjson v0.10.0 as new and default JSON parser. yyjson has an MIT license that is compatible with Debian's Free Software Guidelines, where RapidJSON is not  (https://wiki.debian.org/qa.debian.org/jsonevil). You can still use RapidJSON by setting the new CMake option `ENABLE_YYJSON` to `FALSE`.
+- The `DataType::equals()` method now correctly takes striding into account.
 
 #### Blueprint
 - Certain algorithms that use MPI tags had their tag values lowered since some MPI implementations do not support large values.
 - Changed the name of `conduit::blueprint::mesh::matset::to_sparse_by_element()` to `conduit::blueprint::mesh::matset::to_uni_buffer_by_element()` to be more consistent with similar function names.
+- Expanded the ways species sets can be represented in Blueprint to include sparse by element and sparse by material representations, much like material sets.
 
 #### Relay
 - User-supplied warning and error handlers are suspended during `conduit::relay::communicate_using_schema::execute()` so exceptions will be thrown properly when there is an MPI error. The handlers are restored before the execute method returns.
 - `conduit::relay::communicate_using_schema::execute()` flushes logs as they are generated, in case of error. This is mostly to facilitate internal debugging.
 - Changes were made to how Relay queries the upper limit for MPI tags to work around problems on some systems.
+- Rewrote `conduit::blueprint::mesh::specset::to_silo()` to allow it to support specsets that do not use all the materials in the associated matset.
 
 ## [0.9.2] - Released 2024-05-21
 
