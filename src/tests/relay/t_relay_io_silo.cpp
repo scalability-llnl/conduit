@@ -76,16 +76,16 @@ TEST(conduit_relay_io_silo, conduit_silo_cold_storage_generic_iface)
 // test silo file format detection
 TEST(conduit_relay_io_silo, test_silo_detect)
 {
-    std::string path = utils::join_file_path("overlink", "box2d.silo");
-    std::string input_file = relay_test_silo_data_path(path);
+
 
     // make sure bogus file doesn't return true
     EXPECT_FALSE(io::silo::is_silo_file("BoGUS.txt"));
+    
     // make sure pure hdf5 file doesn't return true
-
     Node n_test;
     n_test["a"] = 42.0;
     io::save(n_test,"tout_hdf5_plain_vs_silo_open.hdf5");
+    EXPECT_FALSE(io::silo::is_silo_file("tout_hdf5_plain_vs_silo_open.hdf5"));
 
     // make sure blueprint hdf5 file doesn't return true
     n_test.reset();
@@ -93,8 +93,10 @@ TEST(conduit_relay_io_silo, test_silo_detect)
     io::blueprint::save_mesh(n_test,"tout_bp_hdf5_mesh_vs_silo_open","hdf5");
     EXPECT_FALSE(io::silo::is_silo_file("tout_bp_hdf5_mesh_vs_silo_open.root"));
 
+    std::string silo_input_file = utils::join_file_path("overlink", "box2d.silo");
+    silo_input_file = relay_test_silo_data_path(silo_input_file);
     // make sure known silo file *does* return true
-    EXPECT_TRUE(io::silo::is_silo_file(input_file));
+    EXPECT_TRUE(io::silo::is_silo_file(silo_input_file));
 
 }
 
