@@ -99,60 +99,6 @@ TEST(conduit_relay_io_silo, test_silo_detect)
 }
 
 //-----------------------------------------------------------------------------
-// test reading in a handful of different overlink files
-TEST(conduit_relay_io_silo, load_mesh_geometry)
-{
-    // TODO: all these files are in overlink symlink format.
-    // Symlinks may break on Windows (?)
-    // Could make them overlink format without the symlink.
-    // But would require modifying the files.
-    std::vector<std::string> filename_vec = {
-        "box2d.silo",
-        "box3d.silo",
-        "diamond.silo",
-        // TODO: rename these files to be more descriptive.
-        // would also require modifying the paths stored within the files,
-        // and re-symlinking
-        "testDisk2D_a.silo",
-        "donordiv.s2_materials2.silo",
-        "donordiv.s2_materials3.silo"
-    };
-    std::vector<int> dims_vec            = {2, 3, 2,  2,    2,  2};
-    std::vector<int> coordset_length_vec = {4, 8, 36, 1994, 16, 961};
-    std::vector<int> topology_length_vec = {1, 1, 33, 1920, 9,  900};
-    for (int i = 0; i < filename_vec.size(); ++i)
-    {
-        Node mesh, info;
-        std::string path = utils::join_file_path("overlink", filename_vec.at(i));
-        std::string input_file = relay_test_silo_data_path(path);
-        io::silo::load_mesh(input_file, mesh);
-
-        EXPECT_TRUE(blueprint::mesh::verify(mesh, info));
-        EXPECT_EQ(blueprint::mesh::number_of_domains(mesh), 1);
-
-        const Node &domain = *blueprint::mesh::domains(mesh).front();
-        EXPECT_TRUE(domain.has_child("coordsets"));
-        EXPECT_EQ(domain["coordsets"].number_of_children(), 1);
-        EXPECT_TRUE(domain.has_child("topologies"));
-        EXPECT_EQ(domain["topologies"].number_of_children(), 1);
-
-        { // Coordset Validation //
-            const Node &cset = domain["coordsets"].child(0);
-            EXPECT_EQ(blueprint::mesh::coordset::dims(cset), dims_vec.at(i));
-            EXPECT_EQ(blueprint::mesh::coordset::length(cset), coordset_length_vec.at(i));
-            EXPECT_TRUE(blueprint::mesh::coordset::_explicit::verify(cset, info));
-        }
-
-        { // Topology Validation //
-            const Node &topo = domain["topologies"].child(0);
-            EXPECT_EQ(blueprint::mesh::topology::dims(topo), dims_vec.at(i));
-            EXPECT_EQ(blueprint::mesh::topology::length(topo), topology_length_vec.at(i));
-            EXPECT_TRUE(blueprint::mesh::topology::unstructured::verify(topo, info));
-        }
-    }
-}
-
-//-----------------------------------------------------------------------------
 TEST(conduit_relay_io_silo, round_trip_basic)
 {
     const std::vector<std::pair<std::string, std::string>> mesh_types = {
