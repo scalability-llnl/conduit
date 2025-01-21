@@ -36,15 +36,10 @@ TEST(conduit_relay_io_silo, conduit_silo_cold_storage)
     EXPECT_EQ(n["b"].as_uint32(), b_val);
     EXPECT_EQ(n["c"].as_uint32(), c_val);
 
-    n.print();
-
     io::silo_write(n,"tout_cold_storage_test.silo:myobj");
 
     Node n_load;
     io::silo_read("tout_cold_storage_test.silo:myobj",n_load);
-
-    std::cout << "round trip" << std::endl;
-    n_load.print();
 
     EXPECT_EQ(n_load["a"].as_uint32(), a_val);
     EXPECT_EQ(n_load["b"].as_uint32(), b_val);
@@ -171,6 +166,7 @@ TEST(conduit_relay_io_silo, round_trip_basic)
         std::make_pair("hexs", "3"),
         std::make_pair("wedges", "3"),
         std::make_pair("pyramids", "3"),
+        // TODO
         // std::make_pair("polyhedra", "3")
     };
     for (int i = 0; i < mesh_types.size(); ++i)
@@ -219,7 +215,7 @@ TEST(conduit_relay_io_silo, round_trip_avoid_name_collisions)
     save_mesh["specsets"]["specset"]["matset"].set("matset");
 
     const std::string basename = "silo_round_trip_avoid_name_collisions";
-    const std::string filename = basename + ".cycle_000100.root";;
+    const std::string filename = basename + ".cycle_000100.root";
 
     Node read_opts;
     read_opts["matset_style"] = "multi_buffer_full";
@@ -232,9 +228,6 @@ TEST(conduit_relay_io_silo, round_trip_avoid_name_collisions)
     save_mesh["fields"].remove_child("mesh");
     save_mesh["matsets"].remove_child("mesh");
     save_mesh["specsets"].remove_child("mesh");
-
-    // TODO remove this once we add specsets
-    save_mesh.remove_child("specsets");
 
     // make changes to save mesh so the diff will pass
     silo_name_changer("mesh", save_mesh);
@@ -263,10 +256,11 @@ TEST(conduit_relay_io_silo, round_trip_braid)
         std::make_pair("hexs", "3"),
         std::make_pair("wedges", "3"),
         std::make_pair("pyramids", "3"),
+        // TODO
         // std::make_pair("mixed_2d", "2"),
         // std::make_pair("mixed", "3"),
     };
-    for (int i = 0; i < mesh_types.size(); ++i)
+    for (int i = 0; i < mesh_types.size(); i ++)
     {
         std::string dim = mesh_types[i].second;
         index_t nx = 3;
@@ -641,6 +635,37 @@ TEST(conduit_relay_io_silo, round_trip_grid_adjset)
 
         EXPECT_FALSE(l_curr.diff(s_curr, info, CONDUIT_EPSILON, true));
     }
+}
+
+//-----------------------------------------------------------------------------
+TEST(conduit_relay_io_silo, round_trip_specsets)
+{
+    Node save_mesh, load_mesh, info;
+    blueprint::mesh::examples::misc("specsets", 10, 10, 1, save_mesh);
+    save_mesh["matsets"].rename_child("mesh", "matset");
+    save_mesh["specsets"].rename_child("mesh", "specset");
+    save_mesh["specsets"]["specset"]["matset"].set("matset");
+
+    const std::string basename = "silo_round_trip_specsets";
+    const std::string filename = basename + ".cycle_000100.root";
+
+    Node read_opts;
+    read_opts["matset_style"] = "multi_buffer_full";
+
+    remove_path_if_exists(filename);
+    io::silo::save_mesh(save_mesh, basename);
+    io::silo::load_mesh(filename, read_opts, load_mesh);
+
+    EXPECT_TRUE(blueprint::mesh::verify(load_mesh, info));
+
+    // make changes to save mesh so the diff will pass
+    silo_name_changer("mesh", save_mesh);
+
+    // the loaded mesh will be in the multidomain format
+    // but the saved mesh is in the single domain format
+    EXPECT_EQ(load_mesh.number_of_children(), 1);
+    EXPECT_EQ(load_mesh[0].number_of_children(), save_mesh.number_of_children());
+    EXPECT_FALSE(load_mesh[0].diff(save_mesh, info, CONDUIT_EPSILON, true));
 }
 
 //-----------------------------------------------------------------------------
@@ -1756,7 +1781,7 @@ TEST(conduit_relay_io_silo, round_trip_save_option_overlink5)
         std::make_pair("quads", "2"),
         std::make_pair("polygons", "2"),
         std::make_pair("hexs", "3"),
-        // std::make_pair("polyhedra", "3")
+        // std::make_pair("polyhedra", "3") // TODO
         // Overlink does not support tris, wedges, pyramids, or tets
     };
     for (int i = 0; i < mesh_types.size(); ++i)
@@ -1810,6 +1835,41 @@ TEST(conduit_relay_io_silo, round_trip_save_option_overlink5)
 }
 
 //-----------------------------------------------------------------------------
+// this tests specset i/o
+TEST(conduit_relay_io_silo, round_trip_save_option_overlink6)
+{
+    Node save_mesh, load_mesh, info;
+    blueprint::mesh::examples::misc("specsets", 10, 10, 1, save_mesh);
+    save_mesh["matsets"].rename_child("mesh", "matset");
+    save_mesh["specsets"].rename_child("mesh", "specset");
+    save_mesh["specsets"]["specset"]["matset"].set("matset");
+
+    const std::string basename = "silo_save_option_overlink_misc";
+    const std::string filename = basename + "/OvlTop.silo";
+
+    Node write_opts;
+    write_opts["file_style"] = "overlink";
+
+    Node read_opts;
+    read_opts["matset_style"] = "multi_buffer_full";
+
+    remove_path_if_exists(filename);
+    io::silo::save_mesh(save_mesh, basename, write_opts);
+    io::silo::load_mesh(filename, read_opts, load_mesh);
+    EXPECT_TRUE(blueprint::mesh::verify(load_mesh, info));
+
+    // make changes to save mesh so the diff will pass
+    vector_field_to_scalars_braid(save_mesh, "2");
+    overlink_name_changer(save_mesh);
+
+    // the loaded mesh will be in the multidomain format
+    // but the saved mesh is in the single domain format
+    EXPECT_EQ(load_mesh.number_of_children(), 1);
+    EXPECT_EQ(load_mesh[0].number_of_children(), save_mesh.number_of_children());
+    EXPECT_FALSE(load_mesh[0].diff(save_mesh, info, CONDUIT_EPSILON, true));
+}
+
+//-----------------------------------------------------------------------------
 
 // 
 // read option tests
@@ -1843,8 +1903,8 @@ TEST(conduit_relay_io_silo, round_trip_read_option_mesh_name)
     EXPECT_TRUE(load_mesh[0]["topologies"].number_of_children() == 1);
 }
 
-TEST(conduit_relay_io_silo, round_trip_read_option_matset_style)
 //-----------------------------------------------------------------------------
+TEST(conduit_relay_io_silo, round_trip_read_option_matset_style)
 {
     // the matset type and the type we are requesting on read
     const std::vector<std::pair<std::string, std::string>> matset_types = {
@@ -1980,6 +2040,57 @@ TEST(conduit_relay_io_silo, round_trip_read_option_matset_style)
 //
 
 //-----------------------------------------------------------------------------
+// test reading in a handful of different overlink files
+TEST(conduit_relay_io_silo, load_mesh_geometry)
+{
+    const std::vector<std::pair<std::string, std::vector<int>>> file_info = {
+        std::make_pair("box2d",                  std::vector<int>{2, 4,    1}),
+        std::make_pair("box3d",                  std::vector<int>{3, 8,    1}),
+        std::make_pair("diamond",                std::vector<int>{2, 36,   33}),
+        std::make_pair("testDisk2D_a",           std::vector<int>{2, 1994, 1920}),
+        std::make_pair("donordiv.s2_materials2", std::vector<int>{2, 16,   9}),
+        std::make_pair("donordiv.s2_materials3", std::vector<int>{2, 961,  900}),
+    };
+
+    for (size_t i = 0; i < file_info.size(); i ++)
+    {
+        const std::string &basename = file_info[i].first;
+        const std::string filename = basename + ".silo";
+        const int dim = file_info[i].second[0];
+        const int coordset_length = file_info[i].second[1];
+        const int topology_length = file_info[i].second[2];
+
+        Node mesh, info;
+        const std::string path = utils::join_file_path("overlink", filename);
+        const std::string input_file = relay_test_silo_data_path(path);
+        io::silo::load_mesh(input_file, mesh);
+
+        EXPECT_TRUE(blueprint::mesh::verify(mesh, info));
+        EXPECT_EQ(blueprint::mesh::number_of_domains(mesh), 1);
+
+        const Node &domain = *blueprint::mesh::domains(mesh).front();
+        EXPECT_TRUE(domain.has_child("coordsets"));
+        EXPECT_EQ(domain["coordsets"].number_of_children(), 1);
+        EXPECT_TRUE(domain.has_child("topologies"));
+        EXPECT_EQ(domain["topologies"].number_of_children(), 1);
+
+        { // Coordset Validation //
+            const Node &cset = domain["coordsets"].child(0);
+            EXPECT_EQ(blueprint::mesh::coordset::dims(cset), dim);
+            EXPECT_EQ(blueprint::mesh::coordset::length(cset), coordset_length);
+            EXPECT_TRUE(blueprint::mesh::coordset::_explicit::verify(cset, info));
+        }
+
+        { // Topology Validation //
+            const Node &topo = domain["topologies"].child(0);
+            EXPECT_EQ(blueprint::mesh::topology::dims(topo), dim);
+            EXPECT_EQ(blueprint::mesh::topology::length(topo), topology_length);
+            EXPECT_TRUE(blueprint::mesh::topology::unstructured::verify(topo, info));
+        }
+    }
+}
+
+//-----------------------------------------------------------------------------
 // read normal silo files containing multimeshes, multivars, and multimats
 TEST(conduit_relay_io_silo, read_silo)
 {
@@ -2034,7 +2145,7 @@ TEST(conduit_relay_io_silo, read_silo)
         {
             remove_path_if_exists(out_name + "_write_overlink");
             write_opts["file_style"] = "overlink";
-            write_opts["ovl_topo_name"] = meshname; // TODO do I even need this
+            write_opts["ovl_topo_name"] = meshname;
             io::silo::save_mesh(load_mesh, out_name + "_write_overlink", write_opts);
         }
     }
@@ -2081,7 +2192,7 @@ TEST(conduit_relay_io_silo, read_simple_silo)
             {
                 remove_path_if_exists(out_name + "_write_overlink");
                 write_opts["file_style"] = "overlink";
-                write_opts["ovl_topo_name"] = "MMESH"; // TODO do I even need this
+                write_opts["ovl_topo_name"] = "MMESH";
                 io::silo::save_mesh(load_mesh, out_name + "_write_overlink", write_opts);
             }
         }
@@ -2095,12 +2206,12 @@ TEST(conduit_relay_io_silo, read_fake_overlink)
     const std::vector<std::vector<std::string>> file_info = {
      // {"ev_0_0_100",              "OvlTop", ".silo", ""     }, // test default case
      // {"ev_0_0_100",              "OvlTop", ".silo", "MMESH"},
-        // uncomment once silo ucdmesh phzones are supported
+        // TODO uncomment once silo ucdmesh phzones are supported
         {"hl18spec",                "OvlTop", ".silo", ""     }, // test default case
         {"hl18spec",                "OvlTop", ".silo", "MMESH"},
      // {"regrovl_qh_1000_10001_4", "OvlTop", ".silo", ""     }, // test default case
      // {"regrovl_qh_1000_10001_4", "OvlTop", ".silo", "MMESH"},
-        // uncomment once silo ucdmesh phzones are supported
+        // TODO uncomment once silo ucdmesh phzones are supported
         {"utpyr4",                  "OvlTop", ".silo", ""     }, // test default case
         {"utpyr4",                  "OvlTop", ".silo", "MMESH"},
     };
@@ -2147,17 +2258,25 @@ TEST(conduit_relay_io_silo, read_overlink_symlink_format)
         {".", "box2d",                  ".silo", "MMESH"},
         {".", "box3d",                  ".silo", ""     }, // test default case
         {".", "box3d",                  ".silo", "MMESH"},
+        {".", "c36_m5",                 ".silo", ""     }, // test default case
+        {".", "c36_m5",                 ".silo", "MMESH"},
+        {".", "cube20b",                ".silo", ""     }, // test default case
+        {".", "cube20b",                ".silo", "MMESH"},
         {".", "diamond",                ".silo", ""     }, // test default case
         {".", "diamond",                ".silo", "MMESH"},
         // TODO check diamond filled boundary plot in visit
         // once https://github.com/visit-dav/visit/issues/19522
         // is resolved.
-        {".", "testDisk2D_a",           ".silo", ""     }, // test default case
-        {".", "testDisk2D_a",           ".silo", "MMESH"},
         {".", "donordiv.s2_materials2", ".silo", ""     }, // test default case
         {".", "donordiv.s2_materials2", ".silo", "MMESH"},
         {".", "donordiv.s2_materials3", ".silo", ""     }, // test default case
         {".", "donordiv.s2_materials3", ".silo", "MMESH"},
+        {".", "hl18spec",               ".silo", ""     }, // test default case
+        {".", "hl18spec",               ".silo", "MMESH"},
+        {".", "testDisk2D_a",           ".silo", ""     }, // test default case
+        {".", "testDisk2D_a",           ".silo", "MMESH"},
+        {".", "tetra8",                 ".silo", ""     }, // test default case
+        {".", "tetra8",                 ".silo", "MMESH"},
     };
 
     for (int i = 0; i < file_info.size(); i ++) 
@@ -2202,14 +2321,24 @@ TEST(conduit_relay_io_silo, read_overlink_directly)
         {"box2d",                  "OvlTop", ".silo", "MMESH"},
         {"box3d",                  "OvlTop", ".silo", ""     }, // test default case
         {"box3d",                  "OvlTop", ".silo", "MMESH"},
+        {"c36_m5",                 "OvlTop", ".silo", ""     }, // test default case
+        {"c36_m5",                 "OvlTop", ".silo", "MMESH"},
+        // TODO test cube20b species in VisIt.
+        {"cube20b",                "OvlTop", ".silo", ""     }, // test default case
+        {"cube20b",                "OvlTop", ".silo", "MMESH"},
         {"diamond",                "OvlTop", ".silo", ""     }, // test default case
         {"diamond",                "OvlTop", ".silo", "MMESH"},
-        {"testDisk2D_a",           "OvlTop", ".silo", ""     }, // test default case
-        {"testDisk2D_a",           "OvlTop", ".silo", "MMESH"},
         {"donordiv.s2_materials2", "OvlTop", ".silo", ""     }, // test default case
         {"donordiv.s2_materials2", "OvlTop", ".silo", "MMESH"},
         {"donordiv.s2_materials3", "OvlTop", ".silo", ""     }, // test default case
         {"donordiv.s2_materials3", "OvlTop", ".silo", "MMESH"},
+        // TODO test hl18spec species in VisIt.
+        {"hl18spec",               "OvlTop", ".silo", ""     }, // test default case
+        {"hl18spec",               "OvlTop", ".silo", "MMESH"},
+        {"testDisk2D_a",           "OvlTop", ".silo", ""     }, // test default case
+        {"testDisk2D_a",           "OvlTop", ".silo", "MMESH"},
+        {"tetra8",                 "OvlTop", ".silo", ""     }, // test default case
+        {"tetra8",                 "OvlTop", ".silo", "MMESH"},
     };
 
     for (int i = 0; i < file_info.size(); i ++) 
@@ -2245,9 +2374,9 @@ TEST(conduit_relay_io_silo, read_overlink_directly)
     }
 }
 
-// TODO add tests for...
-//  - polytopal meshes once they are supported
-
-// TODO add tetra8 and c36_m5 to all the overlink i/o tests
+// TODO add tests for polytopal meshes once they are supported
 
 // TODO somewhere I need to error on overlink when there are different var or mesh types across domains
+
+// TODO exception tests?
+

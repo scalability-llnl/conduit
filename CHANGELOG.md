@@ -12,8 +12,11 @@ and this project aspires to adhere to [Semantic Versioning](https://semver.org/s
 - Added `conduit::blueprint::mesh::examples:generate` driver functions that supports creating any blueprint example mesh with options.
 - Added `conduit::blueprint::mesh::examples:generate_default_options` functions that provide default options values for `conduit::blueprint::mesh::examples:generate`.
 - Added python API support for `conduit::blueprint::mesh::examples:generate` and `conduit::blueprint::mesh::examples:generate_default_options`.
-- Added `gyre` example mesh, which provides a simple velocity vector field. 
+- Added `gyre` example mesh, which provides a simple velocity vector field.
+- Added `bent_multi_grid` example mesh, which provides a multi-grid that can contain enhanced and reduced connectivity.  `bent_multi_grid` can produce meshes like the example at http://visitusers.org/index.php?title=Representing_ghost_data#Enhanced_and_Reduced_Connectivity_Zones .
 
+#### Relay
+- Added limited support for species sets for Silo/Overlink I/O. Multi-buffer element-dominant species sets can be written to Silo and the same can be read from Silo. Additional species set flavors will come online in a later release.
 
 ### Changed
 

@@ -151,7 +151,7 @@ silo_name_changer(const std::string &mmesh_name,
         }
     }
 
-     if (save_mesh.has_child("specsets"))
+    if (save_mesh.has_child("specsets"))
     {
         auto specset_itr = save_mesh["specsets"].children();
         while (specset_itr.has_next())
