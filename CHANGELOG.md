@@ -8,6 +8,10 @@ and this project aspires to adhere to [Semantic Versioning](https://semver.org/s
 
 ### Added
 
+#### Conduit
+- Added `conduit_yaml` and `conduit_base64_yaml` protocol support.
+- Added support to detect `.yml` files as `yaml` protocol.
+
 #### Blueprint
 - Added `conduit::blueprint::mesh::examples:generate` driver functions that supports creating any blueprint example mesh with options.
 - Added `conduit::blueprint::mesh::examples:generate_default_options` functions that provide default options values for `conduit::blueprint::mesh::examples:generate`.
@@ -16,6 +20,7 @@ and this project aspires to adhere to [Semantic Versioning](https://semver.org/s
 
 #### Relay
 - Added limited support for species sets for Silo/Overlink I/O. Multi-buffer element-dominant species sets can be written to Silo and the same can be read from Silo. Additional species set flavors will come online in a later release.
+- Added support for `conduit_yaml` and `conduit_base64_yaml` I/O cases.
 
 ### Changed
 
