@@ -234,6 +234,28 @@ void silo_read(DBfile *dbfile,
 namespace silo
 {
 
+//---------------------------------------------------------------------------//
+bool
+is_silo_file(const std::string &file_path)
+{
+    bool res = false;
+    DBfile *silo_dbfile = DBOpen(file_path.c_str(), DB_UNKNOWN, DB_READ);
+
+    if(silo_dbfile != NULL)
+    {
+        // we are able to open with silo, if we want to be extra careful
+        // we can also try:
+        // if(DBInqVarExists(silo_dbfile, "_silolibinfo"))
+        // {
+        //     res = true;
+        // }
+        res = true;
+        DBClose(silo_dbfile);
+    }
+
+    return res;
+}
+
 //-----------------------------------------------------------------------------
 // -- begin conduit::relay::<mpi>::io::silo::detail --
 //-----------------------------------------------------------------------------

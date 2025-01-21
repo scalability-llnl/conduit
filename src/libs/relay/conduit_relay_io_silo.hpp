@@ -51,6 +51,11 @@ namespace silo
 {
 
 //-----------------------------------------------------------------------------
+/// Checks if the given path is a valid silo file by opening it.
+//-----------------------------------------------------------------------------
+bool CONDUIT_RELAY_API is_silo_file(const std::string &path);
+
+//-----------------------------------------------------------------------------
 // Write a blueprint mesh to silo
 //-----------------------------------------------------------------------------
 /// These methods assume `mesh` is a valid blueprint mesh.
