@@ -12,6 +12,9 @@
 #  gtest, fruit, and mpi
 ################################
 
+# clear DLL runtime path
+set(CONDUIT_TPL_DLL_PATHS)
+
 ################################
 # Threads support
 ################################

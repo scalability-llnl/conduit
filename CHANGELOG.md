@@ -16,7 +16,8 @@ and this project aspires to adhere to [Semantic Versioning](https://semver.org/s
 - Added `conduit::blueprint::mesh::examples:generate` driver functions that supports creating any blueprint example mesh with options.
 - Added `conduit::blueprint::mesh::examples:generate_default_options` functions that provide default options values for `conduit::blueprint::mesh::examples:generate`.
 - Added python API support for `conduit::blueprint::mesh::examples:generate` and `conduit::blueprint::mesh::examples:generate_default_options`.
-- Added `gyre` example mesh, which provides a simple velocity vector field. 
+- Added `gyre` example mesh, which provides a simple velocity vector field.
+- Added `bent_multi_grid` example mesh, which provides a multi-grid that can contain enhanced and reduced connectivity.  `bent_multi_grid` can produce meshes like the example at http://visitusers.org/index.php?title=Representing_ghost_data#Enhanced_and_Reduced_Connectivity_Zones .
 - Added new utilities for material sets: `conduit::blueprint::mesh::matset::count_zones_from_matset()`, `conduit::blueprint::mesh::matset::is_material_in_zone()`, and `conduit::blueprint::mesh::matset::create_reverse_material_map()`.
 - Added a new example, `conduit::blueprint::mesh::examples::venn_specsets()`, which covers the breadth of species set representations.
 
