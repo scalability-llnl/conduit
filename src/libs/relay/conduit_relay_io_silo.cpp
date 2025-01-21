@@ -244,7 +244,7 @@ is_silo_file(const std::string &file_path)
     if(silo_dbfile != NULL)
     {
         // we are able to open with silo, if we want to be extra careful
-        // we can also try:
+        // we can also ask:
         // if(DBInqVarExists(silo_dbfile, "_silolibinfo"))
         // {
         //     res = true;
