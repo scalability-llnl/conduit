@@ -228,6 +228,107 @@ void silo_read(DBfile *dbfile,
 }
 
 
+//---------------------------------------------------------------------------//
+bool
+is_silo_file(const std::string &file_path)
+{
+    bool res = false;
+    // Note: we use DB_UNKNOWN here b/c we expect the common case to be 
+    // where we are testing a non-silo file. For this case, we don't want
+    // a cascade of tries at opening.
+    //
+    // For silo_open_file_for_read(), we make a different choice
+    // b/c for that API call, we expect that in most cases the path
+    // passed will be an hdf5 flavored silo file
+
+    DBfile *silo_dbfile = DBOpen(file_path.c_str(), DB_UNKNOWN, DB_READ);
+
+    if(silo_dbfile != NULL)
+    {
+        // we are able to open with silo, if we want to be extra careful
+        // we can also ask:
+        // if(DBInqVarExists(silo_dbfile, "_silolibinfo"))
+        // {
+        //     res = true;
+        // }
+        res = true;
+        silo_close_file(silo_dbfile);
+    }
+
+    //
+    // DBfile *silo_dbfile = DBOpen(file_path.c_str(), DB_HDF5, DB_READ);
+    //
+    // if(silo_dbfile != NULL)
+    // {
+    //     // we are able to open with silo, if we want to be extra careful
+    //     // we can also ask:
+    //     // if(DBInqVarExists(silo_dbfile, "_silolibinfo"))
+    //     // {
+    //     //     res = true;
+    //     // }
+    //     res = true;
+    //     silo_close_file(silo_dbfile);
+    // }
+    //
+    // silo_dbfile = DBOpen(file_path.c_str(), DB_PDB, DB_READ);
+    //
+    // if(silo_dbfile != NULL)
+    // {
+    //     // we are able to open with silo, if we want to be extra careful
+    //     // we can also ask:
+    //     // if(DBInqVarExists(silo_dbfile, "_silolibinfo"))
+    //     // {
+    //     //     res = true;
+    //     // }
+    //     res = true;
+    //     silo_close_file(silo_dbfile);
+    // }
+    
+
+    return res;
+}
+
+
+//---------------------------------------------------------------------------//
+DBfile *
+silo_open_file_for_read(const std::string &file_path)
+{
+    // this open cascade is an optimization -- we expect most open cases
+    // will need hdf5 driver, DB_UNKNOWN has more logic that is slightly
+    // more expensive.
+
+    DBfile *res = DBOpen(file_path.c_str(), DB_HDF5, DB_READ);
+    if(res != NULL)
+    {
+        return res;
+    }
+
+    res = DBOpen(file_path.c_str(), DB_PDB, DB_READ);
+    if(res != NULL)
+    {
+        return res;
+    }
+
+    res = DBOpen(file_path.c_str(), DB_UNKNOWN, DB_READ);
+    if(res != NULL)
+    {
+        return res;
+    }
+
+    return res;
+}
+
+//---------------------------------------------------------------------------//
+void
+silo_close_file(DBfile *silo_handle)
+{
+    if(silo_handle !=NULL)
+    {
+        DBClose(silo_handle);
+    }
+}
+
+
 //-----------------------------------------------------------------------------
 // -- begin conduit::relay::<mpi>::io::silo --
 //-----------------------------------------------------------------------------
@@ -236,9 +337,17 @@ namespace silo
 
 //---------------------------------------------------------------------------//
 bool
-is_silo_file(const std::string &file_path)
+silo_open_file_for_read(const std::string &file_path)
 {
     bool res = false;
+    // Note: we use DB_UNKNOWN here b/c we expect the common case to be 
+    // where we are testing a non-silo file. For this case, we don't want
+    // a cascade of tries at opening.
+    //
+    // For silo_open_file_for_read(), we make a different choice
+    // b/c for that API call, we expect that in most cases the path
+    // passed will be an hdf5 flavored silo file
+
     DBfile *silo_dbfile = DBOpen(file_path.c_str(), DB_UNKNOWN, DB_READ);
 
     if(silo_dbfile != NULL)

@@ -932,6 +932,41 @@ check_num_char(const char v)
     return res;
 }
 
+//---------------------------------------------------------------------------//
+std::string
+strip_quoted_strings(const std::string &input, const std::string &quote_char)
+{
+    std::string res;
+    bool in_string = false;
+    bool emit = false;
+
+    for(size_t i = 0; i < input.size(); ++i)
+    {
+        emit = true;
+        // check for start & end of a string
+        if(input[i] == quote_char[0] && ( i > 0 && ( input[i-1] != '\\' )))
+        {
+            if(in_string)
+            {
+                in_string = false;
+                emit = false;
+            }
+            else
+            {
+                in_string = true;
+            }
+        }
+
+        if(in_string)
+            emit = false;
+
+        if(emit)
+            res += input[i];
+    }
+
+    return res;
+}
+
 
 //-----------------------------------------------------------------------------
 std::string

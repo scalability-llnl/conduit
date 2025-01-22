@@ -23,6 +23,11 @@
 #include "conduit_relay_io_hdf5.hpp"
 #endif
 
+#ifdef CONDUIT_RELAY_IO_SILO_ENABLED
+#include "conduit_relay_io_silo.hpp"
+#endif
+
+
 #include <fstream>
 
 //-----------------------------------------------------------------------------
@@ -119,20 +124,30 @@ identify_protocol(const std::string &path,
 //---------------------------------------------------------------------------//
 void
 identify_file_type(const std::string &path,
-                  std::string &file_type)
+                   std::string &file_type)
 {
     file_type = "unknown";
 
-    // goal: check for: hdf5, json, or yaml
+    // goal: check for: silo, hdf5, json, or yaml
 
-    // first check for hdf5
+#ifdef CONDUIT_RELAY_IO_SILO_ENABLED
+    // // check for silo before hdf5 b/c:
+    // //    silo files can be a specific flavor of hdf5
+    // if(conduit::relay::io::is_silo_file(path))
+    // {
+    //     file_type = "silo";
+    // }
+#endif
+    std::cout << file_type << std::endl;
 #ifdef CONDUIT_RELAY_IO_HDF5_ENABLED
     if(conduit::relay::io::is_hdf5_file(path))
     {
+        std::cout << "is hdf5 file!" << std::endl;
         file_type = "hdf5";
     }
-    else
 #endif 
+    std::cout << file_type << std::endl;
+    if(file_type == "unknown")
     {
         // read up to 256 bytes
         char buff[257];
@@ -146,11 +161,16 @@ identify_file_type(const std::string &path,
             ifs.close();
 
             std::string test_str(buff,nbytes_read);
-
             // for json or yaml, lets make sure a new line exists
             if(test_str.find("\n") != std::string::npos)
             {
-                // for yaml look for ":" 
+                // chars for heuristics could be embedded string leaves
+                // so strip out any leaf strings.
+                test_str = conduit::utils::strip_quoted_strings(test_str,"\"");
+                test_str = conduit::utils::strip_quoted_strings(test_str,"'");
+                std::cout << "checking for yaml vs json" << std::endl;
+                std::cout << test_str << std::endl;
+                // for yaml look for ":"
                 // for json, look for "{"
                 if(test_str.find(":") != std::string::npos)
                 {
