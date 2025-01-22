@@ -109,100 +109,99 @@ struct MySpecialFunctor
     }
 };
 
+//-----------------------------------------------------------------------------
+TEST(conduit_execution, test_forall)
+{
+    conduit_device_prepare();
+    const index_t size = 10;
+
+    index_t host_vals[size];
+    index_t *dev_vals_ptr = static_cast<index_t*>(device_alloc(sizeof(index_t) * size));
+
+    conduit::execution::ExecutionPolicy serial = conduit::execution::ExecutionPolicy::serial();
+    conduit::execution::forall(serial, 0, size, [=](index_t i)
+    {
+        dev_vals_ptr[i] = i;
+    });
+    // CONDUIT_DEVICE_ERROR_CHECK();
+    
+    MagicMemory::copy(&host_vals[0], dev_vals_ptr, sizeof(index_t) * size);
+
+    for (index_t i = 0; i < size; i ++)
+    {
+        EXPECT_EQ(host_vals[i],i);
+    }
+
+    device_free(dev_vals_ptr);
+}
+
 // //-----------------------------------------------------------------------------
-// TEST(conduit_execution, test_forall)
+// TEST(conduit_execution, test_reductions)
 // {
-//     conduit_device_prepare();
-//     const index_t size = 10;
-
-//     index_t host_vals[size];
+//     Conduit::execution::ExecPolicy SerialPolicy(conduit::execution::policy::Serial);
+//     const index_t size = 4;
+//     index_t host_vals[size] = {0,-10,10, 5};
 //     index_t *dev_vals_ptr = static_cast<index_t*>(device_alloc(sizeof(index_t) * size));
+//     MagicMemory::copy(dev_vals_ptr, &host_vals[0], sizeof(index_t) * size);
 
-//     conduit::execution::ExecPolicy SerialPolicy(conduit::execution::policy::Serial);
 
-//     conduit::execution::forall(SerialPolicy, 0, size, [=](index_t i)
+//     // sum
+//     // ascent::ReduceSum<reduce_policy,index_t> sum_reducer;
+//     using reduce_policy = typename conduit::execution::policy::Serial::reduce_policy;
+//     conduit::execution::forall<reduce_policy>(0, size, [=](index_t i)
 //     {
-//         dev_vals_ptr[i] = i;
+//         sum_reducer += dev_vals_ptr[i];
 //     });
 //     // CONDUIT_DEVICE_ERROR_CHECK();
-    
-//     MagicMemory::copy(&host_vals[0], dev_vals_ptr, sizeof(index_t) * size);
 
-//     for(index_t i=0;i<size;i++)
-//     {
-//         EXPECT_EQ(host_vals[i],i);
-//     }
+//     EXPECT_EQ(sum_reducer.get(),5);
+
+
+//     // // min
+//     // ascent::ReduceMin<reduce_policy,index_t> min_reducer;
+//     // conduit::execution::forall<reduce_policy>(0, size, [=](index_t i)
+//     // {
+//     //     min_reducer.min(dev_vals_ptr[i]);
+//     // });
+//     // // CONDUIT_DEVICE_ERROR_CHECK();
+
+//     // EXPECT_EQ(min_reducer.get(),-10);
+
+//     // // minloc
+//     // ascent::ReduceMinLoc<reduce_policy,index_t> minloc_reducer;
+//     // conduit::execution::forall<reduce_policy>(0, size, [=](index_t i)
+//     // {
+//     //     minloc_reducer.minloc(dev_vals_ptr[i],i);
+//     // });
+//     // // CONDUIT_DEVICE_ERROR_CHECK();
+
+//     // EXPECT_EQ(minloc_reducer.get(),-10);
+//     // EXPECT_EQ(minloc_reducer.getLoc(),1);
+
+
+//     // // max
+//     // ascent::ReduceMax<reduce_policy,index_t> max_reducer;
+//     // conduit::execution::forall<reduce_policy>(0, size, [=](index_t i)
+//     // {
+//     //     max_reducer.max(dev_vals_ptr[i]);
+//     // });
+//     // // CONDUIT_DEVICE_ERROR_CHECK();
+
+//     // EXPECT_EQ(max_reducer.get(),10);
+
+//     // // maxloc
+//     // ascent::ReduceMaxLoc<reduce_policy,index_t> maxloc_reducer;
+//     // conduit::execution::forall<reduce_policy>(0, size, [=](index_t i)
+//     // {
+//     //     maxloc_reducer.maxloc(dev_vals_ptr[i],i);
+//     // });
+//     // // CONDUIT_DEVICE_ERROR_CHECK();
+
+//     // EXPECT_EQ(maxloc_reducer.get(),10);
+//     // EXPECT_EQ(maxloc_reducer.getLoc(),2);
 
 //     device_free(dev_vals_ptr);
 // }
-
-// // //-----------------------------------------------------------------------------
-// // TEST(conduit_execution, test_reductions)
-// // {
-// //     Conduit::execution::ExecPolicy SerialPolicy(conduit::execution::policy::Serial);
-// //     const index_t size = 4;
-// //     index_t host_vals[size] = {0,-10,10, 5};
-// //     index_t *dev_vals_ptr = static_cast<index_t*>(device_alloc(sizeof(index_t) * size));
-// //     MagicMemory::copy(dev_vals_ptr, &host_vals[0], sizeof(index_t) * size);
-
-
-// //     // sum
-// //     // ascent::ReduceSum<reduce_policy,index_t> sum_reducer;
-// //     using reduce_policy = typename conduit::execution::policy::Serial::reduce_policy;
-// //     conduit::execution::forall<reduce_policy>(0, size, [=](index_t i)
-// //     {
-// //         sum_reducer += dev_vals_ptr[i];
-// //     });
-// //     // CONDUIT_DEVICE_ERROR_CHECK();
-
-// //     EXPECT_EQ(sum_reducer.get(),5);
-
-
-// //     // // min
-// //     // ascent::ReduceMin<reduce_policy,index_t> min_reducer;
-// //     // conduit::execution::forall<reduce_policy>(0, size, [=](index_t i)
-// //     // {
-// //     //     min_reducer.min(dev_vals_ptr[i]);
-// //     // });
-// //     // // CONDUIT_DEVICE_ERROR_CHECK();
-
-// //     // EXPECT_EQ(min_reducer.get(),-10);
-
-// //     // // minloc
-// //     // ascent::ReduceMinLoc<reduce_policy,index_t> minloc_reducer;
-// //     // conduit::execution::forall<reduce_policy>(0, size, [=](index_t i)
-// //     // {
-// //     //     minloc_reducer.minloc(dev_vals_ptr[i],i);
-// //     // });
-// //     // // CONDUIT_DEVICE_ERROR_CHECK();
-
-// //     // EXPECT_EQ(minloc_reducer.get(),-10);
-// //     // EXPECT_EQ(minloc_reducer.getLoc(),1);
-
-
-// //     // // max
-// //     // ascent::ReduceMax<reduce_policy,index_t> max_reducer;
-// //     // conduit::execution::forall<reduce_policy>(0, size, [=](index_t i)
-// //     // {
-// //     //     max_reducer.max(dev_vals_ptr[i]);
-// //     // });
-// //     // // CONDUIT_DEVICE_ERROR_CHECK();
-
-// //     // EXPECT_EQ(max_reducer.get(),10);
-
-// //     // // maxloc
-// //     // ascent::ReduceMaxLoc<reduce_policy,index_t> maxloc_reducer;
-// //     // conduit::execution::forall<reduce_policy>(0, size, [=](index_t i)
-// //     // {
-// //     //     maxloc_reducer.maxloc(dev_vals_ptr[i],i);
-// //     // });
-// //     // // CONDUIT_DEVICE_ERROR_CHECK();
-
-// //     // EXPECT_EQ(maxloc_reducer.get(),10);
-// //     // EXPECT_EQ(maxloc_reducer.getLoc(),2);
-
-// //     device_free(dev_vals_ptr);
-// // }
 
 //-----------------------------------------------------------------------------
 // TEST(conduit_execution, cpp_magic_tests)
