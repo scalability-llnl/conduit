@@ -47,8 +47,6 @@ set(conduit_headers
     conduit_core.hpp
     conduit_endianness.hpp
     conduit_execution.hpp
-    conduit_execution_omp.hpp
-    conduit_execution_serial.hpp
     conduit_execution_accessor.hpp
     conduit_execution_array.hpp
     conduit_memory_manager.hpp
