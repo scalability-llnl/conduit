@@ -63,6 +63,7 @@ ExecutionPolicy::device()
     return ExecutionPolicy(PolicyID::HIP_ID);
 #else
     CONDUIT_ERROR("Conduit was built with neither CUDA nor HIP.");
+    return ExecutionPolicy(PolicyID::EMPTY_ID);
 #endif
 }
 

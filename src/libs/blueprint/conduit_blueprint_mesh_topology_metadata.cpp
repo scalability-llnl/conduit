@@ -956,7 +956,6 @@ private:
         // general faceid, then by their elemface "ef", which should keep the
         // elements in order.
         CONDUIT_ANNOTATE_MARK_BEGIN("Sort labels");
-        conduit::execution::ExecutionPolicy policy = conduit::execution::ExecutionPolicy::host();
         conduit::execution::sort(policy, faceid_to_ef.begin(), faceid_to_ef.end());
         CONDUIT_ANNOTATE_MARK_END("Sort labels");
 #ifdef DEBUG_PRINT
@@ -1130,7 +1129,7 @@ private:
         std::vector<std::pair<index_t, index_t>> ee_to_edge(nelem_edges);
 
         conduit::execution::ExecutionPolicy policy = conduit::execution::ExecutionPolicy::host();
-        conduit::execution::forall(0, nelem, [&](index_t elem)
+        conduit::execution::forall(policy, 0, nelem, [&](index_t elem)
         {
             constexpr size_t MAX_VERTS = 32;
 
@@ -1168,7 +1167,6 @@ private:
 
         // Sort edgeid_to_ee so any like edges will be sorted.
         CONDUIT_ANNOTATE_MARK_BEGIN("Sort labels");
-        conduit::execution::ExecutionPolicy policy = conduit::execution::ExecutionPolicy::host();
         conduit::execution::sort(policy, edgeid_to_ee.begin(), edgeid_to_ee.end());
         CONDUIT_ANNOTATE_MARK_END("Sort labels");
 #ifdef DEBUG_PRINT
@@ -2189,9 +2187,9 @@ TopologyMetadata::Implementation::build_edge_key_to_id(
 #endif
 
     // Sort the edges by the ids.
-    conduit::execution::ExecutionPolicy policy = conduit::execution::ExecutionPolicy::host();
+    conduit::execution::ExecutionPolicy sort_policy = conduit::execution::ExecutionPolicy::host();
     conduit::execution::sort(
-        policy, edge_key_to_id.begin(), edge_key_to_id.end(),
+        sort_policy, edge_key_to_id.begin(), edge_key_to_id.end(),
         [&](const std::pair<uint64, index_t> &lhs,
             const std::pair<uint64, index_t> &rhs) 
         {
@@ -2285,7 +2283,7 @@ TopologyMetadata::Implementation::build_association_3_1_and_3_0_nonph()
     // Iterate over the elements, applying the edge template to make unique
     // edges for the element. We look up the edge in edge_key_to_id to get
     // its id.
-    conudit::execution::ExecutionPolicy policy = conduit::execution::ExecutionPolicy::host();
+    conduit::execution::ExecutionPolicy policy = conduit::execution::ExecutionPolicy::host();
     conduit::execution::forall(policy, 0, nelem, [&](index_t ei)
     {
         index_t elem_offset = ei * points_per_elem;
