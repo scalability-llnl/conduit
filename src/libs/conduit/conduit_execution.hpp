@@ -17,10 +17,6 @@
 //-----------------------------------------------------------------------------
 #include "conduit_config.h"
 #include "conduit_utils.hpp"
-#include "conduit_execution_serial.hpp"
-#if defined(CONDUIT_USE_OPENMP)
-#include "conduit_execution_omp.hpp"
-#endif
 
 //-----------------------------------------------------------------------------
 // cpp lib includes
@@ -234,10 +230,10 @@ struct OpenMPExec
 //---------------------------------------------------------------------------
 struct SerialExec
 {
-    using for_policy = seq::for_policy;
+    using for_policy = EmptyPolicy;
     using reduce_policy = EmptyPolicy;
     using atomic_policy = EmptyPolicy;
-    using sort_policy = seq::sort_policy;
+    using sort_policy = EmptyPolicy;
     static std::string memory_space;
 };
 
@@ -247,10 +243,10 @@ struct SerialExec
 //---------------------------------------------------------------------------
 struct OpenMPExec
 {
-    using for_policy = omp::for_policy;
+    using for_policy = EmptyPolicy;
     using reduce_policy = EmptyPolicy;
     using atomic_policy = EmptyPolicy;
-    using sort_policy = omp::sort_policy;
+    using sort_policy = EmptyPolicy;
     static std::string memory_space;
 };
 #endif
@@ -587,40 +583,6 @@ sort(ExecutionPolicy &policy,
     {
         CONDUIT_ERROR("Cannot call sort with an empty policy.");
     }
-}
-
-// OLD BRAD STUFF below
-
-// TODO finish going through and finding where these are used
-// and convert to the new system so we can strip this functionality out
-// + get rid of exec_ser and exec_omp src files.
-
-//---------------------------------------------------------------------------
-template <typename ExecPolicy, typename Func>
-inline void
-for_all(size_t begin, size_t end, Func &&func)
-{
-    using policy = typename ExecPolicy::for_policy;
-    policy exec;
-    exec(begin, end, func);
-}
-
-template <typename ExecPolicy, typename Iterator>
-inline void
-sort(Iterator begin, Iterator end)
-{
-    using policy = typename ExecPolicy::sort_policy;
-    policy exec;
-    exec(begin, end);
-}
-
-template <typename ExecPolicy, typename Iterator, typename Predicate>
-inline void
-sort(Iterator begin, Iterator end, Predicate &&predicate)
-{
-    using policy = typename ExecPolicy::sort_policy;
-    policy exec;
-    exec(begin, end, predicate);
 }
 
 }

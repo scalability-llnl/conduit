@@ -3698,12 +3698,6 @@ PointQuery::acceleratedSearch(int ndims,
     int *result_ptr = &result[0];
     conduit::index_t numCoordsetPts = coords[0]->dtype().number_of_elements();
 
-#if defined(CONDUIT_USE_OPENMP)
-    using policy = conduit::execution::OpenMPExec;
-#else
-    using policy = conduit::execution::SerialExec;
-#endif
-
     // Special case a few large searches where the types are the same.
     if(ndims == 3 &&
        sameTypes &&
@@ -3718,7 +3712,8 @@ PointQuery::acceleratedSearch(int ndims,
         conduit::blueprint::mesh::utils::kdtree<float64_array, float64, 3> search;
         search.initialize(typedCoords, numCoordsetPts);
         search.setPointTolerance(m_pointTolerance);
-        conduit::execution::for_all<policy>(0, numInputPts, [&](conduit::index_t i)
+        conduit::execution::ExecutionPolicy policy = conduit::execution::ExecutionPolicy::host();
+        conduit::execution::forall(policy, 0, numInputPts, [&](conduit::index_t i)
         {
             float64 searchPt[3] = {static_cast<float64>(input_ptr[i * 3 + 0]),
                                    static_cast<float64>(input_ptr[i * 3 + 1]),
@@ -3741,7 +3736,8 @@ PointQuery::acceleratedSearch(int ndims,
         conduit::blueprint::mesh::utils::kdtree<float32_array, float32, 3> search;
         search.initialize(typedCoords, numCoordsetPts);
         search.setPointTolerance(static_cast<float32>(m_pointTolerance));
-        conduit::execution::for_all<policy>(0, numInputPts, [&](conduit::index_t i)
+        conduit::execution::ExecutionPolicy policy = conduit::execution::ExecutionPolicy::host();
+        conduit::execution::forall(policy, 0, numInputPts, [&](conduit::index_t i)
         {
             float32 searchPt[3] = {static_cast<float32>(input_ptr[i * 3 + 0]),
                                    static_cast<float32>(input_ptr[i * 3 + 1]),
@@ -3764,7 +3760,8 @@ PointQuery::acceleratedSearch(int ndims,
         conduit::blueprint::mesh::utils::kdtree<float64_array, float64, 2> search;
         search.initialize(typedCoords, numCoordsetPts);
         search.setPointTolerance(m_pointTolerance);
-        conduit::execution::for_all<policy>(0, numInputPts, [&](conduit::index_t i)
+        conduit::execution::ExecutionPolicy policy = conduit::execution::ExecutionPolicy::host();
+        conduit::execution::forall(policy, 0, numInputPts, [&](conduit::index_t i)
         {
             float64 searchPt[2] = {static_cast<float64>(input_ptr[i * 3 + 0]),
                                    static_cast<float64>(input_ptr[i * 3 + 1])};
@@ -3785,7 +3782,8 @@ PointQuery::acceleratedSearch(int ndims,
         conduit::blueprint::mesh::utils::kdtree<float32_array, float32, 2> search;
         search.initialize(typedCoords, numCoordsetPts);
         search.setPointTolerance(static_cast<float32>(m_pointTolerance));
-        conduit::execution::for_all<policy>(0, numInputPts, [&](conduit::index_t i)
+        conduit::execution::ExecutionPolicy policy = conduit::execution::ExecutionPolicy::host();
+        conduit::execution::forall(policy, 0, numInputPts, [&](conduit::index_t i)
         {
             float32 searchPt[2] = {static_cast<float32>(input_ptr[i * 3 + 0]),
                                    static_cast<float32>(input_ptr[i * 3 + 1])};
@@ -3815,16 +3813,11 @@ PointQuery::normalSearch(int ndims,
     conduit::index_t numCoordsetPts = coords[0]->dtype().number_of_elements();
     double EPS_SQ = m_pointTolerance * m_pointTolerance;
 
-#if defined(CONDUIT_USE_OPENMP)
-    using policy = conduit::execution::OpenMPExec;
-#else
-    using policy = conduit::execution::SerialExec;
-#endif
-
     // Back up to a brute force search
     if(ndims == 3)
     {
-        conduit::execution::for_all<policy>(0, numInputPts, [&](conduit::index_t i)
+        conduit::execution::ExecutionPolicy policy = conduit::execution::ExecutionPolicy::host();
+        conduit::execution::forall(policy, 0, numInputPts, [&](conduit::index_t i)
         {
             const double *searchPt = &input_ptr[i * 3];
             int found = NotFound;
@@ -3849,7 +3842,8 @@ PointQuery::normalSearch(int ndims,
     }
     else if(ndims == 2)
     {
-        conduit::execution::for_all<policy>(0, numInputPts, [&](conduit::index_t i)
+        conduit::execution::ExecutionPolicy policy = conduit::execution::ExecutionPolicy::host();
+        conduit::execution::forall(policy, 0, numInputPts, [&](conduit::index_t i)
         {
             const double *searchPt = &input_ptr[i * 3];
             int found = NotFound;
@@ -3872,7 +3866,8 @@ PointQuery::normalSearch(int ndims,
     }
     else if(ndims == 1)
     {
-        conduit::execution::for_all<policy>(0, numInputPts, [&](conduit::index_t i)
+        conduit::execution::ExecutionPolicy policy = conduit::execution::ExecutionPolicy::host();
+        conduit::execution::forall(policy, 0, numInputPts, [&](conduit::index_t i)
         {
             const double *searchPt = &input_ptr[i * 3];
             int found = NotFound;
