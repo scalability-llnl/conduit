@@ -397,11 +397,13 @@ Node::save(const std::string &obase,
         res.schema().save(ofschema);
         res.serialize(obase);
     }
-    else if( proto == "yaml")
+    else if( proto == "yaml" ||
+             proto == "conduit_yaml" ||
+             proto == "conduit_base64_yaml")
     {
         to_yaml_stream(obase,proto);
     }
-    else     // single file json cases
+    else // single file json cases
     {
         to_json_stream(obase,proto);
     }
@@ -17747,6 +17749,10 @@ Node::identify_protocol(const std::string &path,
         io_type = "conduit_base64_json";
     }
     else if(file_name_ext == "yaml")
+    {
+        io_type = "yaml";
+    }
+    else if(file_name_ext == "yml")
     {
         io_type = "yaml";
     }
