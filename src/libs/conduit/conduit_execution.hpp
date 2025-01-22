@@ -18,6 +18,10 @@
 #include "conduit_config.h"
 #include "conduit_utils.hpp"
 
+#if defined(CONDUIT_USE_OPENMP)
+#include <omp.h>
+#endif
+
 //-----------------------------------------------------------------------------
 // cpp lib includes
 //-----------------------------------------------------------------------------
