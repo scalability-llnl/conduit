@@ -40,76 +40,74 @@ void conduit_device_prepare()
     execution::init_device_memory_handlers();
 }
 
-// // TODO someday we want allocator to make sense for nodes when we are done with them
+// TODO someday we want allocator to make sense for nodes when we are done with them
 
-// //---------------------------------------------------------------------------//
-// // example functor 
-// //---------------------------------------------------------------------------//
-// struct MyFunctor
-// {
-//     int res;
-//     int size;
-//     template<typename ComboPolicyTag>
-//     void operator()(ComboPolicyTag &exec)
-//     {
-//         std::cout << typeid(ComboPolicyTag).name() << std::endl;
-//         using thetag = typename ComboPolicyTag::for_policy;
-//         std::cout << typeid(thetag).name() << std::endl;
-//         res = 0;
-//         conduit::execution::new_forall<thetag>(0, size, [=] (int i)
-//         {
-//             std::cout << i << std::endl;
-//             res ++;
-//         });
-//     }
-// };
+//---------------------------------------------------------------------------//
+// example functor 
+//---------------------------------------------------------------------------//
+struct MyFunctor
+{
+    int res;
+    int size;
+    template<typename ComboPolicyTag>
+    void operator()(ComboPolicyTag &exec)
+    {
+        std::cout << typeid(ComboPolicyTag).name() << std::endl;
+        using thetag = typename ComboPolicyTag::for_policy;
+        std::cout << typeid(thetag).name() << std::endl;
+        res = 0;
+        conduit::execution::forall<thetag>(0, size, [=] (int i)
+        {
+            std::cout << i << std::endl;
+            res ++;
+        });
+    }
+};
 
-// //---------------------------------------------------------------------------//
-// // Mock of a class templated on a concrete tag
-// // (like a RAJA Reduction Object)
-// //---------------------------------------------------------------------------//
-// template <typename ExecPolicy>
-// class MySpecialClass
-// {
-// public:
-//     using policy = ExecPolicy;
-//     int val;
+//---------------------------------------------------------------------------//
+// Mock of a class templated on a concrete tag
+// (like a RAJA Reduction Object)
+//---------------------------------------------------------------------------//
+template <typename ExecPolicy>
+class MySpecialClass
+{
+public:
+    using policy = ExecPolicy;
+    int val;
 
-//     MySpecialClass(int _val)
-//     :val(_val)
-//     {
-
-//     }
+    MySpecialClass(int _val)
+    :val(_val)
+    {}
     
-//     void exec(int i) const
-//     {
-//         std::cout << typeid(policy).name() << " exec " <<  val << " " <<  i <<std::endl;
-//     }
-// };
+    void exec(int i) const
+    {
+        std::cout << typeid(policy).name() << " exec " <<  val << " " <<  i << std::endl;
+    }
+};
 
-// //---------------------------------------------------------------------------//
-// // example functor using MySpecialClass
-// //---------------------------------------------------------------------------//
-// struct MySpecialFunctor
-// {
-//     int res;
-//     int size;
-//     template<typename ComboPolicyTag>
-//     void operator()(ComboPolicyTag &exec)
-//     {
-//         // in this case we use an object
-//         // that is templated on a concrete tag
-//         // (like a RAJA Reduction Object)
-//         using thetag = typename ComboPolicyTag::for_policy;
-//         res = 0;
-//         MySpecialClass<thetag> s(10);
-//         conduit::execution::new_forall<thetag>(0, size, [=] (int i)
-//         {
-//             s.exec(i);
-//             res ++;
-//         });
-//     }
-// };
+//---------------------------------------------------------------------------//
+// example functor using MySpecialClass
+//---------------------------------------------------------------------------//
+struct MySpecialFunctor
+{
+    int res;
+    int size;
+    template<typename ComboPolicyTag>
+    void operator()(ComboPolicyTag &exec)
+    {
+        // in this case we use an object
+        // that is templated on a concrete tag
+        // (like a RAJA Reduction Object)
+        using thetag = typename ComboPolicyTag::for_policy;
+        res = 0;
+        MySpecialClass<thetag> s(10);
+        conduit::execution::forall<thetag>(0, size, [=] (int i)
+        {
+            s.exec(i);
+            res ++;
+        });
+    }
+};
 
 // //-----------------------------------------------------------------------------
 // TEST(conduit_execution, test_forall)
@@ -122,7 +120,7 @@ void conduit_device_prepare()
 
 //     conduit::execution::ExecPolicy SerialPolicy(conduit::execution::policy::Serial);
 
-//     conduit::execution::new_forall(SerialPolicy, 0, size, [=](index_t i)
+//     conduit::execution::forall(SerialPolicy, 0, size, [=](index_t i)
 //     {
 //         dev_vals_ptr[i] = i;
 //     });
@@ -151,7 +149,7 @@ void conduit_device_prepare()
 // //     // sum
 // //     // ascent::ReduceSum<reduce_policy,index_t> sum_reducer;
 // //     using reduce_policy = typename conduit::execution::policy::Serial::reduce_policy;
-// //     conduit::execution::new_forall<reduce_policy>(0, size, [=](index_t i)
+// //     conduit::execution::forall<reduce_policy>(0, size, [=](index_t i)
 // //     {
 // //         sum_reducer += dev_vals_ptr[i];
 // //     });
@@ -162,7 +160,7 @@ void conduit_device_prepare()
 
 // //     // // min
 // //     // ascent::ReduceMin<reduce_policy,index_t> min_reducer;
-// //     // conduit::execution::new_forall<reduce_policy>(0, size, [=](index_t i)
+// //     // conduit::execution::forall<reduce_policy>(0, size, [=](index_t i)
 // //     // {
 // //     //     min_reducer.min(dev_vals_ptr[i]);
 // //     // });
@@ -172,7 +170,7 @@ void conduit_device_prepare()
 
 // //     // // minloc
 // //     // ascent::ReduceMinLoc<reduce_policy,index_t> minloc_reducer;
-// //     // conduit::execution::new_forall<reduce_policy>(0, size, [=](index_t i)
+// //     // conduit::execution::forall<reduce_policy>(0, size, [=](index_t i)
 // //     // {
 // //     //     minloc_reducer.minloc(dev_vals_ptr[i],i);
 // //     // });
@@ -184,7 +182,7 @@ void conduit_device_prepare()
 
 // //     // // max
 // //     // ascent::ReduceMax<reduce_policy,index_t> max_reducer;
-// //     // conduit::execution::new_forall<reduce_policy>(0, size, [=](index_t i)
+// //     // conduit::execution::forall<reduce_policy>(0, size, [=](index_t i)
 // //     // {
 // //     //     max_reducer.max(dev_vals_ptr[i]);
 // //     // });
@@ -194,7 +192,7 @@ void conduit_device_prepare()
 
 // //     // // maxloc
 // //     // ascent::ReduceMaxLoc<reduce_policy,index_t> maxloc_reducer;
-// //     // conduit::execution::new_forall<reduce_policy>(0, size, [=](index_t i)
+// //     // conduit::execution::forall<reduce_policy>(0, size, [=](index_t i)
 // //     // {
 // //     //     maxloc_reducer.maxloc(dev_vals_ptr[i],i);
 // //     // });
@@ -206,60 +204,116 @@ void conduit_device_prepare()
 // //     device_free(dev_vals_ptr);
 // // }
 
-// //-----------------------------------------------------------------------------
-// // TEST(conduit_execution, cpp_magic_tests)
-// TEST(conduit_execution, justin_fun)
-// {
-//     std::cout << "forall cases!" << std::endl;
+//-----------------------------------------------------------------------------
+// TEST(conduit_execution, cpp_magic_tests)
+TEST(conduit_execution, justin_fun)
+{
+    std::cout << "forall cases!" << std::endl;
 
-//     conduit::execution::ExecPolicy SerialPolicy(conduit::execution::policy::Serial);
-//     // conduit::execution::ExecPolicy DevicePolicy(conduit::execution::policy::Device);
+    conduit::execution::ExecutionPolicy serial = conduit::execution::ExecutionPolicy::serial();
+#if defined(CONDUIT_USE_OPENMP)
+    conduit::execution::ExecutionPolicy openmp = conduit::execution::ExecutionPolicy::openmp();
+#endif
+#if defined(CONDUIT_USE_RAJA)
+    conduit::execution::ExecutionPolicy device = conduit::execution::ExecutionPolicy::device();
+#endif
 
-//     int size = 4;
+    int size = 4;
 
-//     conduit::execution::new_forall(SerialPolicy, 0, size, [=] (int i)
-//     {
-//        std::cout << i << std::endl;
-//     });
+    conduit::execution::forall(serial, 0, size, [=] (int i)
+    {
+       std::cout << i << std::endl;
+    });
 
-//     // conduit::execution::new_forall(DevicePolicy, 0, size, [=] (int i)
-//     // {
-//     //    std::cout << i << std::endl;
-//     // });
+#if defined(CONDUIT_USE_OPENMP)
+    conduit::execution::forall(openmp, 0, size, [=] (int i)
+    {
+       std::cout << i << std::endl;
+    });
+#endif
 
-//     std::cout << "functor cases!" << std::endl;
+#if defined(CONDUIT_USE_RAJA)
+    conduit::execution::forall(device, 0, size, [=] (int i)
+    {
+       std::cout << i << std::endl;
+    });
+#endif
 
-//     MyFunctor func;
-//     func.size = size;
-//     conduit::execution::dispatch(SerialPolicy,func);
-//     std::cout << func.res << std::endl;
+    std::cout << "functor cases!" << std::endl;
 
-//     // conduit::execution::dispatch(DevicePolicy,func);
-//     // std::cout << func.res << std::endl;
+    MyFunctor func;
+    func.size = size;
+    conduit::execution::dispatch(serial, func);
+    std::cout << func.res << std::endl;
 
-//     MySpecialFunctor sfunc;
-//     sfunc.size = 4;
-//     conduit::execution::dispatch(SerialPolicy,sfunc);
-//     std::cout << func.res << std::endl;
-    
-//     std::cout << "C++ 20" << std::endl;
+#if defined(CONDUIT_USE_OPENMP)
+    conduit::execution::dispatch(openmp, func);
+    std::cout << func.res << std::endl;
+#endif
 
-//     int res =0;
-//     /// c++ 20 allows us to double lambda instead of a functor
+#if defined(CONDUIT_USE_RAJA)
+    conduit::execution::dispatch(device, func);
+    std::cout << func.res << std::endl;
+#endif
 
-//     // apparently this works just fine with cpp14...?
+    MySpecialFunctor sfunc;
+    sfunc.size = 4;
+    conduit::execution::dispatch(serial, sfunc);
+    std::cout << func.res << std::endl;
 
-//     conduit::execution::dispatch(SerialPolicy, [&] <typename ComboPolicyTag>(ComboPolicyTag &exec)
-//     {
-//          using thetag = typename ComboPolicyTag::for_policy;
-//          MySpecialClass<thetag> s(10);
-//          conduit::execution::new_forall<thetag>(0, size, [=] (int i)
-//          {
-//              s.exec(i);
-//          });
-//          res = 10;
-//     });
+#if defined(CONDUIT_USE_OPENMP)
+    conduit::execution::dispatch(openmp, sfunc);
+    std::cout << func.res << std::endl;
+#endif
 
-// }
+#if defined(CONDUIT_USE_RAJA)
+    conduit::execution::dispatch(device, sfunc);
+    std::cout << func.res << std::endl;
+#endif
+
+    std::cout << "C++ 20" << std::endl;
+
+    int res =0;
+    /// c++ 20 allows us to double lambda instead of a functor
+
+    // apparently this works just fine with cpp14...?
+
+    conduit::execution::dispatch(serial, [&] <typename ComboPolicyTag>(ComboPolicyTag &exec)
+    {
+        using thetag = typename ComboPolicyTag::for_policy;
+        MySpecialClass<thetag> s(10);
+        conduit::execution::forall<thetag>(0, size, [=] (int i)
+        {
+            s.exec(i);
+        });
+        res = 10;
+    });
+
+#if defined(CONDUIT_USE_OPENMP)
+    conduit::execution::dispatch(openmp, [&] <typename ComboPolicyTag>(ComboPolicyTag &exec)
+    {
+        using thetag = typename ComboPolicyTag::for_policy;
+        MySpecialClass<thetag> s(10);
+        conduit::execution::forall<thetag>(0, size, [=] (int i)
+        {
+            s.exec(i);
+        });
+        res = 10;
+    });
+#endif
+
+#if defined(CONDUIT_USE_RAJA)
+    conduit::execution::dispatch(device, [&] <typename ComboPolicyTag>(ComboPolicyTag &exec)
+    {
+        using thetag = typename ComboPolicyTag::for_policy;
+        MySpecialClass<thetag> s(10);
+        conduit::execution::forall<thetag>(0, size, [=] (int i)
+        {
+            s.exec(i);
+        });
+        res = 10;
+    });
+#endif
+}
 
 
