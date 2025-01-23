@@ -42,6 +42,8 @@ void conduit_device_prepare()
 
 // TODO someday we want allocator to make sense for nodes when we are done with them
 
+// TODO turn the strawman into tests?
+
 //---------------------------------------------------------------------------//
 // example functor 
 //---------------------------------------------------------------------------//
