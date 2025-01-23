@@ -125,7 +125,7 @@ TEST(conduit_execution, test_forall)
     });
     // CONDUIT_DEVICE_ERROR_CHECK();
     
-    MagicMemory::copy(&host_vals[0], dev_vals_ptr, sizeof(index_t) * size);
+    conduit::execution::MagicMemory::copy(&host_vals[0], dev_vals_ptr, sizeof(index_t) * size);
 
     for (index_t i = 0; i < size; i ++)
     {
