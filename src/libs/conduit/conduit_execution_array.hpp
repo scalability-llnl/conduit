@@ -355,22 +355,6 @@ public:
     void            set(const DataAccessor<float32>  &values);
     void            set(const DataAccessor<float64>  &values);
 
-    /// signed integer arrays via ExecutionAccessor
-    void            set(const ExecutionAccessor<int8>    &values);
-    void            set(const ExecutionAccessor<int16>   &values);
-    void            set(const ExecutionAccessor<int32>   &values);
-    void            set(const ExecutionAccessor<int64>   &values);
-
-    /// unsigned integer arrays via ExecutionAccessor
-    void            set(const ExecutionAccessor<uint8>   &values);
-    void            set(const ExecutionAccessor<uint16>  &values);
-    void            set(const ExecutionAccessor<uint32>  &values);
-    void            set(const ExecutionAccessor<uint64>  &values);
-    
-    /// floating point arrays via ExecutionAccessor
-    void            set(const ExecutionAccessor<float32>  &values);
-    void            set(const ExecutionAccessor<float64>  &values);
-
     /// signed integer arrays via ExecutionArray
     void            set(const ExecutionArray<int8>    &values);
     void            set(const ExecutionArray<int16>   &values);
@@ -386,6 +370,22 @@ public:
     /// floating point arrays via ExecutionArray
     void            set(const ExecutionArray<float32>  &values);
     void            set(const ExecutionArray<float64>  &values);
+
+    /// signed integer arrays via ExecutionAccessor
+    void            set(const ExecutionAccessor<int8>    &values);
+    void            set(const ExecutionAccessor<int16>   &values);
+    void            set(const ExecutionAccessor<int32>   &values);
+    void            set(const ExecutionAccessor<int64>   &values);
+
+    /// unsigned integer arrays via ExecutionAccessor
+    void            set(const ExecutionAccessor<uint8>   &values);
+    void            set(const ExecutionAccessor<uint16>  &values);
+    void            set(const ExecutionAccessor<uint32>  &values);
+    void            set(const ExecutionAccessor<uint64>  &values);
+    
+    /// floating point arrays via ExecutionAccessor
+    void            set(const ExecutionAccessor<float32>  &values);
+    void            set(const ExecutionAccessor<float64>  &values);
 
 //-----------------------------------------------------------------------------
 // fill
