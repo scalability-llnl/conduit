@@ -15,6 +15,8 @@
 
 using namespace conduit;
 
+// TODO we should have tests for data array, exec acc/arr, and setters that go between all four
+
 //-----------------------------------------------------------------------------
 TEST(conduit_data_accessor, value)
 {
