@@ -282,7 +282,7 @@ void silo_read(DBfile *dbfile,
 bool
 is_silo_file(const std::string &file_path)
 {
-    is_silo_file(file_path,"unknown");
+    return is_silo_file(file_path,"unknown");
 }
 
 //---------------------------------------------------------------------------//
@@ -312,14 +312,14 @@ is_silo_file(const std::string &file_path, const std::string &silo_driver)
                 // if hdf5 it could be a silo file or a normal hdf5 file
                 // open with hdf5 and look for presence of silo
                 // sentinel _silolibinfo
-                hid_t h5_file_id = hdf5_open_file_for_read(file_path);
+                hid_t h5_file_id = conduit::relay::io::hdf5_open_file_for_read(file_path);
             
-                if(hdf5_has_path(h5_file_id,"_silolibinfo"))
+                if(conduit::relay::io::hdf5_has_path(h5_file_id,"_silolibinfo"))
                 {
                     res = true;
                 }
                 // close the hdf5 file
-                hdf5_close_file(h5_file_id);
+                conduit::relay::io::hdf5_close_file(h5_file_id);
             }
         }
     }

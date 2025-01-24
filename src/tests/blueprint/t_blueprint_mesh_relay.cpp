@@ -884,6 +884,12 @@ TEST(conduit_blueprint_mesh_relay, spiral_multi_file_yaml_json_hdf5)
 
         Node n_read, info;
         relay::io::blueprint::read_mesh(output_root,n_read);
+
+        // in all cases we expect 7 domains to match
+        for(int dom_idx =0; dom_idx <7; dom_idx++)
+        {
+            EXPECT_FALSE(data.child(dom_idx).diff(n_read.child(dom_idx),info,CONDUIT_EPSILON, true));
+        }
     }
 }
 
