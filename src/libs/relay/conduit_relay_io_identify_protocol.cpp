@@ -128,6 +128,7 @@ identify_file_type(const std::string &path,
 {
     file_type = "unknown";
     std::string hdf5_magic_number = "\211HDF\r\n\032\n";
+    std::string pdb_magic_number  = "<<PDB:";
     // goal: check for: silo, hdf5, json, or yaml
     char buff[257];
     std::memset(buff,0,257);
@@ -157,17 +158,23 @@ identify_file_type(const std::string &path,
             hdf5_close_file(h5_file_id);
 #endif
         }
+        
         if(file_type == "unknown")
         {
-            // check for pdb magic number first ?
-#ifdef CONDUIT_RELAY_IO_SILO_ENABLED
-            if(conduit::relay::io::is_silo_file(path,"pdb"))
+            // check for pdb magic number first
+            if(test_str.find(pdb_magic_number) != std::string::npos)
             {
-                file_type = "silo";
+                // see if pdb file is a silo file
+#ifdef CONDUIT_RELAY_IO_SILO_ENABLED
+                if(conduit::relay::io::is_silo_file(path,"pdb"))
+                {
+                    file_type = "silo";
+                }
             }
 #endif
-        // else check for yaml or json
         }
+
+        // else check for yaml or json
         if(file_type == "unknown")
         {
             // for json or yaml, lets make sure a new line exists
