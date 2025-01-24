@@ -202,6 +202,8 @@ identify_file_type(const std::string &path,
                 {
                    file_type = "yaml";
                 }
+                // This should not be "else if" because json often includes ":"
+                // characters, which is how we recognize yaml.
                 if(test_str.find("{") != std::string::npos)
                 {
                    file_type = "json";
