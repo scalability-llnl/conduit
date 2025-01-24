@@ -14,9 +14,15 @@
 ///       Do not directly include this file!
 
 //-----------------------------------------------------------------------------
-/// Checks if the given path is a valid silo file by opening it.
+/// Checks if the given path is a silo file.
 //-----------------------------------------------------------------------------
 bool CONDUIT_RELAY_API is_silo_file(const std::string &path);
+//-----------------------------------------------------------------------------
+/// Checks if the given path is a silo file using specific driver
+/// silo_driver options: {"hdf5"|"pdb"|"unknown"}
+//-----------------------------------------------------------------------------
+bool CONDUIT_RELAY_API is_silo_file(const std::string &path,
+                                    const std::string &silo_driver);
 
 //-----------------------------------------------------------------------------
 /// Opens a silo file and returns a silo file handle

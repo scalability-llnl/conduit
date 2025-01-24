@@ -127,40 +127,49 @@ identify_file_type(const std::string &path,
                    std::string &file_type)
 {
     file_type = "unknown";
-
+    std::string hdf5_magic_number = "\211HDF\r\n\032\n";
     // goal: check for: silo, hdf5, json, or yaml
-
-#ifdef CONDUIT_RELAY_IO_SILO_ENABLED
-    // // check for silo before hdf5 b/c:
-    // //    silo files can be a specific flavor of hdf5
-    // if(conduit::relay::io::is_silo_file(path))
-    // {
-    //     file_type = "silo";
-    // }
-#endif
-    std::cout << file_type << std::endl;
-#ifdef CONDUIT_RELAY_IO_HDF5_ENABLED
-    if(conduit::relay::io::is_hdf5_file(path))
+    char buff[257];
+    std::memset(buff,0,257);
+    std::ifstream ifs;
+    ifs.open(path.c_str());
+    if(ifs.is_open())
     {
-        std::cout << "is hdf5 file!" << std::endl;
-        file_type = "hdf5";
-    }
-#endif 
-    std::cout << file_type << std::endl;
-    if(file_type == "unknown")
-    {
-        // read up to 256 bytes
-        char buff[257];
-        std::memset(buff,0,257);
-        std::ifstream ifs;
-        ifs.open(path.c_str());
-        if(ifs.is_open())
+        ifs.read((char *)buff,256);
+        int nbytes_read = static_cast<int>(ifs.gcount());
+        ifs.close();
+        std::string test_str(buff,nbytes_read);
+        // check for hdf5 magic number
+        if(test_str.find(hdf5_magic_number) != std::string::npos)
         {
-            ifs.read((char *)buff,256);
-            int nbytes_read = static_cast<int>(ifs.gcount());
-            ifs.close();
-
-            std::string test_str(buff,nbytes_read);
+            file_type = "hdf5";
+#ifdef CONDUIT_RELAY_IO_HDF5_ENABLED
+            // if hdf5 it could be a silo file or a normal hdf5 file
+            // open with hdf5 and look for presence of silo
+            // sentinel _silolibinfo
+            hid_t h5_file_id = hdf5_open_file_for_read(path);
+            
+            if(hdf5_has_path(h5_file_id,"_silolibinfo"))
+            {
+                file_type="silo";
+            }
+            // close the hdf5 file
+            hdf5_close_file(h5_file_id);
+#endif
+        }
+        if(file_type == "unknown")
+        {
+            // check for pdb magic number first ?
+#ifdef CONDUIT_RELAY_IO_SILO_ENABLED
+            if(conduit::relay::io::is_silo_file(path,"pdb"))
+            {
+                file_type = "silo";
+            }
+#endif
+        // else check for yaml or json
+        }
+        if(file_type == "unknown")
+        {
             // for json or yaml, lets make sure a new line exists
             if(test_str.find("\n") != std::string::npos)
             {
@@ -168,8 +177,6 @@ identify_file_type(const std::string &path,
                 // so strip out any leaf strings.
                 test_str = conduit::utils::strip_quoted_strings(test_str,"\"");
                 test_str = conduit::utils::strip_quoted_strings(test_str,"'");
-                std::cout << "checking for yaml vs json" << std::endl;
-                std::cout << test_str << std::endl;
                 // for yaml look for ":"
                 // for json, look for "{"
                 if(test_str.find(":") != std::string::npos)
@@ -179,10 +186,12 @@ identify_file_type(const std::string &path,
                 if(test_str.find("{") != std::string::npos)
                 {
                    file_type = "json";
-                }
             }
         }
     }
+}
+
+
 }
 
 }

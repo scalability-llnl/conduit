@@ -37,6 +37,8 @@
     #include "conduit_relay_io_blueprint.hpp"
 #endif
 
+#include "conduit_relay_io_hdf5.hpp"
+
 //-----------------------------------------------------------------------------
 // external lib includes
 //-----------------------------------------------------------------------------
@@ -91,6 +93,55 @@ namespace mpi
 //-----------------------------------------------------------------------------
 namespace io
 {
+
+
+//-----------------------------------------------------------------------------
+// Private class used to suppress Silo error messages.
+//
+// Creating an instance of this class will disable the current Silo error
+// callbacks. The default Silo callbacks print error messages during various
+// API calls. When the instance is destroyed, the previous error state is
+// restored.
+//
+//-----------------------------------------------------------------------------
+class SiloErrorSuppressor
+{
+public:
+        SiloErrorSuppressor()
+        :  silo_error_lvl(0),
+           silo_error_func(NULL)
+        {
+            disable_silo_error_func();
+        }
+
+       ~SiloErrorSuppressor()
+        {
+            restore_silo_error_func();
+        }
+
+private:
+    // saves current error level and func
+    // then turns off errors
+    void disable_silo_error_func()
+    {
+        silo_error_lvl = DBErrlvl();
+        silo_error_func = DBErrfunc();
+        DBShowErrors(DB_NONE,NULL);
+    }
+
+    // restores saved error func
+    void restore_silo_error_func()
+    {
+        DBShowErrors(silo_error_lvl,silo_error_func);
+    }
+
+    // silo error level
+    int                  silo_error_lvl;
+    // callback used for silo error interface
+    void (*silo_error_func)(char*);
+};
+
+
 
 //---------------------------------------------------------------------------//
 void
@@ -227,34 +278,123 @@ void silo_read(DBfile *dbfile,
     delete [] data;
 }
 
-
 //---------------------------------------------------------------------------//
 bool
 is_silo_file(const std::string &file_path)
 {
+    is_silo_file(file_path,"unknown");
+}
+
+//---------------------------------------------------------------------------//
+bool
+is_silo_file(const std::string &file_path, const std::string &silo_driver)
+{
+    SiloErrorSuppressor ses;
+
     bool res = false;
-    // Note: we use DB_UNKNOWN here b/c we expect the common case to be 
-    // where we are testing a non-silo file. For this case, we don't want
-    // a cascade of tries at opening.
-    //
-    // For silo_open_file_for_read(), we make a different choice
-    // b/c for that API call, we expect that in most cases the path
-    // passed will be an hdf5 flavored silo file
-
-    DBfile *silo_dbfile = DBOpen(file_path.c_str(), DB_UNKNOWN, DB_READ);
-
-    if(silo_dbfile != NULL)
+    if(silo_driver == "hdf5")
     {
-        // we are able to open with silo, if we want to be extra careful
-        // we can also ask:
-        // if(DBInqVarExists(silo_dbfile, "_silolibinfo"))
-        // {
-        //     res = true;
-        // }
-        res = true;
-        silo_close_file(silo_dbfile);
+        std::string hdf5_magic_number = "\211HDF\r\n\032\n";
+        // goal: check for: silo, hdf5, json, or yaml
+        char buff[257];
+        std::memset(buff,0,257);
+        std::ifstream ifs;
+        ifs.open(file_path.c_str());
+        if(ifs.is_open())
+        {
+            ifs.read((char *)buff,256);
+            int nbytes_read = static_cast<int>(ifs.gcount());
+            ifs.close();
+            std::string test_str(buff,nbytes_read);
+            // check for hdf5 magic number
+            if(test_str.find(hdf5_magic_number) != std::string::npos)
+            {
+                // if hdf5 it could be a silo file or a normal hdf5 file
+                // open with hdf5 and look for presence of silo
+                // sentinel _silolibinfo
+                hid_t h5_file_id = hdf5_open_file_for_read(file_path);
+            
+                if(hdf5_has_path(h5_file_id,"_silolibinfo"))
+                {
+                    res = true;
+                }
+                // close the hdf5 file
+                hdf5_close_file(h5_file_id);
+            }
+        }
     }
+    else if(silo_driver == "pdb")
+    {
+        DBfile *silo_dbfile = DBOpen(file_path.c_str(), DB_PDB, DB_READ);
 
+        if(silo_dbfile != NULL)
+        {
+            // we are able to open with silo, if we want to be extra careful
+            // we can also ask:
+            // if(DBInqVarExists(silo_dbfile, "_silolibinfo"))
+            // {
+            //     res = true;
+            // }
+            res = true;
+            silo_close_file(silo_dbfile);
+        }
+    }
+    else // try unknown
+    {
+        DBfile *silo_dbfile = DBOpen(file_path.c_str(), DB_UNKNOWN, DB_READ);
+
+        if(silo_dbfile != NULL)
+        {
+            // we are able to open with silo, if we want to be extra careful
+            // we can also ask:
+            // if(DBInqVarExists(silo_dbfile, "_silolibinfo"))
+            // {
+            //     res = true;
+            // }
+            res = true;
+            silo_close_file(silo_dbfile);
+        }
+    }
+    
+    // std::string hdf5_magic_number = "\211HDF\r\n\032\n";
+    // bool is_hdf5 = false;
+    //
+    // // // read up to 256 bytes
+    // // char buff[257];
+    // // std::memset(buff,0,257);
+    // // std::ifstream ifs;
+    // // ifs.open(path.c_str());
+    // // if(ifs.is_open())
+    // // {
+    // //
+    // //
+    // // }
+    // // check for hdf5 file
+    // // check for pdb file
+    //
+    // bool res = false;
+    // // Note: we use DB_UNKNOWN here b/c we expect the common case to be
+    // // where we are testing a non-silo file. For this case, we don't want
+    // // a cascade of tries at opening.
+    // //
+    // // For silo_open_file_for_read(), we make a different choice
+    // // b/c for that API call, we expect that in most cases the path
+    // // passed will be an hdf5 flavored silo file
+    // //
+    // // DBfile *silo_dbfile = DBOpen(file_path.c_str(), DB_UNKNOWN, DB_READ);
+    // //
+    // // if(silo_dbfile != NULL)
+    // // {
+    // //     // we are able to open with silo, if we want to be extra careful
+    // //     // we can also ask:
+    // //     // if(DBInqVarExists(silo_dbfile, "_silolibinfo"))
+    // //     // {
+    // //     //     res = true;
+    // //     // }
+    // //     res = true;
+    // //     silo_close_file(silo_dbfile);
+    // // }
+    //
     //
     // DBfile *silo_dbfile = DBOpen(file_path.c_str(), DB_HDF5, DB_READ);
     //
@@ -269,21 +409,21 @@ is_silo_file(const std::string &file_path)
     //     res = true;
     //     silo_close_file(silo_dbfile);
     // }
+    // //
+    // // silo_dbfile = DBOpen(file_path.c_str(), DB_PDB, DB_READ);
+    // //
+    // // if(silo_dbfile != NULL)
+    // // {
+    // //     // we are able to open with silo, if we want to be extra careful
+    // //     // we can also ask:
+    // //     // if(DBInqVarExists(silo_dbfile, "_silolibinfo"))
+    // //     // {
+    // //     //     res = true;
+    // //     // }
+    // //     res = true;
+    // //     silo_close_file(silo_dbfile);
+    // // }
     //
-    // silo_dbfile = DBOpen(file_path.c_str(), DB_PDB, DB_READ);
-    //
-    // if(silo_dbfile != NULL)
-    // {
-    //     // we are able to open with silo, if we want to be extra careful
-    //     // we can also ask:
-    //     // if(DBInqVarExists(silo_dbfile, "_silolibinfo"))
-    //     // {
-    //     //     res = true;
-    //     // }
-    //     res = true;
-    //     silo_close_file(silo_dbfile);
-    // }
-    
 
     return res;
 }
