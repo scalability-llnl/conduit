@@ -28,7 +28,7 @@ and this project aspires to adhere to [Semantic Versioning](https://semver.org/s
 - Certain algorithms that use MPI tags had their tag values lowered since some MPI implementations do not support large values.
 - Changed the name of `conduit::blueprint::mesh::matset::to_sparse_by_element()` to `conduit::blueprint::mesh::matset::to_uni_buffer_by_element()` to be more consistent with similar function names.
 - Updated `conduit.relay.io.blueprint.{load_mesh|read_mesh}` to support reading and writing Silo files when Conduit is built with Silo support.
-- Updated `conduit.relay.io.blueprint.{load_mesh|read_mesh}` to use improved logic to auto detect the format (hdf5 , silo, yaml, or json) of mesh blueprint root files. Prior logic could confuse yaml as json files due to format strings in partition patterns.
+- Updated `conduit.relay.io.blueprint.{load_mesh|read_mesh}` to use improved logic to auto detect the format (hdf5 , silo, yaml, or json) of mesh blueprint root files. Added silo logic, and fixed prior logic that could confuse yaml as json files due to format specifiers in partition pattern strings.
 
 
 #### Relay
