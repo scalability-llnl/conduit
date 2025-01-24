@@ -606,185 +606,185 @@ ExecutionArray<T>::count(T val) const
     return res;
 }
 
-// //---------------------------------------------------------------------------//
-// template <typename T>
-// void
-// ExecutionAccessor<T>::use_with(conduit::execution::ExecutionPolicy policy)
-// {
-//     // we are being asked to execute on the device
-//     if (policy.is_device_policy())
-//     {
-//         // data is already on the device
-//         if (execution::DeviceMemory::is_device_ptr(m_data))
-//         {
-//             // Do nothing
-//         }
-//         else // m_data is on the host
-//         {
-//             // if we started out on the host
-//             if (m_node_ptr->data_ptr() == m_data)
-//             {
-//                 CONDUIT_ASSERT(m_other_ptr == nullptr,
-//                     "Using execution array in this way will result in a memory leak.");
+//---------------------------------------------------------------------------//
+template <typename T>
+void
+ExecutionAccessor<T>::use_with(conduit::execution::ExecutionPolicy policy)
+{
+    // we are being asked to execute on the device
+    if (policy.is_device_policy())
+    {
+        // data is already on the device
+        if (execution::DeviceMemory::is_device_ptr(m_data))
+        {
+            // Do nothing
+        }
+        else // m_data is on the host
+        {
+            // if we started out on the host
+            if (m_node_ptr->data_ptr() == m_data)
+            {
+                CONDUIT_ASSERT(m_other_ptr == nullptr,
+                    "Using execution array in this way will result in a memory leak.");
 
-//                 // allocate new memory and create a new dtype
-//                 m_other_ptr = execution::DeviceMemory::allocate(
-//                     dtype().element_bytes() * number_of_elements());
-//                 m_do_i_own_it = true;
-//                 m_other_dtype = DataType(dtype().id(),
-//                                          number_of_elements(),
-//                                          0, // offset is 0
-//                                          DataType::default_bytes(dtype().id()), // stride
-//                                          dtype().element_bytes(),
-//                                          dtype().endianness());
+                // allocate new memory and create a new dtype
+                m_other_ptr = execution::DeviceMemory::allocate(
+                    dtype().element_bytes() * number_of_elements());
+                m_do_i_own_it = true;
+                m_other_dtype = DataType(dtype().id(),
+                                         number_of_elements(),
+                                         0, // offset is 0
+                                         DataType::default_bytes(dtype().id()), // stride
+                                         dtype().element_bytes(),
+                                         dtype().endianness());
 
-//                 // copy data
-//                 utils::conduit_memcpy_strided_elements(m_other_ptr,
-//                                                        number_of_elements(),
-//                                                        dtype().element_bytes(),
-//                                                        m_other_dtype.stride(),
-//                                                        m_data,
-//                                                        dtype().stride());
+                // copy data
+                utils::conduit_memcpy_strided_elements(m_other_ptr,
+                                                       number_of_elements(),
+                                                       dtype().element_bytes(),
+                                                       m_other_dtype.stride(),
+                                                       m_data,
+                                                       dtype().stride());
 
-//                 // change where our data pointer points and update offset and stride
-//                 m_data = m_other_ptr;
-//                 m_offset = m_other_dtype.offset();
-//                 m_stride = m_other_dtype.stride();
-//             }
-//             else // we started out on the device
-//             {
-//                 CONDUIT_ASSERT(m_data == m_other_ptr,
-//                     "Using execution array in this way will result in a memory leak.");
+                // change where our data pointer points and update offset and stride
+                m_data = m_other_ptr;
+                m_offset = m_other_dtype.offset();
+                m_stride = m_other_dtype.stride();
+            }
+            else // we started out on the device
+            {
+                CONDUIT_ASSERT(m_data == m_other_ptr,
+                    "Using execution array in this way will result in a memory leak.");
 
-//                 // call sync to bring our copy of the data on the host back to the device
-//                 sync();
+                // call sync to bring our copy of the data on the host back to the device
+                sync();
 
-//                 // dealloc the ptr on the host now that we have copied back
-//                 execution::HostMemory::deallocate(m_data);
-//                 m_do_i_own_it = false;
-//                 m_other_dtype = DataType::empty();
+                // dealloc the ptr on the host now that we have copied back
+                execution::HostMemory::deallocate(m_data);
+                m_do_i_own_it = false;
+                m_other_dtype = DataType::empty();
 
-//                 // set m_data to device data and update offset and stride
-//                 m_data = m_node_ptr->data_ptr();
-//                 // the order of operations is important here; changing the pointer
-//                 // will change the result of calling dtype().
-//                 m_offset = dtype().offset();
-//                 m_stride = dtype().stride();
+                // set m_data to device data and update offset and stride
+                m_data = m_node_ptr->data_ptr();
+                // the order of operations is important here; changing the pointer
+                // will change the result of calling dtype().
+                m_offset = dtype().offset();
+                m_stride = dtype().stride();
 
-//                 // reset m_other_ptr
-//                 m_other_ptr = nullptr;
-//             }
-//         }
-//     }
-//     else // we are being asked to execute on the host
-//     {
-//         // data is already on the host
-//         if (! execution::DeviceMemory::is_device_ptr(m_data))
-//         {
-//             // Do nothing
-//         }
-//         else // m_data is on the device
-//         {
-//             // if we started out on the device
-//             if (m_node_ptr->data_ptr() == m_data)
-//             {
-//                 CONDUIT_ASSERT(m_other_ptr == nullptr,
-//                     "Using execution array in this way will result in a memory leak.");
+                // reset m_other_ptr
+                m_other_ptr = nullptr;
+            }
+        }
+    }
+    else // we are being asked to execute on the host
+    {
+        // data is already on the host
+        if (! execution::DeviceMemory::is_device_ptr(m_data))
+        {
+            // Do nothing
+        }
+        else // m_data is on the device
+        {
+            // if we started out on the device
+            if (m_node_ptr->data_ptr() == m_data)
+            {
+                CONDUIT_ASSERT(m_other_ptr == nullptr,
+                    "Using execution array in this way will result in a memory leak.");
 
-//                 // allocate new memory and create a new dtype
-//                 m_other_ptr = execution::HostMemory::allocate(
-//                     dtype().element_bytes() * number_of_elements());
-//                 m_do_i_own_it = true;
-//                 m_other_dtype = DataType(dtype().id(),
-//                                          number_of_elements(),
-//                                          0, // offset is 0
-//                                          DataType::default_bytes(dtype().id()), // stride
-//                                          dtype().element_bytes(),
-//                                          dtype().endianness());
+                // allocate new memory and create a new dtype
+                m_other_ptr = execution::HostMemory::allocate(
+                    dtype().element_bytes() * number_of_elements());
+                m_do_i_own_it = true;
+                m_other_dtype = DataType(dtype().id(),
+                                         number_of_elements(),
+                                         0, // offset is 0
+                                         DataType::default_bytes(dtype().id()), // stride
+                                         dtype().element_bytes(),
+                                         dtype().endianness());
 
-//                 // copy data
-//                 utils::conduit_memcpy_strided_elements(m_other_ptr,
-//                                                        number_of_elements(),
-//                                                        dtype().element_bytes(),
-//                                                        m_other_dtype.stride(),
-//                                                        m_data,
-//                                                        dtype().stride());
+                // copy data
+                utils::conduit_memcpy_strided_elements(m_other_ptr,
+                                                       number_of_elements(),
+                                                       dtype().element_bytes(),
+                                                       m_other_dtype.stride(),
+                                                       m_data,
+                                                       dtype().stride());
 
-//                 // change where our data pointer points and update offset and stride
-//                 m_data = m_other_ptr;
-//                 m_offset = m_other_dtype.offset();
-//                 m_stride = m_other_dtype.stride();
-//             }
-//             else // we started out on the host
-//             {
-//                 CONDUIT_ASSERT(m_data == m_other_ptr,
-//                     "Using execution array in this way will result in a memory leak.");
+                // change where our data pointer points and update offset and stride
+                m_data = m_other_ptr;
+                m_offset = m_other_dtype.offset();
+                m_stride = m_other_dtype.stride();
+            }
+            else // we started out on the host
+            {
+                CONDUIT_ASSERT(m_data == m_other_ptr,
+                    "Using execution array in this way will result in a memory leak.");
 
-//                 // call sync to bring our copy of the data on the device back to the host
-//                 sync();
+                // call sync to bring our copy of the data on the device back to the host
+                sync();
 
-//                 // dealloc the ptr on the host now that we have copied back
-//                 execution::DeviceMemory::deallocate(m_data);
-//                 m_do_i_own_it = false;
-//                 m_other_dtype = DataType::empty();
+                // dealloc the ptr on the host now that we have copied back
+                execution::DeviceMemory::deallocate(m_data);
+                m_do_i_own_it = false;
+                m_other_dtype = DataType::empty();
 
-//                 // set m_data to host data and update offset and stride
-//                 m_data = m_node_ptr->data_ptr();
-//                 m_offset = dtype().offset();
-//                 m_stride = dtype().stride();
+                // set m_data to host data and update offset and stride
+                m_data = m_node_ptr->data_ptr();
+                m_offset = dtype().offset();
+                m_stride = dtype().stride();
 
-//                 // reset m_other_ptr
-//                 m_other_ptr = nullptr;
-//             }
-//         }
-//     }
-// }
+                // reset m_other_ptr
+                m_other_ptr = nullptr;
+            }
+        }
+    }
+}
 
-// //---------------------------------------------------------------------------//
-// template <typename T>
-// void
-// ExecutionAccessor<T>::sync()
-// {
-//     // if the ptrs don't point to the same place
-//     if (m_data != m_node_ptr->data_ptr())
-//     {
-//         if (!(m_node_ptr->dtype().compatible(dtype()) && 
-//               number_of_elements() == m_node_ptr->dtype().number_of_elements()))
-//         {
-//             m_node_ptr->set(dtype());
-//         }
-//         utils::conduit_memcpy_strided_elements(m_node_ptr->data_ptr(),
-//                                                number_of_elements(),
-//                                                m_node_ptr->dtype().element_bytes(),
-//                                                m_node_ptr->dtype().stride(),
-//                                                m_data,
-//                                                m_stride);
-//     }
-// }
+//---------------------------------------------------------------------------//
+template <typename T>
+void
+ExecutionAccessor<T>::sync()
+{
+    // if the ptrs don't point to the same place
+    if (m_data != m_node_ptr->data_ptr())
+    {
+        if (!(m_node_ptr->dtype().compatible(dtype()) && 
+              number_of_elements() == m_node_ptr->dtype().number_of_elements()))
+        {
+            m_node_ptr->set(dtype());
+        }
+        utils::conduit_memcpy_strided_elements(m_node_ptr->data_ptr(),
+                                               number_of_elements(),
+                                               m_node_ptr->dtype().element_bytes(),
+                                               m_node_ptr->dtype().stride(),
+                                               m_data,
+                                               m_stride);
+    }
+}
 
 
-// //---------------------------------------------------------------------------//
-// template <typename T>
-// void
-// ExecutionAccessor<T>::assume()
-// {
-//     // if the ptrs don't point to the same place
-//     if (m_data != m_node_ptr->data_ptr())
-//     {
-//         CONDUIT_ASSERT(m_data == m_other_ptr,
-//             "Using execution array in this way will result in a memory leak.");
+//---------------------------------------------------------------------------//
+template <typename T>
+void
+ExecutionAccessor<T>::assume()
+{
+    // if the ptrs don't point to the same place
+    if (m_data != m_node_ptr->data_ptr())
+    {
+        CONDUIT_ASSERT(m_data == m_other_ptr,
+            "Using execution array in this way will result in a memory leak.");
 
-//         // reset will deallocate the data the node points to
-//         m_node_ptr->reset();
-//         m_node_ptr->schema_ptr()->set(dtype());
-//         m_node_ptr->set_data_ptr(m_data);
+        // reset will deallocate the data the node points to
+        m_node_ptr->reset();
+        m_node_ptr->schema_ptr()->set(dtype());
+        m_node_ptr->set_data_ptr(m_data);
 
-//         // we no longer own the data since we have given it to node
-//         m_other_ptr = nullptr;
-//         m_do_i_own_it = false;
-//         m_other_dtype = DataType::empty();
-//     }
-// }
+        // we no longer own the data since we have given it to node
+        m_other_ptr = nullptr;
+        m_do_i_own_it = false;
+        m_other_dtype = DataType::empty();
+    }
+}
 
 //---------------------------------------------------------------------------// 
 template <typename T>

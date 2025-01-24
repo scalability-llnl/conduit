@@ -136,14 +136,14 @@ public:
     /// counts number of occurrences of given value
     index_t         count(T value) const;
 
-// //-----------------------------------------------------------------------------
-// // Cool Stuff
-// //-----------------------------------------------------------------------------
-//     void            use_with(conduit::execution::ExecutionPolicy policy);
+//-----------------------------------------------------------------------------
+// Data movement
+//-----------------------------------------------------------------------------
+    void            use_with(conduit::execution::ExecutionPolicy policy);
 
-//     void            sync();
+    void            sync();
 
-//     void            assume();
+    void            assume();
 
 //-----------------------------------------------------------------------------
 // Setters
