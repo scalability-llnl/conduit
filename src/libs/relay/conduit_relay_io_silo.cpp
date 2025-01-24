@@ -203,7 +203,7 @@ void silo_read(const std::string &file_path,
                const std::string &silo_obj_path,
                Node &n)
 {
-    DBfile *dbfile = DBOpen(file_path.c_str(), DB_HDF5, DB_READ);
+    DBfile *dbfile = silo_open_file_for_read(file_path);
 
     CONDUIT_ASSERT(dbfile, "Error opening Silo file for reading: " << file_path);
     silo_read(dbfile,silo_obj_path,n);
@@ -295,7 +295,6 @@ is_silo_file(const std::string &file_path, const std::string &silo_driver)
     if(silo_driver == "hdf5")
     {
         const std::string hdf5_magic_number = "\211HDF\r\n\032\n";
-        // goal: check for: silo, hdf5, json, or yaml
         char buff[257];
         std::memset(buff,0,257);
         std::ifstream ifs;
@@ -3079,7 +3078,7 @@ open_or_reuse_file(const bool ovltop_case,
                 // otherwise we need to open our own file
                 else
                 {
-                    domain_file.setSiloObject(DBOpen(domain_filename.c_str(), DB_UNKNOWN, DB_READ));
+                    domain_file.setSiloObject(silo_open_file_for_read(domain_filename));
                     domain_file.setErrMsg("Error closing Silo file: " + domain_filename);
                     CONDUIT_ASSERT(domain_file_to_use = domain_file.getSiloObject(),
                         "Error opening Silo file for reading: " << domain_filename);
@@ -3088,7 +3087,7 @@ open_or_reuse_file(const bool ovltop_case,
 
             if (DBInqFile(domain_filename.c_str()) > 0) // the file exists
             {
-                domain_file.setSiloObject(DBOpen(domain_filename.c_str(), DB_UNKNOWN, DB_READ));
+                domain_file.setSiloObject(silo_open_file_for_read(domain_filename));
                 domain_file.setErrMsg("Error closing Silo file: " + domain_filename);
                 if (! (domain_file_to_use = domain_file.getSiloObject()))
                 {
@@ -3112,7 +3111,7 @@ open_or_reuse_file(const bool ovltop_case,
         // otherwise we need to open our own file
         else
         {
-            domain_file.setSiloObject(DBOpen(domain_filename.c_str(), DB_UNKNOWN, DB_READ));
+            domain_file.setSiloObject(silo_open_file_for_read(domain_filename));
             domain_file.setErrMsg("Error closing Silo file: " + domain_filename);
             CONDUIT_ASSERT(domain_file_to_use = domain_file.getSiloObject(),
                 "Error opening Silo file for reading: " << domain_filename);
@@ -3600,18 +3599,15 @@ read_root_silo_index(const std::string &root_file_path,
     error_oss.str("");
 
     // first, make sure we can open the root file
-    std::ifstream ifs;
-    ifs.open(root_file_path.c_str());
-    if(!ifs.is_open())
+    if (! is_silo_file(root_file_path))
     {
         error_oss << "failed to open root file: " << root_file_path;
         return false;
     }
-    ifs.close();
 
     // open silo file
     detail::SiloObjectWrapperCheckError<DBfile, decltype(&DBClose)> dbfile{
-        DBOpen(root_file_path.c_str(), DB_UNKNOWN, DB_READ), 
+        silo_open_file_for_read(root_file_path), 
         &DBClose, 
         "Error closing Silo file: " + root_file_path};
     if (! dbfile.getSiloObject())
