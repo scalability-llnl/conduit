@@ -852,13 +852,12 @@ TEST(conduit_blueprint_mesh_relay, sparse_topos)
 
 
 //-----------------------------------------------------------------------------
-TEST(conduit_blueprint_mesh_relay, spiral_multi_file_yaml_json_hdf5)
+TEST(conduit_blueprint_mesh_relay, spiral_multi_file_yaml_json_hdf5_silo)
 {
     Node io_protos;
     relay::io::about(io_protos["io"]);
     bool hdf5_enabled = io_protos["io/protocols/hdf5"].as_string() == "enabled";
     bool silo_enabled = io_protos["io/protocols/conduit_silo_mesh"].as_string() == "enabled";
-    Node data;
 
     std::vector<std::string> protocols = {"yaml","json"};
     if(hdf5_enabled)
@@ -866,7 +865,6 @@ TEST(conduit_blueprint_mesh_relay, spiral_multi_file_yaml_json_hdf5)
         protocols.push_back("hdf5");
     }
 
-    // TODO: finish wire up and we can add this case
     if(silo_enabled)
     {
         protocols.push_back("silo");
@@ -876,6 +874,7 @@ TEST(conduit_blueprint_mesh_relay, spiral_multi_file_yaml_json_hdf5)
     {
         // use spiral , with 7 domains
         index_t ndomains =7;
+        Node data;
         conduit::blueprint::mesh::examples::spiral(ndomains,data);
 
         std::cout << "testing protocol: " << protocol << std::endl;
