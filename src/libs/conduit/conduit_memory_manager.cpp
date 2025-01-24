@@ -107,7 +107,7 @@ size_t DeviceMemory::m_free_count = 0;
 void *
 DeviceMemory::allocate(size_t bytes)
 {
-#if !defined(CONDUIT_UMPIRE_ENABLED) // TODO is this going to exist
+#if !defined(CONDUIT_UMPIRE_ENABLED)
     CONDUIT_ERROR("Conduit was built without Umpire support. "
                    "Cannot use DeviceMemory::alloc().");
 #endif
@@ -137,7 +137,7 @@ DeviceMemory::allocate(size_t items, size_t item_size)
 void
 DeviceMemory::deallocate(void *data_ptr)
 {
-#if !defined(CONDUIT_UMPIRE_ENABLED) // TODO is this going to exist
+#if !defined(CONDUIT_UMPIRE_ENABLED)
     CONDUIT_ERROR("Conduit was built without Umpire support. "
                   "Cannot use DeviceMemory::free().");
 #endif
