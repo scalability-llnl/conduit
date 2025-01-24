@@ -66,15 +66,15 @@ public:
         ExecutionArray();
         /// copy constructor
         ExecutionArray(const ExecutionArray<T> &array);
-       /// Access a pointer to node data according to node dtype description.
-       ExecutionArray(Node &node);
-       // /// Access a const pointer to node data according to node dtype description.
-       // ExecutionArray(const Node &node);
-       /// Access a pointer to node data according to node dtype description.
-       ExecutionArray(Node *node);
-       /// Access a const pointer to node data according to node dtype description.
-       ExecutionArray(const Node *node);
-       /// Destructor.
+        /// Access a pointer to node data according to node dtype description.
+        ExecutionArray(Node &node);
+        // /// Access a const pointer to node data according to node dtype description.
+        // ExecutionArray(const Node &node);
+        /// Access a pointer to node data according to node dtype description.
+        ExecutionArray(Node *node);
+        /// Access a const pointer to node data according to node dtype description.
+        ExecutionArray(const Node *node);
+        /// Destructor.
        ~ExecutionArray();
 
     /// Assignment operator
