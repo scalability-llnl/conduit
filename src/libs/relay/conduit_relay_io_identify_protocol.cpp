@@ -170,8 +170,8 @@ identify_file_type(const std::string &path,
                 {
                     file_type = "silo";
                 }
-            }
 #endif
+            }
         }
 
         // else check for yaml or json
@@ -199,7 +199,6 @@ identify_file_type(const std::string &path,
 }
 
 
-}
 
 }
 //-----------------------------------------------------------------------------
