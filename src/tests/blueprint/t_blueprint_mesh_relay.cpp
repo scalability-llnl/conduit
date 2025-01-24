@@ -901,17 +901,14 @@ TEST(conduit_blueprint_mesh_relay, spiral_multi_file_yaml_json_hdf5)
         // make sure we can load back, this tests the auto detection
         // of the file type
         // read the mesh back in diff to make sure we have the same data
-
-        // if(protocol != "silo")
-        // {
         Node n_read, info;
         relay::io::blueprint::read_mesh(output_root,n_read);
 
         #ifdef CONDUIT_RELAY_IO_SILO_ENABLED
         if(protocol == "silo")
         {
-            // silo does not always preserve names or mesh types
-            // use test helper to make things comparable
+            // silo does not always preserve names or mesh types so we
+            // use a test helper on the input to make things comparable
             for(int dom_idx =0; dom_idx <ndomains; dom_idx++)
             {
                 silo_name_changer("mesh", data.child(dom_idx));
