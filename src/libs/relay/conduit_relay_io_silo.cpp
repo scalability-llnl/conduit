@@ -294,7 +294,7 @@ is_silo_file(const std::string &file_path, const std::string &silo_driver)
     bool res = false;
     if(silo_driver == "hdf5")
     {
-        std::string hdf5_magic_number = "\211HDF\r\n\032\n";
+        const std::string hdf5_magic_number = "\211HDF\r\n\032\n";
         // goal: check for: silo, hdf5, json, or yaml
         char buff[257];
         std::memset(buff,0,257);

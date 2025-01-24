@@ -127,8 +127,8 @@ identify_file_type(const std::string &path,
                    std::string &file_type)
 {
     file_type = "unknown";
-    std::string hdf5_magic_number = "\211HDF\r\n\032\n";
-    std::string pdb_magic_number  = "<<PDB:";
+    const std::string hdf5_magic_number = "\211HDF\r\n\032\n";
+    const std::string pdb_magic_number  = "<<PDB:";
     // goal: check for: silo, hdf5, json, or yaml
     char buff[257];
     std::memset(buff,0,257);

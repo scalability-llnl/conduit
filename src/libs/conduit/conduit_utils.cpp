@@ -943,20 +943,30 @@ strip_quoted_strings(const std::string &input, const std::string &quote_char)
     for(size_t i = 0; i < input.size(); ++i)
     {
         emit = true;
-        // check for start & end of a string
-        if(input[i] == quote_char[0] && ( i > 0 && ( input[i-1] != '\\' )))
+        // emit a character when not in a string, including the opening and 
+        // closing quote.
+        //
+        // check for a quote + start & end of a string
+        // the check for `\\` ignores escaped quotes inside a string
+        if(input[i] == quote_char[0] && ( i > 0 && ( input[i-1] = '\\' )))
         {
             if(in_string)
             {
+                // we are in a string & have encountered an ending quote
+                // so we are no longer in a string but  still don't want to
+                // emit the (current) quote char.
                 in_string = false;
                 emit = false;
             }
             else
             {
+                // we aren't in a string & have encountered a starting quote,
+                // we are starting a string
                 in_string = true;
             }
         }
 
+        // never emit when in a string
         if(in_string)
             emit = false;
 
