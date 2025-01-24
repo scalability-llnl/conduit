@@ -12,8 +12,6 @@
 #define CONDUIT_EXECUTION_ACCESSOR_HPP
 
 
-// TODO add setters from data arrays/accessors and exec arrays
-
 //-----------------------------------------------------------------------------
 // -- conduit  includes -- 
 //-----------------------------------------------------------------------------
@@ -47,7 +45,8 @@ class ExecutionArray;
 /// class: conduit::ExecutionAccessor
 ///
 /// description:
-///  TODO
+///  Helps consume Node data as desired type with on the fly conversion and 
+///  supports memory movement between host and device.
 ///
 //-----------------------------------------------------------------------------
 template <typename T> 

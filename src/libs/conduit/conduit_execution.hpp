@@ -182,7 +182,7 @@ struct SerialExec
 };
 
 //---------------------------------------------------------------------------
-#if defined(CONDUIT_USE_CUDA) // TODO who is this
+#if defined(CONDUIT_USE_CUDA)
 struct CudaExec
 {
     using for_policy    = RAJA::cuda_exec<CUDA_BLOCK_SIZE>;

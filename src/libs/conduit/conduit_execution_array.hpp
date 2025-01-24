@@ -45,7 +45,8 @@ class ExecutionAccessor;
 /// class: conduit::ExecutionArray
 ///
 /// description:
-///  TODO
+///  Light weight pointer wrapper that handles addressing for ragged arrays 
+///  stored in Nodes; also supports memory movement between host and device.
 ///
 //-----------------------------------------------------------------------------
 template <typename T> 
