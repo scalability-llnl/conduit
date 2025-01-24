@@ -948,7 +948,7 @@ strip_quoted_strings(const std::string &input, const std::string &quote_char)
         //
         // check for a quote + start & end of a string
         // the check for `\\` ignores escaped quotes inside a string
-        if(input[i] == quote_char[0] && ( i > 0 && ( input[i-1] = '\\' )))
+        if(input[i] == quote_char[0] && ( i > 0 && ( input[i-1] != '\\' )))
         {
             if(in_string)
             {
