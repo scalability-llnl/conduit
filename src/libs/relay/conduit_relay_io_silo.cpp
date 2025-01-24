@@ -406,36 +406,6 @@ silo_close_file(DBfile *silo_handle)
 namespace silo
 {
 
-//---------------------------------------------------------------------------//
-bool
-silo_open_file_for_read(const std::string &file_path)
-{
-    bool res = false;
-    // Note: we use DB_UNKNOWN here b/c we expect the common case to be 
-    // where we are testing a non-silo file. For this case, we don't want
-    // a cascade of tries at opening.
-    //
-    // For silo_open_file_for_read(), we make a different choice
-    // b/c for that API call, we expect that in most cases the path
-    // passed will be an hdf5 flavored silo file
-
-    DBfile *silo_dbfile = DBOpen(file_path.c_str(), DB_UNKNOWN, DB_READ);
-
-    if(silo_dbfile != NULL)
-    {
-        // we are able to open with silo, if we want to be extra careful
-        // we can also ask:
-        // if(DBInqVarExists(silo_dbfile, "_silolibinfo"))
-        // {
-        //     res = true;
-        // }
-        res = true;
-        DBClose(silo_dbfile);
-    }
-
-    return res;
-}
-
 //-----------------------------------------------------------------------------
 // -- begin conduit::relay::<mpi>::io::silo::detail --
 //-----------------------------------------------------------------------------
