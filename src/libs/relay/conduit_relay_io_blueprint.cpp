@@ -18,10 +18,16 @@
     #include "conduit_relay_mpi.hpp"
     #include "conduit_relay_mpi_io_blueprint.hpp"
     #include "conduit_blueprint_mpi.hpp"
+    #ifdef CONDUIT_RELAY_IO_SILO_ENABLED
+        #include "conduit_relay_mpi_io_silo.hpp"
+    #endif
 #else
     #include "conduit_relay_io_blueprint.hpp"
 #endif
 
+#ifdef CONDUIT_RELAY_IO_SILO_ENABLED
+    #include "conduit_relay_io_silo.hpp"
+#endif
 
 #ifdef CONDUIT_RELAY_IO_MPI_ENABLED
 // Define an argument macro that adds the communicator argument.
@@ -886,6 +892,26 @@ void write_mesh(const Node &mesh,
                 const Node &opts
                 CONDUIT_RELAY_COMMUNICATOR_ARG(MPI_Comm mpi_comm))
 {
+
+    if(file_protocol == "silo")
+    {
+#ifdef CONDUIT_RELAY_IO_SILO_ENABLED
+    #ifdef CONDUIT_RELAY_IO_MPI_ENABLED
+        return conduit::relay::mpi::io::silo::write_mesh(mesh,
+                                                         path,
+                                                         opts,
+                                                         mpi_comm);
+    #else
+        return conduit::relay::io::silo::write_mesh(mesh,
+                                                    path,
+                                                    opts);
+    #endif
+#else // conduit lacks silo support
+    CONDUIT_ERROR("write_mesh invalid protocol option: `silo`"
+                  << "conduit build lacks silo support\n");
+#endif
+    }
+    
     // The assumption here is that everything is multi domain
 
     std::string opts_file_style = "default";
@@ -1993,6 +2019,42 @@ void read_mesh(const std::string &root_file_path,
     par_rank = relay::mpi::rank(mpi_comm);
     int par_size = relay::mpi::size(mpi_comm);
 #endif
+
+    // check root file on rank 0, if silo call into silo mesh write logic
+    std::string root_protocol;
+    if(par_rank == 0)
+    {
+        // check root file protocol using heuristic search
+        conduit::relay::io::identify_file_type(root_file_path,root_protocol);
+    }
+
+#if CONDUIT_RELAY_IO_MPI_ENABLED
+    Node n_root_proto;
+    n_root_proto.set(root_protocol);
+    conduit::relay::mpi::broadcast_using_schema(n_root_proto,
+                                                0,
+                                                mpi_comm);
+    root_protocol = n_root_proto.as_string();
+#endif
+
+    if(root_protocol == "silo")
+    {
+#ifdef CONDUIT_RELAY_IO_SILO_ENABLED
+    #ifdef CONDUIT_RELAY_IO_MPI_ENABLED
+        return conduit::relay::mpi::io::silo::read_mesh(root_file_path,
+                                                        opts,
+                                                        mesh,
+                                                        mpi_comm);
+    #else
+        return conduit::relay::io::silo::read_mesh(root_file_path,
+                                                   opts,
+                                                   mesh);
+    #endif
+#else // conduit lacks silo support
+    CONDUIT_ERROR("read_mesh invalid protocol option: `silo`"
+                  << "conduit build lacks silo support\n");
+#endif
+    }
 
     int error = 0;
     std::ostringstream error_oss;
