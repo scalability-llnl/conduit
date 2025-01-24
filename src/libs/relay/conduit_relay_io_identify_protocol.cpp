@@ -193,6 +193,7 @@ identify_file_type(const std::string &path,
                 if(test_str.find("{") != std::string::npos)
                 {
                    file_type = "json";
+                }
             }
         }
     }
