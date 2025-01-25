@@ -19,6 +19,11 @@
 #include <iostream>
 #include "gtest/gtest.h"
 
+#ifdef CONDUIT_RELAY_IO_SILO_ENABLED
+#include "silo_test_utils.hpp"
+#endif
+
+
 using namespace conduit;
 using namespace conduit::utils;
 
@@ -118,7 +123,7 @@ TEST(conduit_blueprint_mesh_relay, spiral_multi_file)
         relay::io::blueprint::read_mesh(output_base + ".cycle_000000.root",
                                         n_read);
 
-        // in all cases we expect 7 domains to match 
+        // in all cases we expect 7 domains to match
         for(int dom_idx =0; dom_idx <7; dom_idx++)
         {
             EXPECT_FALSE(data.child(dom_idx).diff(n_read.child(dom_idx),info));
@@ -844,4 +849,77 @@ TEST(conduit_blueprint_mesh_relay, sparse_topos)
     EXPECT_FALSE(n_load[2].diff(dom2,info));
 }
 
+
+
+//-----------------------------------------------------------------------------
+TEST(conduit_blueprint_mesh_relay, spiral_multi_file_yaml_json_hdf5_silo)
+{
+    Node io_protos;
+    relay::io::about(io_protos["io"]);
+    bool hdf5_enabled = io_protos["io/protocols/hdf5"].as_string() == "enabled";
+    bool silo_enabled = io_protos["io/protocols/conduit_silo_mesh"].as_string() == "enabled";
+
+    std::vector<std::string> protocols = {"yaml","json"};
+    if(hdf5_enabled)
+    {
+        protocols.push_back("hdf5");
+    }
+
+    if(silo_enabled)
+    {
+        protocols.push_back("silo");
+    }
+    
+    for(auto protocol : protocols)
+    {
+        // use spiral , with 7 domains
+        index_t ndomains =7;
+        Node data;
+        conduit::blueprint::mesh::examples::spiral(ndomains,data);
+
+        std::cout << "testing protocol: " << protocol << std::endl;
+        std::string output_base = "tout_relay_spiral_mesh_save_proto_" + protocol;
+        std::string output_dir  = output_base + ".cycle_000000";
+        std::string output_root = output_base + ".cycle_000000.root";
+        // clean up files from prior runs
+        // remove existing root file, directory and any output files
+        remove_path_if_exists(output_root);
+        for(int i=0;i<ndomains;i++)
+        {
+            std::string fprefix = "domain_";
+            std::string output_file = conduit_fmt::format("{}{:06d}.{}",
+                            join_file_path(output_base + ".cycle_000000",
+                                           fprefix),
+                            i,
+                            protocol);
+            remove_path_if_exists(output_file);
+        }
+
+        relay::io::blueprint::write_mesh(data, output_base, protocol);
+
+        // make sure we can load back, this tests the auto detection
+        // of the file type
+        // read the mesh back in diff to make sure we have the same data
+        Node n_read, info;
+        relay::io::blueprint::read_mesh(output_root,n_read);
+
+        #ifdef CONDUIT_RELAY_IO_SILO_ENABLED
+        if(protocol == "silo")
+        {
+            // silo does not always preserve names or mesh types so we
+            // use a test helper on the input to make things comparable
+            for(int dom_idx =0; dom_idx <ndomains; dom_idx++)
+            {
+                silo_name_changer("mesh", data.child(dom_idx));
+            }
+        }
+        #endif
+
+        // in all cases we expect domains to match
+        for(int dom_idx =0; dom_idx <ndomains; dom_idx++)
+        {
+            EXPECT_FALSE(data.child(dom_idx).diff(n_read.child(dom_idx),info,CONDUIT_EPSILON, true));
+        }
+    }
+}
 

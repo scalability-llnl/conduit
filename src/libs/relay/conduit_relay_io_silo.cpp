@@ -37,6 +37,8 @@
     #include "conduit_relay_io_blueprint.hpp"
 #endif
 
+#include "conduit_relay_io_hdf5.hpp"
+
 //-----------------------------------------------------------------------------
 // external lib includes
 //-----------------------------------------------------------------------------
@@ -91,6 +93,55 @@ namespace mpi
 //-----------------------------------------------------------------------------
 namespace io
 {
+
+
+//-----------------------------------------------------------------------------
+// Private class used to suppress Silo error messages.
+//
+// Creating an instance of this class will disable the current Silo error
+// callbacks. The default Silo callbacks print error messages during various
+// API calls. When the instance is destroyed, the previous error state is
+// restored.
+//
+//-----------------------------------------------------------------------------
+class SiloErrorSuppressor
+{
+public:
+        SiloErrorSuppressor()
+        :  silo_error_lvl(0),
+           silo_error_func(NULL)
+        {
+            disable_silo_error_func();
+        }
+
+       ~SiloErrorSuppressor()
+        {
+            restore_silo_error_func();
+        }
+
+private:
+    // saves current error level and func
+    // then turns off errors
+    void disable_silo_error_func()
+    {
+        silo_error_lvl = DBErrlvl();
+        silo_error_func = DBErrfunc();
+        DBShowErrors(DB_NONE,NULL);
+    }
+
+    // restores saved error func
+    void restore_silo_error_func()
+    {
+        DBShowErrors(silo_error_lvl,silo_error_func);
+    }
+
+    // silo error level
+    int                  silo_error_lvl;
+    // callback used for silo error interface
+    void (*silo_error_func)(char*);
+};
+
+
 
 //---------------------------------------------------------------------------//
 void
@@ -152,7 +203,7 @@ void silo_read(const std::string &file_path,
                const std::string &silo_obj_path,
                Node &n)
 {
-    DBfile *dbfile = DBOpen(file_path.c_str(), DB_HDF5, DB_READ);
+    DBfile *dbfile = silo_open_file_for_read(file_path);
 
     CONDUIT_ASSERT(dbfile, "Error opening Silo file for reading: " << file_path);
     silo_read(dbfile,silo_obj_path,n);
@@ -225,6 +276,126 @@ void silo_read(DBfile *dbfile,
 
     delete [] schema;
     delete [] data;
+}
+
+//---------------------------------------------------------------------------//
+bool
+is_silo_file(const std::string &file_path)
+{
+    return is_silo_file(file_path,"unknown");
+}
+
+//---------------------------------------------------------------------------//
+bool
+is_silo_file(const std::string &file_path, const std::string &silo_driver)
+{
+    SiloErrorSuppressor ses;
+
+    bool res = false;
+    if(silo_driver == "hdf5")
+    {
+        const std::string hdf5_magic_number = "\211HDF\r\n\032\n";
+        char buff[257];
+        std::memset(buff,0,257);
+        std::ifstream ifs;
+        ifs.open(file_path.c_str());
+        if(ifs.is_open())
+        {
+            ifs.read((char *)buff,256);
+            int nbytes_read = static_cast<int>(ifs.gcount());
+            ifs.close();
+            std::string test_str(buff,nbytes_read);
+            // check for hdf5 magic number
+            if(test_str.find(hdf5_magic_number) != std::string::npos)
+            {
+                // if hdf5 it could be a silo file or a normal hdf5 file
+                // open with hdf5 and look for presence of silo
+                // sentinel _silolibinfo
+                hid_t h5_file_id = conduit::relay::io::hdf5_open_file_for_read(file_path);
+            
+                if(conduit::relay::io::hdf5_has_path(h5_file_id,"_silolibinfo"))
+                {
+                    res = true;
+                }
+                // close the hdf5 file
+                conduit::relay::io::hdf5_close_file(h5_file_id);
+            }
+        }
+    }
+    else if(silo_driver == "pdb")
+    {
+        DBfile *silo_dbfile = DBOpen(file_path.c_str(), DB_PDB, DB_READ);
+
+        if(silo_dbfile != NULL)
+        {
+            // we are able to open with silo, if we want to be extra careful
+            // we can also ask:
+            // if(DBInqVarExists(silo_dbfile, "_silolibinfo"))
+            // {
+            //     res = true;
+            // }
+            res = true;
+            silo_close_file(silo_dbfile);
+        }
+    }
+    else // try unknown
+    {
+        DBfile *silo_dbfile = DBOpen(file_path.c_str(), DB_UNKNOWN, DB_READ);
+
+        if(silo_dbfile != NULL)
+        {
+            // we are able to open with silo, if we want to be extra careful
+            // we can also ask:
+            // if(DBInqVarExists(silo_dbfile, "_silolibinfo"))
+            // {
+            //     res = true;
+            // }
+            res = true;
+            silo_close_file(silo_dbfile);
+        }
+    }
+
+    return res;
+}
+
+
+//---------------------------------------------------------------------------//
+DBfile *
+silo_open_file_for_read(const std::string &file_path)
+{
+    // this open cascade is an optimization -- we expect most open cases
+    // will need hdf5 driver, DB_UNKNOWN has more logic that is slightly
+    // more expensive.
+
+    DBfile *res = DBOpen(file_path.c_str(), DB_HDF5, DB_READ);
+    if(res != NULL)
+    {
+        return res;
+    }
+
+    res = DBOpen(file_path.c_str(), DB_PDB, DB_READ);
+    if(res != NULL)
+    {
+        return res;
+    }
+
+    res = DBOpen(file_path.c_str(), DB_UNKNOWN, DB_READ);
+    if(res != NULL)
+    {
+        return res;
+    }
+
+    return res;
+}
+
+//---------------------------------------------------------------------------//
+void
+silo_close_file(DBfile *silo_handle)
+{
+    if(silo_handle !=NULL)
+    {
+        DBClose(silo_handle);
+    }
 }
 
 
@@ -2907,7 +3078,7 @@ open_or_reuse_file(const bool ovltop_case,
                 // otherwise we need to open our own file
                 else
                 {
-                    domain_file.setSiloObject(DBOpen(domain_filename.c_str(), DB_UNKNOWN, DB_READ));
+                    domain_file.setSiloObject(silo_open_file_for_read(domain_filename));
                     domain_file.setErrMsg("Error closing Silo file: " + domain_filename);
                     CONDUIT_ASSERT(domain_file_to_use = domain_file.getSiloObject(),
                         "Error opening Silo file for reading: " << domain_filename);
@@ -2916,7 +3087,7 @@ open_or_reuse_file(const bool ovltop_case,
 
             if (DBInqFile(domain_filename.c_str()) > 0) // the file exists
             {
-                domain_file.setSiloObject(DBOpen(domain_filename.c_str(), DB_UNKNOWN, DB_READ));
+                domain_file.setSiloObject(silo_open_file_for_read(domain_filename));
                 domain_file.setErrMsg("Error closing Silo file: " + domain_filename);
                 if (! (domain_file_to_use = domain_file.getSiloObject()))
                 {
@@ -2940,7 +3111,7 @@ open_or_reuse_file(const bool ovltop_case,
         // otherwise we need to open our own file
         else
         {
-            domain_file.setSiloObject(DBOpen(domain_filename.c_str(), DB_UNKNOWN, DB_READ));
+            domain_file.setSiloObject(silo_open_file_for_read(domain_filename));
             domain_file.setErrMsg("Error closing Silo file: " + domain_filename);
             CONDUIT_ASSERT(domain_file_to_use = domain_file.getSiloObject(),
                 "Error opening Silo file for reading: " << domain_filename);
@@ -3428,18 +3599,15 @@ read_root_silo_index(const std::string &root_file_path,
     error_oss.str("");
 
     // first, make sure we can open the root file
-    std::ifstream ifs;
-    ifs.open(root_file_path.c_str());
-    if(!ifs.is_open())
+    if (! is_silo_file(root_file_path))
     {
         error_oss << "failed to open root file: " << root_file_path;
         return false;
     }
-    ifs.close();
 
     // open silo file
     detail::SiloObjectWrapperCheckError<DBfile, decltype(&DBClose)> dbfile{
-        DBOpen(root_file_path.c_str(), DB_UNKNOWN, DB_READ), 
+        silo_open_file_for_read(root_file_path), 
         &DBClose, 
         "Error closing Silo file: " + root_file_path};
     if (! dbfile.getSiloObject())
