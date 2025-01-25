@@ -73,6 +73,51 @@ TEST(conduit_relay_io_silo, conduit_silo_cold_storage_generic_iface)
 }
 
 //-----------------------------------------------------------------------------
+// test silo file format detection
+TEST(conduit_relay_io_silo, test_silo_detect)
+{
+
+
+    // make sure bogus file doesn't return true
+    EXPECT_FALSE(io::is_silo_file("BoGUS.txt"));
+    
+    // make sure pure hdf5 file doesn't return true
+    Node n_test;
+    n_test["a"] = 42.0;
+    io::save(n_test,"tout_hdf5_plain_vs_silo_open.hdf5");
+    EXPECT_FALSE(io::is_silo_file("tout_hdf5_plain_vs_silo_open.hdf5"));
+
+    // make sure blueprint hdf5 file doesn't return true
+    n_test.reset();
+    blueprint::mesh::examples::braid("uniform", 5, 5, 0, n_test);
+    io::blueprint::save_mesh(n_test,"tout_bp_hdf5_mesh_vs_silo_open","hdf5");
+    EXPECT_FALSE(io::is_silo_file("tout_bp_hdf5_mesh_vs_silo_open.root"));
+
+    // make sure blueprint yaml file doesn't return true
+    io::blueprint::save_mesh(n_test,"tout_bp_yaml_mesh_vs_silo_open","yaml");
+    EXPECT_FALSE(io::is_silo_file("tout_bp_yaml_mesh_vs_silo_open.root"));
+
+    // make sure conduit creaeted silo pdb file *does* return true
+    Node n_save_opts;
+    n_save_opts["silo_type"] = "pdb";
+    n_save_opts["suffix"] = "none";
+    io::silo::save_mesh(n_test, "tout_bp_silo_pdb_open", n_save_opts);
+    EXPECT_TRUE(io::is_silo_file("tout_bp_silo_pdb_open.root"));
+
+    // make sure conduit created silo hdf5 file *does* return true
+    n_save_opts["silo_type"] = "hdf5";
+    n_save_opts["suffix"] = "none";
+    io::silo::save_mesh(n_test, "tout_bp_silo_hdf5_open", n_save_opts);
+    EXPECT_TRUE(io::is_silo_file("tout_bp_silo_hdf5_open.root"));
+
+    // make sure known silo file *does* return true
+    std::string silo_input_file = utils::join_file_path("overlink", "box2d.silo");
+    silo_input_file = relay_test_silo_data_path(silo_input_file);
+    EXPECT_TRUE(io::is_silo_file(silo_input_file));
+
+}
+
+//-----------------------------------------------------------------------------
 TEST(conduit_relay_io_silo, round_trip_basic)
 {
     const std::vector<std::pair<std::string, std::string>> mesh_types = {

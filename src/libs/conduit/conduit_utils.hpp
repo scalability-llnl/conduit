@@ -483,6 +483,10 @@ namespace utils
     std::string CONDUIT_API escape_special_chars(const std::string &input);
     std::string CONDUIT_API unescape_special_chars(const std::string &input);
 
+//-----------------------------------------------------------------------------
+     std::string CONDUIT_API strip_quoted_strings(const std::string &input,
+                                                  const std::string &quote_char);
+
 
 //-----------------------------------------------------------------------------
 /// fmt style string formatting helpers
