@@ -72,79 +72,79 @@ TEST(conduit_array, basic_construction)
     EXPECT_EQ(-16,data2[0]);
 }
 
-// //-----------------------------------------------------------------------------
-// TEST(conduit_array, array_stride_int8)
-// {
-//     std::vector<int8> data(20,0);
+//-----------------------------------------------------------------------------
+TEST(conduit_array, array_stride_int8)
+{
+    std::vector<int8> data(20,0);
 
-//     for(int i=0;i<20;i+=2)
-//     {
-//         data[i] = i/2;
-//     }
+    for(int i=0;i<20;i+=2)
+    {
+        data[i] = i/2;
+    }
 
-//     for(int i=1;i<20;i+=2)
-//     {
-//         data[i] = -i/2;
-//     }
-//     std::cout << "Full Data" << std::endl;
+    for(int i=1;i<20;i+=2)
+    {
+        data[i] = -i/2;
+    }
+    std::cout << "Full Data" << std::endl;
 
-//     for(int i=0;i<20;i++)
-//     {
-//         std::cout << (int64) data[i] << " ";
-//     }
-//     std::cout << std::endl;
+    for(int i=0;i<20;i++)
+    {
+        std::cout << (int64) data[i] << " ";
+    }
+    std::cout << std::endl;
 
-//     DataType arr_t(DataType::INT8_ID,
-//                    10,
-//                    0,
-//                    sizeof(int8)*2, // stride
-//                    sizeof(int8),
-//                    Endianness::DEFAULT_ID);
-//     Node n;
-//     n["value"].set_external(arr_t,&data[0]);
-
-
-//     int8_array arr = n["value"].as_int8_array();
-
-//     for(int i=0;i<10;i++)
-//     {
-//         // note: the cast is for proper printing to std::out
-//         std::cout << "value[" << i << "] = " << ((int64)arr[i] ) << std::endl;
-//     }
-//     std::cout << std::endl;
-
-//     EXPECT_EQ(arr[5],5);
-//     EXPECT_EQ(arr[9],9);
-
-//     arr[1] = 100;
-//     EXPECT_EQ(data[2],100);
-
-//         std::cout << "Full Data" << std::endl;
-
-//     for(int i=0;i<20;i++)
-//     {
-//         std::cout << (int64) data[i] << " ";
-//     }
-//     std::cout << std::endl;
+    DataType arr_t(DataType::INT8_ID,
+                   10,
+                   0,
+                   sizeof(int8)*2, // stride
+                   sizeof(int8),
+                   Endianness::DEFAULT_ID);
+    Node n;
+    n["value"].set_external(arr_t,&data[0]);
 
 
-//     Node n2(DataType::int8(10,sizeof(int8),sizeof(int8)*2),
-//             &data[0],
-//             true); /// true for external
+    int8_exec_array arr(n["value"]);
 
-//     int8_array arr_2 = n2.as_int8_array();
+    for(int i=0;i<10;i++)
+    {
+        // note: the cast is for proper printing to std::out
+        std::cout << "value[" << i << "] = " << ((int64)arr[i] ) << std::endl;
+    }
+    std::cout << std::endl;
 
-//     for(int i=0;i<10;i++)
-//     {
-//         // note: the cast is for proper printing to std::out
-//         std::cout << "value[" << i << "] = " <<  ((int64)arr_2[i] ) << std::endl;
-//     }
-//     std::cout << std::endl;
+    EXPECT_EQ(arr[5],5);
+    EXPECT_EQ(arr[9],9);
 
-//     EXPECT_EQ(arr_2[0],0);
-//     EXPECT_EQ(arr_2[9],-9);
+    arr[1] = 100;
+    EXPECT_EQ(data[2],100);
 
-// }
+        std::cout << "Full Data" << std::endl;
+
+    for(int i=0;i<20;i++)
+    {
+        std::cout << (int64) data[i] << " ";
+    }
+    std::cout << std::endl;
+
+
+    Node n2(DataType::int8(10,sizeof(int8),sizeof(int8)*2),
+            &data[0],
+            true); /// true for external
+
+    int8_exec_array arr_2(n2);
+
+    for(int i=0;i<10;i++)
+    {
+        // note: the cast is for proper printing to std::out
+        std::cout << "value[" << i << "] = " <<  ((int64)arr_2[i] ) << std::endl;
+    }
+    std::cout << std::endl;
+
+    EXPECT_EQ(arr_2[0],0);
+    EXPECT_EQ(arr_2[9],-9);
+
+}
 
 // //-----------------------------------------------------------------------------
 // TEST(conduit_array, array_stride_int8_external)
