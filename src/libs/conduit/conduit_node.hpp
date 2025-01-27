@@ -292,11 +292,11 @@ public:
     void set_schema(const Schema &schema);
     void set(const Schema &schema);
 
-    void set_data_using_schema(const Schema &schema, void *data);
-    void set(const Schema &schema, void *data);
+    void set_data_using_schema(const Schema &schema, const void *data);
+    void set(const Schema &schema, const void *data);
 
-    void set_data_using_dtype(const DataType &dtype, void *data);
-    void set(const DataType &dtype, void *data);
+    void set_data_using_dtype(const DataType &dtype, const void *data);
+    void set(const DataType &dtype, const void *data);
 
 //-----------------------------------------------------------------------------
 // -- set for bitwidth style scalar types ---

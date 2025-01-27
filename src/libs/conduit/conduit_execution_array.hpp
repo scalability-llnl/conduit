@@ -70,7 +70,7 @@ public:
         /// Access a pointer to node data according to node dtype description.
         ExecutionArray(Node &node);
         // /// Access a const pointer to node data according to node dtype description.
-        // ExecutionArray(const Node &node);
+        ExecutionArray(const Node &node);
         /// Access a pointer to node data according to node dtype description.
         ExecutionArray(Node *node);
         /// Access a const pointer to node data according to node dtype description.

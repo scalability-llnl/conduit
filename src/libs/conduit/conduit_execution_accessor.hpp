@@ -70,7 +70,7 @@ public:
     /// Access a pointer to node data according to node dtype description.
     ExecutionAccessor(Node &node);
     // /// Access a const pointer to node data according to node dtype description.
-    // ExecutionAccessor(const Node &node);
+    ExecutionAccessor(const Node &node);
     /// Access a pointer to node data according to node dtype description.
     ExecutionAccessor(Node *node);
     /// Access a const pointer to node data according to node dtype description.

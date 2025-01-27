@@ -76,6 +76,19 @@ ExecutionAccessor<T>::ExecutionAccessor(Node &node)
 
 //---------------------------------------------------------------------------//
 template <typename T> 
+ExecutionAccessor<T>::ExecutionAccessor(const Node &node)
+: m_node_ptr(&node),
+  m_other_ptr(nullptr),
+  m_other_dtype(DataType::empty()),
+  m_do_i_own_it(false),
+  m_data(const_cast<void*>(node.data_ptr())),
+  m_offset(node.dtype().offset()),
+  m_stride(node.dtype().stride())
+{}
+
+
+//---------------------------------------------------------------------------//
+template <typename T> 
 ExecutionAccessor<T>::ExecutionAccessor(Node *node)
 : m_node_ptr(node),
   m_other_ptr(nullptr),
