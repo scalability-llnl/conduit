@@ -21,11 +21,8 @@ TEST(conduit_array, basic_construction)
     std::vector<int8> data1(10,8);
     std::vector<int8> data2(10,-8);
 
-    void *data1_ptr = &data1[0];
-    const void *cdata2_ptr = &data2[0];
-
     Node data1_node;
-    data1_node.set(DataType::int8(10), data1_ptr);
+    data1_node.set_external(data1);
 
     ExecutionArray<int8> da_1(data1_node);
 
@@ -37,7 +34,7 @@ TEST(conduit_array, basic_construction)
     }
 
     Node cdata2_node;
-    cdata2_node.set(DataType::int8(10), cdata2_ptr);
+    cdata2_node.set_external(data2);
 
     ExecutionArray<int8> da_2(cdata2_node);
 
@@ -71,8 +68,8 @@ TEST(conduit_array, basic_construction)
     da_3.to_string_stream(std::cout);
     da_3.to_json_stream(std::cout);
 
-    // EXPECT_EQ(16,data1[0]);
-    // EXPECT_EQ(-16,data2[0]);
+    EXPECT_EQ(16,data1[0]);
+    EXPECT_EQ(-16,data2[0]);
 }
 
 // //-----------------------------------------------------------------------------

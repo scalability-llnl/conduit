@@ -564,7 +564,7 @@ Node::set(const Schema &schema)
 //---------------------------------------------------------------------------//
 void
 Node::set_data_using_schema(const Schema &schema,
-                            const void *data)
+                            void *data)
 {
     release();
     m_schema->set(schema);
@@ -578,7 +578,7 @@ Node::set_data_using_schema(const Schema &schema,
 //---------------------------------------------------------------------------//
 void
 Node::set(const Schema &schema,
-          const void *data)
+          void *data)
 {
     set_data_using_schema(schema,data);
 }
@@ -586,7 +586,7 @@ Node::set(const Schema &schema,
 //---------------------------------------------------------------------------//
 void
 Node::set_data_using_dtype(const DataType &dtype,
-                           const void *data)
+                           void *data)
 {
     release();
     m_schema->set(dtype);
@@ -599,7 +599,7 @@ Node::set_data_using_dtype(const DataType &dtype,
 
 //---------------------------------------------------------------------------//
 void
-Node::set(const DataType &dtype, const void *data)
+Node::set(const DataType &dtype, void *data)
 {
     set_data_using_dtype(dtype,data);
 }
