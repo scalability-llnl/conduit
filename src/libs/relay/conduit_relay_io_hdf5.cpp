@@ -323,15 +323,15 @@ hdf5_options(Node &opts)
 //
 // Creating an instance of this class will disable the current HDF5 error
 // callbacks. The default HDF5 callbacks print error messages when probing
-// properties of the HDF5 tree. When the instance is destroyed, the prevsous
+// properties of the HDF5 tree. When the instance is destroyed, the previous
 // error state is restored.
 //
 // Suppression is only enabled when HDF5Options::messages == "quiet"
 //-----------------------------------------------------------------------------
-class HDF5ErrorStackSupressor
+class HDF5ErrorStackSuppressor
 {
 public:
-        HDF5ErrorStackSupressor()
+        HDF5ErrorStackSuppressor()
         :  herr_func(NULL),
            herr_func_client_data(NULL),
            active(true)
@@ -343,7 +343,7 @@ public:
             }
         }
 
-       ~HDF5ErrorStackSupressor()
+       ~HDF5ErrorStackSuppressor()
         {
             if(active)
             {
@@ -3270,7 +3270,7 @@ hid_t
 hdf5_create_file(const std::string &file_path)
 {
     // disable hdf5 error stack
-    HDF5ErrorStackSupressor supress_hdf5_errors;
+    HDF5ErrorStackSuppressor supress_hdf5_errors;
 
     hid_t h5_fc_plist = create_hdf5_file_create_plist();
     hid_t h5_fa_plist = create_hdf5_file_access_plist();
@@ -3329,7 +3329,7 @@ hdf5_write(const Node &node,
            const Node &opts)
 {
     // disable hdf5 error stack
-    HDF5ErrorStackSupressor supress_hdf5_errors;
+    HDF5ErrorStackSuppressor supress_hdf5_errors;
 
     // TODO: we only want to support abs paths if hdf5_id is a file
     // if ( (not hdf5 file) &&
@@ -3431,7 +3431,7 @@ hdf5_write(const Node &node,
     // disable hdf5 error stack
     // TODO: we may only need to use this in an outer level variant
     // of check_if_conduit_node_is_compatible_with_hdf5_tree
-    HDF5ErrorStackSupressor supress_hdf5_errors;
+    HDF5ErrorStackSuppressor supress_hdf5_errors;
 
     std::string incompat_details;
 
@@ -3607,7 +3607,7 @@ hdf5_write(const Node &node,
            bool append)
 {
     // disable hdf5 error stack
-    HDF5ErrorStackSupressor supress_hdf5_errors;
+    HDF5ErrorStackSuppressor supress_hdf5_errors;
 
     hid_t h5_file_id = -1;
     if(append && utils::is_file(file_path))
@@ -3648,7 +3648,7 @@ hid_t
 hdf5_open_file_for_read(const std::string &file_path)
 {
     // disable hdf5 error stack
-    HDF5ErrorStackSupressor supress_hdf5_errors;
+    HDF5ErrorStackSuppressor supress_hdf5_errors;
 
     hid_t h5_fa_plist = create_hdf5_file_access_plist();
 
@@ -3675,7 +3675,7 @@ hid_t
 hdf5_open_file_for_read_write(const std::string &file_path)
 {
     // disable hdf5 error stack
-    HDF5ErrorStackSupressor supress_hdf5_errors;
+    HDF5ErrorStackSuppressor supress_hdf5_errors;
 
     hid_t h5_fa_plist = create_hdf5_file_access_plist();
 
@@ -3716,7 +3716,7 @@ hdf5_read(hid_t hdf5_id,
           Node &dest)
 {
     // disable hdf5 error stack
-    HDF5ErrorStackSupressor supress_hdf5_errors;
+    HDF5ErrorStackSuppressor supress_hdf5_errors;
 
     // get hdf5 object at path, then call read_hdf5_tree_into_conduit_node
     hid_t h5_child_obj  = H5Oopen(hdf5_id,
@@ -3831,7 +3831,7 @@ hdf5_read(hid_t hdf5_id,
           Node &dest)
 {
     // disable hdf5 error stack
-    HDF5ErrorStackSupressor supress_hdf5_errors;
+    HDF5ErrorStackSuppressor supress_hdf5_errors;
 
     read_hdf5_tree_into_conduit_node(hdf5_id,
                                      "",
@@ -3861,7 +3861,7 @@ hdf5_read_info(hid_t hdf5_id,
           Node &dest)
 {
     // disable hdf5 error stack
-    HDF5ErrorStackSupressor supress_hdf5_errors;
+    HDF5ErrorStackSuppressor supress_hdf5_errors;
 
     // get hdf5 object at path, then call read_hdf5_tree_into_conduit_node
     hid_t h5_child_obj  = H5Oopen(hdf5_id,
@@ -3976,7 +3976,7 @@ hdf5_read_info(hid_t hdf5_id,
           Node &dest)
 {
     // disable hdf5 error stack
-    HDF5ErrorStackSupressor supress_hdf5_errors;
+    HDF5ErrorStackSuppressor supress_hdf5_errors;
 
     read_hdf5_tree_into_conduit_node(hdf5_id,
                                      "",
@@ -3994,7 +3994,7 @@ hdf5_has_path(hid_t hdf5_id,
               const std::string &hdf5_path)
 {
     // disable hdf5 error stack
-    HDF5ErrorStackSupressor supress_hdf5_errors;
+    HDF5ErrorStackSuppressor supress_hdf5_errors;
 
     int res = H5Lexists(hdf5_id,hdf5_path.c_str(),H5P_DEFAULT);
 
@@ -4018,7 +4018,7 @@ hdf5_remove_path(hid_t hdf5_id,
                  const std::string &hdf5_path)
 {
     // disable hdf5 error stack
-    HDF5ErrorStackSupressor supress_hdf5_errors;
+    HDF5ErrorStackSuppressor supress_hdf5_errors;
 
     CONDUIT_CHECK_HDF5_ERROR_WITH_FILE_AND_REF_PATH(H5Ldelete(hdf5_id,
                                                               hdf5_path.c_str(),
@@ -4039,7 +4039,7 @@ bool
 is_hdf5_file(const std::string &file_path)
 {
     // disable hdf5 error stack
-    HDF5ErrorStackSupressor supress_hdf5_errors;
+    HDF5ErrorStackSuppressor supress_hdf5_errors;
 
     bool res = false;
     // open the file for read to check if it is valid hdf5
@@ -4068,7 +4068,7 @@ void hdf5_group_list_child_names(hid_t hdf5_id,
                                  std::vector<std::string> &res)
 {
     // disable hdf5 error stack
-    HDF5ErrorStackSupressor supress_hdf5_errors;
+    HDF5ErrorStackSuppressor supress_hdf5_errors;
 
     res.clear();
     // first, hdf5_id + path must be a group in order to have children

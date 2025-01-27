@@ -60,3 +60,8 @@ find_package(caliper REQUIRED
 
 set(CALIPER_FOUND TRUE)
 set(CONDUIT_USE_CALIPER TRUE)
+
+if(CONDUIT_ENABLE_TESTS AND WIN32 AND BUILD_SHARED_LIBS)
+    # if we are running tests with dlls, we need path to dlls
+    list(APPEND CONDUIT_TPL_DLL_PATHS ${CALIPER_DIR}/bin/)
+endif()
