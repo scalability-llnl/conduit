@@ -24,7 +24,8 @@ TEST(conduit_array, basic_construction)
     void *data1_ptr = &data1[0];
     const void *cdata2_ptr = &data2[0];
 
-    Node data1_node(DataType::int8(10), data1_ptr, true);
+    Node data1_node;
+    data1_node.set(DataType::int8(10), data1_ptr);
 
     ExecutionArray<int8> da_1(data1_node);
 
@@ -35,46 +36,43 @@ TEST(conduit_array, basic_construction)
         EXPECT_EQ(8,da_1[i]);
     }
 
-    // Node cdata2_node;
-    // cdata2_node.set(DataType::int8(10), cdata2_ptr);
+    Node cdata2_node;
+    cdata2_node.set(DataType::int8(10), cdata2_ptr);
 
-    // ExecutionArray<int8> da_2(cdata2_node);
+    ExecutionArray<int8> da_2(cdata2_node);
 
-    // std::cout << da_2.to_string() << std::endl;
+    std::cout << da_2.to_string() << std::endl;
 
-    // for(index_t i=0;i<10;i++)
-    // {
-    //     EXPECT_EQ(-8,da_2[i]);
-    // }
+    for(index_t i=0;i<10;i++)
+    {
+        EXPECT_EQ(-8,da_2[i]);
+    }
 
-    // ExecutionArray<int8> da_3(da_1);
-    // for(index_t i=0;i<10;i++)
-    // {
-    //     EXPECT_EQ(8,da_3[i]);
-    // }
+    ExecutionArray<int8> da_3(da_1);
+    for(index_t i=0;i<10;i++)
+    {
+        EXPECT_EQ(8,da_3[i]);
+    }
 
-    // da_3[0] = 16;
+    da_3[0] = 16;
 
-    // std::cout << da_3.to_string() << std::endl;
-    // std::cout << da_1.to_string() << std::endl;
+    da_3 = da_2;
 
-    // da_3 = da_2;
+    for(index_t i=0;i<10;i++)
+    {
+        EXPECT_EQ(-8,da_2[i]);
+    }
 
-    // for(index_t i=0;i<10;i++)
-    // {
-    //     EXPECT_EQ(-8,da_2[i]);
-    // }
+    da_3[0] = -16;
 
-    // da_3[0] = -16;
+    std::cout << da_3.to_string() << std::endl;
 
-    // std::cout << da_3.to_string() << std::endl;
-
-    // // test other variants of to_string and to stream, etc
-    // da_3.to_string_stream(std::cout);
-    // da_3.to_json_stream(std::cout);
+    // test other variants of to_string and to stream, etc
+    da_3.to_string_stream(std::cout);
+    da_3.to_json_stream(std::cout);
 
     // EXPECT_EQ(16,data1[0]);
-    // // EXPECT_EQ(-16,data2[0]);
+    // EXPECT_EQ(-16,data2[0]);
 }
 
 // //-----------------------------------------------------------------------------

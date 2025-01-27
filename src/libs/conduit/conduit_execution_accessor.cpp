@@ -77,7 +77,7 @@ ExecutionAccessor<T>::ExecutionAccessor(Node &node)
 //---------------------------------------------------------------------------//
 template <typename T> 
 ExecutionAccessor<T>::ExecutionAccessor(const Node &node)
-: m_node_ptr(&node),
+: m_node_ptr(const_cast<Node*>(&node)),
   m_other_ptr(nullptr),
   m_other_dtype(DataType::empty()),
   m_do_i_own_it(false),
