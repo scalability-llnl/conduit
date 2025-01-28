@@ -319,8 +319,8 @@ forall(const int& begin,
 template <typename Kernel>
 inline void
 forall<OpenMPExec, Kernel>(const int& begin,
-                   const int& end,
-                   Kernel&& kernel) noexcept
+                           const int& end,
+                           Kernel&& kernel) noexcept
 {
     omp_forall_exec(begin, end, std::forward<Kernel>(kernel));
 }

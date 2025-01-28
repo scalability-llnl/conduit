@@ -212,94 +212,119 @@ TEST(conduit_execution, justin_fun)
 {
     std::cout << "forall cases!" << std::endl;
 
-    ExecutionPolicy serial = ExecutionPolicy::serial();
-    ExecutionPolicy openmp = (ExecutionPolicy::is_openmp_enabled() ? 
-                                                  ExecutionPolicy::openmp() :
-                                                  ExecutionPolicy::serial());
-    ExecutionPolicy device = (ExecutionPolicy::is_device_enabled() ? 
-                                                  ExecutionPolicy::device() :
-                                                  ExecutionPolicy::serial());
-
-    int size = 4;
-
-    conduit::execution::forall(serial, 0, size, [=] (int i)
-    {
-       std::cout << i << std::endl;
-    });
-
-    conduit::execution::forall(openmp, 0, size, [=] (int i)
-    {
-       std::cout << i << std::endl;
-    });
-
-    conduit::execution::forall(device, 0, size, [=] (int i)
-    {
-       std::cout << i << std::endl;
-    });
-
-    std::cout << "functor cases!" << std::endl;
-
+    const int size = 4;
     MyFunctor func;
     func.size = size;
-    conduit::execution::dispatch(serial, func);
-    std::cout << func.res << std::endl;
-
-    conduit::execution::dispatch(openmp, func);
-    std::cout << func.res << std::endl;
-
-    conduit::execution::dispatch(device, func);
-    std::cout << func.res << std::endl;
-
     MySpecialFunctor sfunc;
     sfunc.size = 4;
-    conduit::execution::dispatch(serial, sfunc);
-    std::cout << func.res << std::endl;
 
-    conduit::execution::dispatch(openmp, sfunc);
-    std::cout << func.res << std::endl;
-
-    conduit::execution::dispatch(device, sfunc);
-    std::cout << func.res << std::endl;
-
-    std::cout << "C++ 20" << std::endl;
-
-    int res =0;
-    /// c++ 20 allows us to double lambda instead of a functor
-
-    // apparently this works just fine with cpp14...?
-
-    conduit::execution::dispatch(serial, [&] <typename ComboPolicyTag>(ComboPolicyTag &exec)
+    if (ExecutionPolicy::is_serial_enabled())
     {
-        using thetag = typename ComboPolicyTag::for_policy;
-        MySpecialClass<thetag> s(10);
-        conduit::execution::forall<thetag>(0, size, [=] (int i)
-        {
-            s.exec(i);
-        });
-        res = 10;
-    });
+        ExecutionPolicy serial = ExecutionPolicy::serial();
 
-    conduit::execution::dispatch(openmp, [&] <typename ComboPolicyTag>(ComboPolicyTag &exec)
-    {
-        using thetag = typename ComboPolicyTag::for_policy;
-        MySpecialClass<thetag> s(10);
-        conduit::execution::forall<thetag>(0, size, [=] (int i)
+        conduit::execution::forall(serial, 0, size, [=] (int i)
         {
-            s.exec(i);
+           std::cout << i << std::endl;
         });
-        res = 10;
-    });
 
-    conduit::execution::dispatch(device, [&] <typename ComboPolicyTag>(ComboPolicyTag &exec)
-    {
-        using thetag = typename ComboPolicyTag::for_policy;
-        MySpecialClass<thetag> s(10);
-        conduit::execution::forall<thetag>(0, size, [=] (int i)
+        std::cout << "functor cases!" << std::endl;
+
+        conduit::execution::dispatch(serial, func);
+        std::cout << func.res << std::endl;
+
+        conduit::execution::dispatch(serial, sfunc);
+        std::cout << func.res << std::endl;
+
+        std::cout << "C++ 20" << std::endl;
+
+        int res =0;
+        /// c++ 20 allows us to double lambda instead of a functor
+
+        // apparently this works just fine with cpp14...?
+
+        conduit::execution::dispatch(serial, [&] <typename ComboPolicyTag>(ComboPolicyTag &exec)
         {
-            s.exec(i);
+            using thetag = typename ComboPolicyTag::for_policy;
+            MySpecialClass<thetag> s(10);
+            conduit::execution::forall<thetag>(0, size, [=] (int i)
+            {
+                s.exec(i);
+            });
+            res = 10;
         });
-        res = 10;
-    });
+    }
+
+    if (ExecutionPolicy::is_openmp_enabled())
+    {
+        ExecutionPolicy openmp = ExecutionPolicy::openmp();
+
+        conduit::execution::forall(openmp, 0, size, [=] (int i)
+        {
+           std::cout << i << std::endl;
+        });
+
+        std::cout << "functor cases!" << std::endl;
+
+        conduit::execution::dispatch(openmp, func);
+        std::cout << func.res << std::endl;
+
+        conduit::execution::dispatch(openmp, sfunc);
+        std::cout << func.res << std::endl;
+
+        std::cout << "C++ 20" << std::endl;
+
+        int res =0;
+        /// c++ 20 allows us to double lambda instead of a functor
+
+        // apparently this works just fine with cpp14...?
+
+        conduit::execution::dispatch(openmp, [&] <typename ComboPolicyTag>(ComboPolicyTag &exec)
+        {
+            using thetag = typename ComboPolicyTag::for_policy;
+            MySpecialClass<thetag> s(10);
+            conduit::execution::forall<thetag>(0, size, [=] (int i)
+            {
+                s.exec(i);
+            });
+            res = 10;
+        });
+    }
+
+    if (ExecutionPolicy::is_device_enabled())
+    {
+        ExecutionPolicy device = ExecutionPolicy::device();
+
+        conduit::execution::forall(device, 0, size, [=] (int i)
+        {
+           std::cout << i << std::endl;
+        });
+
+        std::cout << "functor cases!" << std::endl;
+
+        conduit::execution::dispatch(device, func);
+        std::cout << func.res << std::endl;
+
+        conduit::execution::dispatch(device, sfunc);
+        std::cout << func.res << std::endl;
+
+        std::cout << "C++ 20" << std::endl;
+
+        int res =0;
+        /// c++ 20 allows us to double lambda instead of a functor
+
+        // apparently this works just fine with cpp14...?
+
+        conduit::execution::dispatch(device, [&] <typename ComboPolicyTag>(ComboPolicyTag &exec)
+        {
+            using thetag = typename ComboPolicyTag::for_policy;
+            MySpecialClass<thetag> s(10);
+            conduit::execution::forall<thetag>(0, size, [=] (int i)
+            {
+                s.exec(i);
+            });
+            res = 10;
+        });
+    }
 }
 
 
