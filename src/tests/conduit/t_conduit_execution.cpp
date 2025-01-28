@@ -16,6 +16,7 @@
 #include "gtest/gtest.h"
 
 using namespace conduit;
+using conduit::execution::ExecutionPolicy;
 
 void *device_alloc(index_t bytes)
 {
@@ -120,7 +121,7 @@ TEST(conduit_execution, test_forall)
     index_t host_vals[size];
     index_t *dev_vals_ptr = static_cast<index_t*>(device_alloc(sizeof(index_t) * size));
 
-    conduit::execution::ExecutionPolicy serial = conduit::execution::ExecutionPolicy::serial();
+    ExecutionPolicy serial = ExecutionPolicy::serial();
     conduit::execution::forall(serial, 0, size, [=](index_t i)
     {
         dev_vals_ptr[i] = i;
@@ -211,13 +212,13 @@ TEST(conduit_execution, justin_fun)
 {
     std::cout << "forall cases!" << std::endl;
 
-    conduit::execution::ExecutionPolicy serial = conduit::execution::ExecutionPolicy::serial();
-#if defined(CONDUIT_USE_OPENMP)
-    conduit::execution::ExecutionPolicy openmp = conduit::execution::ExecutionPolicy::openmp();
-#endif
-#if defined(CONDUIT_USE_RAJA)
-    conduit::execution::ExecutionPolicy device = conduit::execution::ExecutionPolicy::device();
-#endif
+    ExecutionPolicy serial = ExecutionPolicy::serial();
+    ExecutionPolicy openmp = (ExecutionPolicy::is_openmp_enabled() ? 
+                                                  ExecutionPolicy::openmp() :
+                                                  ExecutionPolicy::serial());
+    ExecutionPolicy device = (ExecutionPolicy::is_device_enabled() ? 
+                                                  ExecutionPolicy::device() :
+                                                  ExecutionPolicy::serial());
 
     int size = 4;
 
@@ -226,19 +227,15 @@ TEST(conduit_execution, justin_fun)
        std::cout << i << std::endl;
     });
 
-#if defined(CONDUIT_USE_OPENMP)
     conduit::execution::forall(openmp, 0, size, [=] (int i)
     {
        std::cout << i << std::endl;
     });
-#endif
 
-#if defined(CONDUIT_USE_RAJA)
     conduit::execution::forall(device, 0, size, [=] (int i)
     {
        std::cout << i << std::endl;
     });
-#endif
 
     std::cout << "functor cases!" << std::endl;
 
@@ -247,30 +244,22 @@ TEST(conduit_execution, justin_fun)
     conduit::execution::dispatch(serial, func);
     std::cout << func.res << std::endl;
 
-#if defined(CONDUIT_USE_OPENMP)
     conduit::execution::dispatch(openmp, func);
     std::cout << func.res << std::endl;
-#endif
 
-#if defined(CONDUIT_USE_RAJA)
     conduit::execution::dispatch(device, func);
     std::cout << func.res << std::endl;
-#endif
 
     MySpecialFunctor sfunc;
     sfunc.size = 4;
     conduit::execution::dispatch(serial, sfunc);
     std::cout << func.res << std::endl;
 
-#if defined(CONDUIT_USE_OPENMP)
     conduit::execution::dispatch(openmp, sfunc);
     std::cout << func.res << std::endl;
-#endif
 
-#if defined(CONDUIT_USE_RAJA)
     conduit::execution::dispatch(device, sfunc);
     std::cout << func.res << std::endl;
-#endif
 
     std::cout << "C++ 20" << std::endl;
 
@@ -290,7 +279,6 @@ TEST(conduit_execution, justin_fun)
         res = 10;
     });
 
-#if defined(CONDUIT_USE_OPENMP)
     conduit::execution::dispatch(openmp, [&] <typename ComboPolicyTag>(ComboPolicyTag &exec)
     {
         using thetag = typename ComboPolicyTag::for_policy;
@@ -301,9 +289,7 @@ TEST(conduit_execution, justin_fun)
         });
         res = 10;
     });
-#endif
 
-#if defined(CONDUIT_USE_RAJA)
     conduit::execution::dispatch(device, [&] <typename ComboPolicyTag>(ComboPolicyTag &exec)
     {
         using thetag = typename ComboPolicyTag::for_policy;
@@ -314,7 +300,6 @@ TEST(conduit_execution, justin_fun)
         });
         res = 10;
     });
-#endif
 }
 
 

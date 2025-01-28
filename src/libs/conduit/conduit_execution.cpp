@@ -186,6 +186,60 @@ ExecutionPolicy::is_device_policy() const
     return is_cuda() || is_hip();
 }
 
+//---------------------------------------------------------------------------//
+bool
+ExecutionPolicy::is_serial_enabled()
+{
+    return true;
+}
+
+//---------------------------------------------------------------------------//
+bool
+ExecutionPolicy::is_cuda_enabled()
+{
+#if defined(CONDUIT_USE_RAJA) && defined(CONDUIT_USE_CUDA)
+    return true;
+#else
+    return false;
+#endif
+}
+
+//---------------------------------------------------------------------------//
+bool
+ExecutionPolicy::is_hip_enabled()
+{
+#if defined(CONDUIT_USE_RAJA) && defined(CONDUIT_USE_HIP)
+    return true;
+#else
+    return false;
+#endif
+}
+
+//---------------------------------------------------------------------------//
+bool
+ExecutionPolicy::is_openmp_enabled()
+{
+#if defined(CONDUIT_USE_OPENMP)
+    return true;
+#else
+    return false;
+#endif
+}
+
+//---------------------------------------------------------------------------//
+bool
+ExecutionPolicy::is_host_enabled()
+{
+    return is_serial_enabled() || is_openmp_enabled();
+}
+
+//---------------------------------------------------------------------------//
+bool
+ExecutionPolicy::is_device_enabled()
+{
+    return is_cuda_enabled() || is_hip_enabled();
+}
+
 //-----------------------------------------------------------------------------
 // PolicyID to string and string to PolicyID
 //-----------------------------------------------------------------------------

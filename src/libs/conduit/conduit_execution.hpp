@@ -117,19 +117,29 @@ public:
 //-----------------------------------------------------------------------------
 // Getters and info methods.
 //-----------------------------------------------------------------------------
-    PolicyID    policy_id()        const { return m_policy_id; }
-    std::string policy_name()      const { return policy_id_to_name(m_policy_id); }
+    PolicyID    policy_id()         const { return m_policy_id; }
+    std::string policy_name()       const { return policy_id_to_name(m_policy_id); }
 
-    // these methods ask questions about the chosen policy
-    bool        is_empty()         const;
-    bool        is_serial()        const;
-    bool        is_cuda()          const;
-    bool        is_hip()           const;
-    bool        is_openmp()        const;
+    // these methods answer questions about the chosen policy
+    bool        is_empty()          const;
+    bool        is_serial()         const;
+    bool        is_cuda()           const;
+    bool        is_hip()            const;
+    bool        is_openmp()         const;
 
-    // these methods ask questions about where the policy can execute
-    bool        is_host_policy()   const;
-    bool        is_device_policy() const;
+    // these methods answer questions about where the policy can execute
+    bool        is_host_policy()    const;
+    bool        is_device_policy()  const;
+
+    // these methods answer questions about which policies are able to be instantiated
+    static bool is_serial_enabled();
+    static bool is_cuda_enabled();
+    static bool is_hip_enabled();
+    static bool is_openmp_enabled();
+
+    // these methods answer questions about which places we can instantiate policies for
+    static bool is_host_enabled();
+    static bool is_device_enabled();
 
 //-----------------------------------------------------------------------------
 // Helpers to convert PolicyID Enum Values to human readable strings and 
