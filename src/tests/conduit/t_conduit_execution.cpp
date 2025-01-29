@@ -207,8 +207,7 @@ TEST(conduit_execution, test_forall)
 // }
 
 //-----------------------------------------------------------------------------
-// TEST(conduit_execution, cpp_magic_tests)
-TEST(conduit_execution, justin_fun)
+TEST(conduit_execution, for_all_and_dispatch)
 {
     std::cout << "forall cases!" << std::endl;
 
@@ -218,21 +217,19 @@ TEST(conduit_execution, justin_fun)
     MySpecialFunctor sfunc;
     sfunc.size = 4;
 
-    if (ExecutionPolicy::is_serial_enabled())
+    auto test_exec_policy = [&](ExecutionPolicy policy)
     {
-        ExecutionPolicy serial = ExecutionPolicy::serial();
-
-        conduit::execution::forall(serial, 0, size, [=] (int i)
+        conduit::execution::forall(policy, 0, size, [=] (int i)
         {
-           std::cout << i << std::endl;
+            std::cout << i << std::endl;
         });
 
         std::cout << "functor cases!" << std::endl;
 
-        conduit::execution::dispatch(serial, func);
+        conduit::execution::dispatch(policy, func);
         std::cout << func.res << std::endl;
 
-        conduit::execution::dispatch(serial, sfunc);
+        conduit::execution::dispatch(policy, sfunc);
         std::cout << func.res << std::endl;
 
         std::cout << "C++ 20" << std::endl;
@@ -242,7 +239,7 @@ TEST(conduit_execution, justin_fun)
 
         // apparently this works just fine with cpp14...?
 
-        conduit::execution::dispatch(serial, [&] <typename ComboPolicyTag>(ComboPolicyTag &exec)
+        conduit::execution::dispatch(policy, [&] <typename ComboPolicyTag>(ComboPolicyTag &exec)
         {
             using thetag = typename ComboPolicyTag::for_policy;
             MySpecialClass<thetag> s(10);
@@ -252,78 +249,228 @@ TEST(conduit_execution, justin_fun)
             });
             res = 10;
         });
+    };
+
+    if (ExecutionPolicy::is_serial_enabled())
+    {
+        ExecutionPolicy serial = ExecutionPolicy::serial();
+        test_exec_policy(serial);
     }
 
     if (ExecutionPolicy::is_openmp_enabled())
     {
         ExecutionPolicy openmp = ExecutionPolicy::openmp();
-
-        conduit::execution::forall(openmp, 0, size, [=] (int i)
-        {
-           std::cout << i << std::endl;
-        });
-
-        std::cout << "functor cases!" << std::endl;
-
-        conduit::execution::dispatch(openmp, func);
-        std::cout << func.res << std::endl;
-
-        conduit::execution::dispatch(openmp, sfunc);
-        std::cout << func.res << std::endl;
-
-        std::cout << "C++ 20" << std::endl;
-
-        int res =0;
-        /// c++ 20 allows us to double lambda instead of a functor
-
-        // apparently this works just fine with cpp14...?
-
-        conduit::execution::dispatch(openmp, [&] <typename ComboPolicyTag>(ComboPolicyTag &exec)
-        {
-            using thetag = typename ComboPolicyTag::for_policy;
-            MySpecialClass<thetag> s(10);
-            conduit::execution::forall<thetag>(0, size, [=] (int i)
-            {
-                s.exec(i);
-            });
-            res = 10;
-        });
+        test_exec_policy(openmp);
     }
 
     if (ExecutionPolicy::is_device_enabled())
     {
         ExecutionPolicy device = ExecutionPolicy::device();
+        test_exec_policy(device);
+    }
+}
 
-        conduit::execution::forall(device, 0, size, [=] (int i)
+//-----------------------------------------------------------------------------
+TEST(conduit_execution, strawman)
+{
+    //------------------------------------------------------
+    // forall cases
+    //------------------------------------------------------
+
+    //------------------------------------------------------
+    // run on device
+    //------------------------------------------------------
+    {
+        DataAccessorHostDevice<float64> acc_src(node["src"]);
+        DataAccessorHostDevice<float64> acc_des(node["des"]);
+
+        ExecutionPolicy policy = ExecutionPolicy::device();
+
+        acc_src.use_with(policy);
+        acc_des.use_with(policy);
+
+        index_t size = acc_src.number_of_elements();
+
+        forall(policy, 0, size, [=] EXEC_LAMBDA(index_t idx)
         {
-           std::cout << i << std::endl;
+            const float64 val = 2.0 * acc_src[idx];
+            acc_des.set(idx,val);
         });
+        DEVICE_ERROR_CHECK();
 
-        std::cout << "functor cases!" << std::endl;
+        // sync values to node["des"]
+        // (no op if node["des"] was originally device memory)
+        acc_des.sync(node["des"]); 
+    }
 
-        conduit::execution::dispatch(device, func);
-        std::cout << func.res << std::endl;
+    //------------------------------------------------------
+    // run on device, 
+    // result stays on device and is owned by node["des"],
+    // even if not on the device before hand
+    //------------------------------------------------------
+    {
+        DataAccessorHostDevice<float64> acc_src(node["src"]);
+        DataAccessorHostDevice<float64> acc_des(node["des"]);
 
-        conduit::execution::dispatch(device, sfunc);
-        std::cout << func.res << std::endl;
+        ExecutionPolicy policy = ExecutionPolicy::device();
 
-        std::cout << "C++ 20" << std::endl;
+        acc_src.use_with(policy);
+        acc_des.use_with(policy);
 
-        int res =0;
-        /// c++ 20 allows us to double lambda instead of a functor
+        index_t size = acc_src.number_of_elements();
 
-        // apparently this works just fine with cpp14...?
-
-        conduit::execution::dispatch(device, [&] <typename ComboPolicyTag>(ComboPolicyTag &exec)
+        forall(policy, 0, size, [=] EXEC_LAMBDA(index_t idx)
         {
-            using thetag = typename ComboPolicyTag::for_policy;
-            MySpecialClass<thetag> s(10);
-            conduit::execution::forall<thetag>(0, size, [=] (int i)
+            const float64 val = 2.0 * acc_src[idx];
+            acc_des.set(idx,val);
+        });
+        DEVICE_ERROR_CHECK();
+
+        // move results to be owned by node["des"]
+        // (no op if node["des"] was originally device memory)
+        acc_des.move(node["des"]); 
+    }
+
+    //------------------------------------------------------
+    // run where the src data is
+    //------------------------------------------------------
+    {
+        DataAccessorHostDevice<float64> acc_src(node["src"]);
+        DataAccessorHostDevice<float64> acc_des(node["des"]);
+
+        ExecutionPolicy policy = acc_src.active_space().execution_policy();
+        acc_des.use_with(policy);
+        acc_des.use_with(policy);
+
+        index_t size = acc_src.number_of_elements();
+
+        forall(policy, 0, size, [=] EXEC_LAMBDA(index_t idx)
+        {
+            const float64 val = 2.0 * acc_src[idx];
+            acc_des.set(idx,val);
+        });
+        DEVICE_ERROR_CHECK();
+
+        // sync values to node["des"], 
+        // (no op if node["des"] was originally in 
+        //  same memory space as node["src"] )
+        acc_des.sync(node["des"]); 
+    }
+
+    //------------------------------------------------------
+    // more complex cases
+    //------------------------------------------------------
+
+    //------------------------------------------------------
+    // complex run on device 
+    // double lambda forwarding concrete template tag
+    // for use in lambda
+    //
+    // ( requires c++ 20 b/c of templated lambda)
+    //------------------------------------------------------
+    {
+        DataAccessorHostDevice<float64> acc_src(node["src"]);
+        DataAccessorHostDevice<float64> acc_des(node["des"]);
+
+        ExecutionPolicy policy = ExecutionPolicy::device();
+        acc_des.use_with(policy);
+        acc_des.use_with(policy);
+
+        index_t size = acc_src.number_of_elements();
+
+        index_t min_loc = -1;
+        float64 min_val = 0;
+
+        dispatch(policy, [&] <typename Exec>(Exec &exec)
+        {
+            float64 identity = std::numeric_limits<float64>::max();
+            using for_policy    = typename Exec::for_policy;
+            using reduce_policy = typename Exec::reduce_policy;
+
+            ReduceMinLoc<reduce_policy,float64> reducer(identity,-1);
+
+            forall<for_policy>(0, size, [=] EXEC_LAMBDA (int i)
             {
-                s.exec(i);
+                const float64 val = 2.0 * acc_src[idx];
+                reducer.minloc(val,i);
+                acc_des.set(idx,val);
             });
-            res = 10;
+            DEVICE_ERROR_CHECK();
+
+            min_val = reducer.get();
+            min_loc = reducer.getLoc();
         });
+
+        // sync values to node["des"], 
+        // (no op if node["des"] was originally in
+        //  same memory space as node["src"] )
+        acc_des.sync(node["des"]); 
+    }
+
+    //------------------------------------------------------
+    // complex run on device using functor
+    // (functor implementation)
+    //------------------------------------------------------
+    struct ExecFunctor
+    {
+        float64 min_val;
+        index_t min_loc;
+
+        DataAccessorHostDevice<float64> acc_src;
+        DataAccessorHostDevice<float64> acc_des;
+
+        template<typename Exec>
+        void operator()(Exec &exec)
+        {
+            float64 identity = std::numeric_limits<float64>::max();
+            using for_policy    = typename Exec::for_policy;
+            using reduce_policy = typename Exec::reduce_policy;
+
+            ReduceMinLoc<reduce_policy,float64> reducer(identity, -1);
+
+            forall<for_policy>(0, size, [=] (int i)
+            {
+                const float64 val = 2.0 * acc_src[idx];
+                reducer.minloc(val,i);
+                acc_des.set(idx,val);
+            });
+            DEVICE_ERROR_CHECK();
+
+            min_val = reducer.get();
+            min_loc = reducer.getLoc();
+        }
+    };
+
+    //------------------------------------------------------
+    // complex run on device using functor 
+    // (functor dispatch)
+    //------------------------------------------------------
+    {
+        DataAccessorHostDevice<float64> acc_src(node["src"]);
+        DataAccessorHostDevice<float64> acc_des(node["des"]);
+
+        ExecutionPolicy policy = ExecutionPolicy::device();
+        acc_des.use_with(policy);
+        acc_des.use_with(policy);
+
+        index_t size = acc_src.number_of_elements();
+
+        ExecFunctor f();
+
+        // init functor
+        f.acc_src = acc_src;
+        f.acc_des = acc_des;
+
+        dispatch(policy,f);
+
+        // get results stored in functor
+        float64 min_val = f.min_val;
+        index_t min_loc = f.min_loc;
+
+        // sync values to node["des"], 
+        // (no op if node["des"] was originally in
+        //  same memory space as node["src"])
+        acc_des.sync(node["des"]); 
     }
 }
 
