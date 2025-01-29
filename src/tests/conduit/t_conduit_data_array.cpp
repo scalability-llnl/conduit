@@ -16,7 +16,7 @@
 using namespace conduit;
 
 //-----------------------------------------------------------------------------
-TEST(conduit_array, basic_construction)
+TEST(conduit_data_array, basic_construction)
 {
     std::vector<int8> data1(10,8);
     std::vector<int8> data2(10,-8);
@@ -70,7 +70,7 @@ TEST(conduit_array, basic_construction)
 }
 
 //-----------------------------------------------------------------------------
-TEST(conduit_array, array_stride_int8)
+TEST(conduit_data_array, array_stride_int8)
 {
     std::vector<int8> data(20,0);
 
@@ -144,7 +144,7 @@ TEST(conduit_array, array_stride_int8)
 }
 
 //-----------------------------------------------------------------------------
-TEST(conduit_array, array_stride_int8_external)
+TEST(conduit_data_array, array_stride_int8_external)
 {
     std::vector<int64> data(20,0);
 
@@ -187,7 +187,7 @@ TEST(conduit_array, array_stride_int8_external)
 
 
 //-----------------------------------------------------------------------------
-TEST(conduit_array, set_using_ptrs)
+TEST(conduit_data_array, set_using_ptrs)
 {
     //in this case we are  using std vectors to init data conveniently
     // we are actually testing the pointer set cases
@@ -304,7 +304,7 @@ TEST(conduit_array, set_using_ptrs)
 
 
 //-----------------------------------------------------------------------------
-TEST(conduit_array, set_using_data_array)
+TEST(conduit_data_array, set_using_data_array)
 {
     std::vector<int8>  v_int8(10,-8);
     std::vector<int16> v_int16(10,-16);
@@ -430,7 +430,7 @@ TEST(conduit_array, set_using_data_array)
 
 
 //-----------------------------------------------------------------------------
-TEST(conduit_array, set_using_exec_array)
+TEST(conduit_data_array, set_using_exec_array)
 {
     std::vector<int8>  v_int8(10,-8);
     std::vector<int16> v_int16(10,-16);
@@ -578,7 +578,7 @@ TEST(conduit_array, set_using_exec_array)
 }
 
 //-----------------------------------------------------------------------------
-TEST(conduit_array, set_single_element)
+TEST(conduit_data_array, set_single_element)
 {
     std::vector<int8>  v_int8(10,-8);
     std::vector<int16> v_int16(10,-16);
@@ -648,7 +648,7 @@ TEST(conduit_array, set_single_element)
 }
 
 //-----------------------------------------------------------------------------
-TEST(conduit_array, set_using_data_accessor)
+TEST(conduit_data_array, set_using_data_accessor)
 {
     std::vector<int8>  v_int8(10,-8);
     std::vector<int16> v_int16(10,-16);
@@ -773,7 +773,7 @@ TEST(conduit_array, set_using_data_accessor)
 
 
 //-----------------------------------------------------------------------------
-TEST(conduit_array, set_using_exec_accessor)
+TEST(conduit_data_array, set_using_exec_accessor)
 {
     std::vector<int8>  v_int8(10,-8);
     std::vector<int16> v_int16(10,-16);
@@ -920,7 +920,7 @@ TEST(conduit_array, set_using_exec_accessor)
 }
 
 //-----------------------------------------------------------------------------
-TEST(conduit_array, set_using_std_vectors)
+TEST(conduit_data_array, set_using_std_vectors)
 {
     std::vector<int8>  v_int8(10,-8);
     std::vector<int16> v_int16(10,-16);
@@ -1032,7 +1032,7 @@ TEST(conduit_array, set_using_std_vectors)
 }
 
 //-----------------------------------------------------------------------------
-TEST(conduit_array, print_bells_and_whistles)
+TEST(conduit_data_array, print_bells_and_whistles)
 {
     Node n;
 
@@ -1094,7 +1094,7 @@ TEST(conduit_array, print_bells_and_whistles)
 }
 
 //-----------------------------------------------------------------------------
-TEST(conduit_array, fill)
+TEST(conduit_data_array, fill)
 {
     int num_ele = 5;
 
@@ -1192,7 +1192,7 @@ TEST(conduit_array, fill)
 }
 
 //-----------------------------------------------------------------------------
-TEST(conduit_array, compact_to_bytes)
+TEST(conduit_data_array, compact_to_bytes)
 {
     std::vector<int64> vals(8,0);
 
@@ -1220,7 +1220,7 @@ TEST(conduit_array, compact_to_bytes)
 }
 
 //-----------------------------------------------------------------------------
-TEST(conduit_array, summary_stats)
+TEST(conduit_data_array, summary_stats)
 {
     std::vector<int64>    v_int64(3,-64);
     std::vector<uint64>   v_uint64(3,64);
@@ -1256,7 +1256,7 @@ TEST(conduit_array, summary_stats)
 
 
 //-----------------------------------------------------------------------------
-TEST(conduit_array, summary_print)
+TEST(conduit_data_array, summary_print)
 {
     std::vector<int64> v_int64(5,-64);
     int64_array   va_int64(&v_int64[0],DataType::int64(5));
@@ -1328,7 +1328,7 @@ TEST(conduit_array, summary_print)
 
 
 //-----------------------------------------------------------------------------
-TEST(conduit_array, cxx_11_init_lists)
+TEST(conduit_data_array, cxx_11_init_lists)
 {
     std::vector<int8>  v_int8(3,-8);
     std::vector<int16> v_int16(3,-16);

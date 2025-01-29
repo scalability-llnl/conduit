@@ -131,6 +131,8 @@ public:
 //-----------------------------------------------------------------------------
 // Setters
 //-----------------------------------------------------------------------------
+    // TODO I think we want the entire menu of setters (and tests for them)
+
     /// signed integer arrays via DataArray
     void            set(const DataArray<int8>    &values);
     void            set(const DataArray<int16>   &values);
