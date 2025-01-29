@@ -451,7 +451,7 @@ TEST(conduit_exec_array, set_using_data_array)
 }
 
 //-----------------------------------------------------------------------------
-TEST(conduit_array, set_using_data_accessor)
+TEST(conduit_exec_array, set_using_data_accessor)
 {
     std::vector<int8>  v_int8(10,-8);
     std::vector<int16> v_int16(10,-16);
