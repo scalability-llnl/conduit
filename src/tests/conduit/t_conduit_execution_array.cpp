@@ -978,12 +978,12 @@ TEST(conduit_exec_array, fill)
     va_int8.fill((int8)   -1);
     va_int16.fill((int16) -1);
     va_int32.fill((int32) -1);
-    va_int64.fill((int32) -1);
+    va_int64.fill((int64) -1);
 
     va_uint8.fill((uint8)   1);
     va_uint16.fill((uint16) 1);
     va_uint32.fill((uint32) 1);
-    va_uint64.fill((uint32) 1);
+    va_uint64.fill((uint64) 1);
 
     va_float32.fill((float32) 1.0);
     va_float64.fill((float64) 1.0);
