@@ -1079,682 +1079,711 @@ TEST(conduit_exec_array, summary_stats)
 }
 
 
-// //-----------------------------------------------------------------------------
-// TEST(conduit_exec_array, summary_print)
-// {
-//     std::vector<int64> v_int64(5,-64);
-//     int64_array   va_int64(&v_int64[0],DataType::int64(5));
-
-//     va_int64.set({1,2,3,4,5});
-
-//     // default (thresh is 5)
-//     std::string v = va_int64.to_summary_string();
-//     std::cout << v << std::endl;
-//     EXPECT_EQ(v,"[1, 2, 3, 4, 5]");
-
-//     // above threshold, even # to display
-//     v = va_int64.to_summary_string(2);
-//     std::cout << v << std::endl;
-//     EXPECT_EQ(v,"[1, ..., 5]");
-
-//     // above threshold, od # to display
-//     v = va_int64.to_summary_string(3);
-//     std::cout << v << std::endl;
-//     EXPECT_EQ(v,"[1, 2, ..., 5]");
-
-//     // above threshold, threshold is much larger than # of eles
-//     v = va_int64.to_summary_string(64);
-//     std::cout << v << std::endl;
-//     EXPECT_EQ(v,"[1, 2, 3, 4, 5]");
-
-//     // above threshold, threshold is negative
-//     v = va_int64.to_summary_string(-1);
-//     std::cout << v << std::endl;
-//     EXPECT_EQ(v,"[1, 2, 3, 4, 5]");
-
-
-//     // single ele array
-//     std::vector<int64> v_int64_single(1,-1);
-//     int64_array   va_int64_single(&v_int64[0],DataType::int64(1));
-
-//     va_int64_single.set({1});
-
-//     v = va_int64_single.to_summary_string();
-//     std::cout << v << std::endl;
-//     EXPECT_EQ(v,"1");
-
-//     v = va_int64_single.to_summary_string(64);
-//     std::cout << v << std::endl;
-//     EXPECT_EQ(v,"1");
-
-//     v = va_int64_single.to_summary_string(-1);
-//     std::cout << v << std::endl;
-//     EXPECT_EQ(v,"1");
-
-
-//     // single empty array
-//     std::vector<int64> v_int64_empty(0,0);
-//     int64_array   va_int64_empty(&v_int64[0],DataType::int64(0));
-
-//     v = va_int64_empty.to_summary_string();
-//     std::cout << v << std::endl;
-//     EXPECT_EQ(v,"[]");
-
-//     v = va_int64_empty.to_summary_string(64);
-//     std::cout << v << std::endl;
-//     EXPECT_EQ(v,"[]");
-
-//     v = va_int64_empty.to_summary_string(-1);
-//     std::cout << v << std::endl;
-//     EXPECT_EQ(v,"[]");
-
-// }
-
-
-// //-----------------------------------------------------------------------------
-// TEST(conduit_exec_array, cxx_11_init_lists)
-// {
-//     std::vector<int8>  v_int8(3,-8);
-//     std::vector<int16> v_int16(3,-16);
-//     std::vector<int32> v_int32(3,-32);
-//     std::vector<int64> v_int64(3,-64);
-
-//     std::vector<uint8>  v_uint8(3,8);
-//     std::vector<uint16> v_uint16(3,16);
-//     std::vector<uint32> v_uint32(3,32);
-//     std::vector<uint64> v_uint64(3,64);
-
-//     std::vector<float32>  v_float32(3,32.0);
-//     std::vector<float64>  v_float64(3,64.0);
-
-//     int8_array    va_int8(&v_int8[0],DataType::int8(3));
-//     int16_array   va_int16(&v_int16[0],DataType::int16(3));
-//     int32_array   va_int32(&v_int32[0],DataType::int32(3));
-//     int64_array   va_int64(&v_int64[0],DataType::int64(3));
-
-//     uint8_array   va_uint8(&v_uint8[0],DataType::uint8(3));
-//     uint16_array  va_uint16(&v_uint16[0],DataType::uint16(3));
-//     uint32_array  va_uint32(&v_uint32[0],DataType::uint32(3));
-//     uint64_array  va_uint64(&v_uint64[0],DataType::uint64(3));
-
-//     float32_array  va_float32(&v_float32[0],DataType::float32(3));
-//     float64_array  va_float64(&v_float64[0],DataType::float64(3));
-
-
-//     // int 8
-//     {
-//         va_int8.set({-1,2,-3});
-//         va_int8.print();
-//         EXPECT_EQ(va_int8[0],-1);
-//         EXPECT_EQ(va_int8[1],2);
-//         EXPECT_EQ(va_int8[2],-3);
-
-//         va_int8 = {-1,2,-3};
-//         EXPECT_EQ(va_int8[0],-1);
-//         EXPECT_EQ(va_int8[1],2);
-//         EXPECT_EQ(va_int8[2],-3);
-//         va_int8.print();
-
-//         va_int8.set({1u,2u,3u});
-//         va_int8.print();
-//         EXPECT_EQ(va_int8[0],1);
-//         EXPECT_EQ(va_int8[1],2);
-//         EXPECT_EQ(va_int8[2],3);
-
-//         va_int8 = {1u,2u,3u};
-//         va_int8.print();
-//         EXPECT_EQ(va_int8[0],1);
-//         EXPECT_EQ(va_int8[1],2);
-//         EXPECT_EQ(va_int8[2],3);
-
-//         va_int8.set({-1l,2l,-3l});
-//         va_int8.print();
-//         EXPECT_EQ(va_int8[0],-1);
-//         EXPECT_EQ(va_int8[1],2);
-//         EXPECT_EQ(va_int8[2],-3);
-
-//         va_int8 = {-1l,2l,-3l};
-//         va_int8.print();
-//         EXPECT_EQ(va_int8[0],-1);
-//         EXPECT_EQ(va_int8[1],2);
-//         EXPECT_EQ(va_int8[2],-3);
-
-//         va_int8.set({1ul,2ul,3ul});
-//         EXPECT_EQ(va_int8[0],1);
-//         EXPECT_EQ(va_int8[1],2);
-//         EXPECT_EQ(va_int8[2],3);
-//         va_int8.print();
-
-//         va_int8 = {1ul,2ul,3ul};
-//         va_int8.print();
-//         EXPECT_EQ(va_int8[0],1);
-//         EXPECT_EQ(va_int8[1],2);
-//         EXPECT_EQ(va_int8[2],3);
-
-//         va_int8.set({1.0f,2.0f,3.0f});
-//         va_int8.print();
-//         va_int8 = {1.0f,2.0f,3.0f};
-//         va_int8.print();
-
-//         va_int8.set({1.0,2.0,3.0});
-//         va_int8.print();
-//         va_int8 = {1.0,2.0,3.0};
-//         va_int8.print();
-//     }
-
-
-//     // int 16
-//     {
-//         va_int16.set({-1,2,-3});
-//         va_int16.print();
-//         EXPECT_EQ(va_int16[0],-1);
-//         EXPECT_EQ(va_int16[1],2);
-//         EXPECT_EQ(va_int16[2],-3);
-
-//         va_int16 = {-1,2,-3};
-//         va_int16.print();
-//         EXPECT_EQ(va_int16[0],-1);
-//         EXPECT_EQ(va_int16[1],2);
-//         EXPECT_EQ(va_int16[2],-3);
-
-//         va_int16.set({1u,2u,3u});
-//         va_int16.print();
-//         EXPECT_EQ(va_int16[0],1);
-//         EXPECT_EQ(va_int16[1],2);
-//         EXPECT_EQ(va_int16[2],3);
-
-//         va_int16 = {1u,2u,3u};
-//         va_int16.print();
-//         EXPECT_EQ(va_int16[0],1);
-//         EXPECT_EQ(va_int16[1],2);
-//         EXPECT_EQ(va_int16[2],3);
-
-//         va_int16.set({-1l,2l,-3l});
-//         EXPECT_EQ(va_int16[0],-1);
-//         EXPECT_EQ(va_int16[1],2);
-//         EXPECT_EQ(va_int16[2],-3);
-//         va_int16.print();
-
-//         va_int16 = {-1l,2l,-3l};
-//         va_int16.print();
-//         EXPECT_EQ(va_int16[0],-1);
-//         EXPECT_EQ(va_int16[1],2);
-//         EXPECT_EQ(va_int16[2],-3);
-
-//         va_int16.set({1ul,2ul,3ul});
-//         va_int16.print();
-//         EXPECT_EQ(va_int16[0],1);
-//         EXPECT_EQ(va_int16[1],2);
-//         EXPECT_EQ(va_int16[2],3);
-
-//         va_int16 = {1ul,2ul,3ul};
-//         va_int16.print();
-//         EXPECT_EQ(va_int16[0],1);
-//         EXPECT_EQ(va_int16[1],2);
-//         EXPECT_EQ(va_int16[2],3);
-
-//         va_int16.set({1.0f,2.0f,3.0f});
-//         va_int16.print();
-//         va_int16 = {1.0f,2.0f,3.0f};
-//         va_int16.print();
-
-//         va_int16.set({1.0,2.0,3.0});
-//         va_int16.print();
-//         va_int16 = {1.0,2.0,3.0};
-//         va_int16.print();
-//     }
-
-//     // int 32
-//     {
-//         va_int32.set({-1,2,-3});
-//         va_int32.print();
-//         EXPECT_EQ(va_int32[0],-1);
-//         EXPECT_EQ(va_int32[1],2);
-//         EXPECT_EQ(va_int32[2],-3);
-
-//         va_int32 = {-1,2,-3};
-//         va_int32.print();
-//         EXPECT_EQ(va_int32[0],-1);
-//         EXPECT_EQ(va_int32[1],2);
-//         EXPECT_EQ(va_int32[2],-3);
-
-//         va_int32.set({1u,2u,3u});
-//         va_int32.print();
-//         EXPECT_EQ(va_int32[0],1);
-//         EXPECT_EQ(va_int32[1],2);
-//         EXPECT_EQ(va_int32[2],3);
-
-//         va_int32 = {1u,2u,3u};
-//         va_int32.print();
-//         EXPECT_EQ(va_int32[0],1);
-//         EXPECT_EQ(va_int32[1],2);
-//         EXPECT_EQ(va_int32[2],3);
-
-//         va_int32.set({-1l,2l,-3l});
-//         va_int32.print();
-//         EXPECT_EQ(va_int32[0],-1);
-//         EXPECT_EQ(va_int32[1],2);
-//         EXPECT_EQ(va_int32[2],-3);
-
-//         va_int32 = {-1l,2l,-3l};
-//         va_int32.print();
-//         EXPECT_EQ(va_int32[0],-1);
-//         EXPECT_EQ(va_int32[1],2);
-//         EXPECT_EQ(va_int32[2],-3);
-
-//         va_int32.set({1ul,2ul,3ul});
-//         va_int32.print();
-//         EXPECT_EQ(va_int32[0],1);
-//         EXPECT_EQ(va_int32[1],2);
-//         EXPECT_EQ(va_int32[2],3);
-
-//         va_int32 = {1ul,2ul,3ul};
-//         va_int32.print();
-//         EXPECT_EQ(va_int32[0],1);
-//         EXPECT_EQ(va_int32[1],2);
-//         EXPECT_EQ(va_int32[2],3);
-
-//         va_int32.set({1.0f,2.0f,3.0f});
-//         va_int32.print();
-//         va_int32 = {1.0f,2.0f,3.0f};
-//         va_int32.print();
-
-//         va_int32.set({1.0,2.0,3.0});
-//         va_int32.print();
-//         va_int32 = {1.0,2.0,3.0};
-//         va_int32.print();
-//     }
-
-//     // int 64
-//     {
-//         va_int64.set({-1,2,-3});
-//         va_int64.print();
-//         EXPECT_EQ(va_int64[0],-1);
-//         EXPECT_EQ(va_int64[1],2);
-//         EXPECT_EQ(va_int64[2],-3);
-
-//         va_int64 = {-1,2,-3};
-//         va_int64.print();
-//         EXPECT_EQ(va_int64[0],-1);
-//         EXPECT_EQ(va_int64[1],2);
-//         EXPECT_EQ(va_int64[2],-3);
-
-
-//         va_int64.set({1u,2u,3u});
-//         va_int64.print();
-//         EXPECT_EQ(va_int64[0],1);
-//         EXPECT_EQ(va_int64[1],2);
-//         EXPECT_EQ(va_int64[2],3);
-
-//         va_int64 = {1u,2u,3u};
-//         va_int64.print();
-//         EXPECT_EQ(va_int64[0],1);
-//         EXPECT_EQ(va_int64[1],2);
-//         EXPECT_EQ(va_int64[2],3);
-
-//         va_int64.set({-1l,2l,-3l});
-//         va_int64.print();
-//         EXPECT_EQ(va_int64[0],-1);
-//         EXPECT_EQ(va_int64[1],2);
-//         EXPECT_EQ(va_int64[2],-3);
-
-//         va_int64 = {-1l,2l,-3l};
-//         va_int64.print();
-//         EXPECT_EQ(va_int64[0],-1);
-//         EXPECT_EQ(va_int64[1],2);
-//         EXPECT_EQ(va_int64[2],-3);
-
-//         va_int64.set({1ul,2ul,3ul});
-//         va_int64.print();
-//         EXPECT_EQ(va_int64[0],1);
-//         EXPECT_EQ(va_int64[1],2);
-//         EXPECT_EQ(va_int64[2],3);
-
-//         va_int64 = {1ul,2ul,3ul};
-//         va_int64.print();
-//         EXPECT_EQ(va_int64[0],1);
-//         EXPECT_EQ(va_int64[1],2);
-//         EXPECT_EQ(va_int64[2],3);
-
-//         va_int64.set({1.0f,2.0f,3.0f});
-//         va_int64.print();
-//         va_int64 = {1.0f,2.0f,3.0f};
-//         va_int64.print();
-
-//         va_int64.set({1.0,2.0,3.0});
-//         va_int64.print();
-//         va_int64 = {1.0,2.0,3.0};
-//         va_int64.print();
-//     }
-
-//     // uint 8
-//     {
-//         va_uint8.set({1,2,3});
-//         EXPECT_EQ(va_uint8[0],1);
-//         EXPECT_EQ(va_uint8[1],2);
-//         EXPECT_EQ(va_uint8[2],3);
-//         va_uint8.print();
-
-//         va_uint8 = {1,2,3};
-//         va_uint8.print();
-//         EXPECT_EQ(va_uint8[0],1);
-//         EXPECT_EQ(va_uint8[1],2);
-//         EXPECT_EQ(va_uint8[2],3);
-
-//         va_uint8.set({1u,2u,3u});
-//         va_uint8.print();
-//         EXPECT_EQ(va_uint8[0],1);
-//         EXPECT_EQ(va_uint8[1],2);
-//         EXPECT_EQ(va_uint8[2],3);
-
-//         va_uint8 = {1u,2u,3u};
-//         va_uint8.print();
-//         EXPECT_EQ(va_uint8[0],1);
-//         EXPECT_EQ(va_uint8[1],2);
-//         EXPECT_EQ(va_uint8[2],3);
-
-//         va_uint8.set({1l,2l,3l});
-//         va_uint8.print();
-//         EXPECT_EQ(va_uint8[0],1);
-//         EXPECT_EQ(va_uint8[1],2);
-//         EXPECT_EQ(va_uint8[2],3);
-
-//         va_uint8 = {1l,2l,3l};
-//         va_uint8.print();
-//         EXPECT_EQ(va_uint8[0],1);
-//         EXPECT_EQ(va_uint8[1],2);
-//         EXPECT_EQ(va_uint8[2],3);
-
-
-//         va_uint8.set({1ul,2ul,3ul});
-//         va_uint8.print();
-//         EXPECT_EQ(va_uint8[0],1);
-//         EXPECT_EQ(va_uint8[1],2);
-//         EXPECT_EQ(va_uint8[2],3);
-
-//         va_uint8 = {1ul,2ul,3ul};
-//         va_uint8.print();
-//         EXPECT_EQ(va_uint8[0],1);
-//         EXPECT_EQ(va_uint8[1],2);
-//         EXPECT_EQ(va_uint8[2],3);
-
-//         va_uint8.set({1.0f,2.0f,3.0f});
-//         va_uint8.print();
-//         va_uint8 = {1.0f,2.0f,3.0f};
-//         va_uint8.print();
-
-//         va_uint8.set({1.0,2.0,3.0});
-//         va_uint8.print();
-//         va_uint8 = {1.0,2.0,3.0};
-//         va_uint8.print();
-//     }
-
-//     // uint 16
-//     {
-//         va_uint16.set({1,2,3});
-//         va_uint16.print();
-//         EXPECT_EQ(va_uint16[0],1);
-//         EXPECT_EQ(va_uint16[1],2);
-//         EXPECT_EQ(va_uint16[2],3);
-
-//         va_uint16 = {1,2,3};
-//         va_uint16.print();
-//         EXPECT_EQ(va_uint16[0],1);
-//         EXPECT_EQ(va_uint16[1],2);
-//         EXPECT_EQ(va_uint16[2],3);
-
-//         va_uint16.set({1u,2u,3u});
-//         va_uint16.print();
-//         EXPECT_EQ(va_uint16[0],1);
-//         EXPECT_EQ(va_uint16[1],2);
-//         EXPECT_EQ(va_uint16[2],3);
-
-//         va_uint16 = {1u,2u,3u};
-//         va_uint16.print();
-//         EXPECT_EQ(va_uint16[0],1);
-//         EXPECT_EQ(va_uint16[1],2);
-//         EXPECT_EQ(va_uint16[2],3);
-
-//         va_uint16.set({1l,2l,3l});
-//         va_uint16.print();
-//         EXPECT_EQ(va_uint16[0],1);
-//         EXPECT_EQ(va_uint16[1],2);
-//         EXPECT_EQ(va_uint16[2],3);
-
-//         va_uint16 = {1l,2l,3l};
-//         va_uint16.print();
-//         EXPECT_EQ(va_uint16[0],1);
-//         EXPECT_EQ(va_uint16[1],2);
-//         EXPECT_EQ(va_uint16[2],3);
-
-//         va_uint16.set({1ul,2ul,3ul});
-//         va_uint16.print();
-//         EXPECT_EQ(va_uint16[0],1);
-//         EXPECT_EQ(va_uint16[1],2);
-//         EXPECT_EQ(va_uint16[2],3);
-
-//         va_uint16 = {1ul,2ul,3ul};
-//         va_uint16.print();
-//         EXPECT_EQ(va_uint16[0],1);
-//         EXPECT_EQ(va_uint16[1],2);
-//         EXPECT_EQ(va_uint16[2],3);
-
-//         va_uint16.set({1.0f,2.0f,3.0f});
-//         va_uint16.print();
-//         va_uint16 = {1.0f,2.0f,3.0f};
-//         va_uint16.print();
-
-//         va_uint16.set({1.0,2.0,3.0});
-//         va_uint16.print();
-//         va_uint16 = {1.0,2.0,3.0};
-//         va_uint16.print();
-//     }
-
-//     // uint 32
-//     {
-//         va_uint32.set({1,2,3});
-//         va_uint32.print();
-//         EXPECT_EQ(va_uint32[0],1);
-//         EXPECT_EQ(va_uint32[1],2);
-//         EXPECT_EQ(va_uint32[2],3);
-
-//         va_uint32 = {1,2,3};
-//         va_uint32.print();
-//         EXPECT_EQ(va_uint32[0],1);
-//         EXPECT_EQ(va_uint32[1],2);
-//         EXPECT_EQ(va_uint32[2],3);
-
-
-//         va_uint32.set({1u,2u,3u});
-//         va_uint32.print();
-//         EXPECT_EQ(va_uint32[0],1);
-//         EXPECT_EQ(va_uint32[1],2);
-//         EXPECT_EQ(va_uint32[2],3);
-
-//         va_uint32 = {1u,2u,3u};
-//         va_uint32.print();
-//         EXPECT_EQ(va_uint32[0],1);
-//         EXPECT_EQ(va_uint32[1],2);
-//         EXPECT_EQ(va_uint32[2],3);
-
-
-//         va_uint32.set({1l,2l,3l});
-//         va_uint32.print();
-//         EXPECT_EQ(va_uint32[0],1);
-//         EXPECT_EQ(va_uint32[1],2);
-//         EXPECT_EQ(va_uint32[2],3);
-
-//         va_uint32 = {1l,2l,3l};
-//         va_uint32.print();
-//         EXPECT_EQ(va_uint32[0],1);
-//         EXPECT_EQ(va_uint32[1],2);
-//         EXPECT_EQ(va_uint32[2],3);
-
-//         va_uint32.set({1ul,2ul,3ul});
-//         va_uint32.print();
-//         EXPECT_EQ(va_uint32[0],1);
-//         EXPECT_EQ(va_uint32[1],2);
-//         EXPECT_EQ(va_uint32[2],3);
-
-//         va_uint32 = {1ul,2ul,3ul};
-//         va_uint32.print();
-//         EXPECT_EQ(va_uint32[0],1);
-//         EXPECT_EQ(va_uint32[1],2);
-//         EXPECT_EQ(va_uint32[2],3);
-
-//         va_uint32.set({1.0f,2.0f,3.0f});
-//         va_uint32.print();
-//         va_uint32 = {1.0f,2.0f,3.0f};
-//         va_uint32.print();
-
-//         va_uint32.set({1.0,2.0,3.0});
-//         va_uint32.print();
-//         va_uint32 = {1.0,2.0,3.0};
-//         va_uint32.print();
-//     }
-
-//     // uint 64
-//     {
-//         va_uint64.set({1,2,3});
-//         va_uint64.print();
-//         EXPECT_EQ(va_uint64[0],1);
-//         EXPECT_EQ(va_uint64[1],2);
-//         EXPECT_EQ(va_uint64[2],3);
-
-//         va_uint64 = {1,2,3};
-//         va_uint64.print();
-//         EXPECT_EQ(va_uint64[0],1);
-//         EXPECT_EQ(va_uint64[1],2);
-//         EXPECT_EQ(va_uint64[2],3);
-
-//         va_uint64.set({1u,2u,3u});
-//         va_uint64.print();
-//         EXPECT_EQ(va_uint64[0],1);
-//         EXPECT_EQ(va_uint64[1],2);
-//         EXPECT_EQ(va_uint64[2],3);
-
-//         va_uint64 = {1u,2u,3u};
-//         va_uint64.print();
-//         EXPECT_EQ(va_uint64[0],1);
-//         EXPECT_EQ(va_uint64[1],2);
-//         EXPECT_EQ(va_uint64[2],3);
-
-//         va_uint64.set({1l,2l,3l});
-//         va_uint64.print();
-//         EXPECT_EQ(va_uint64[0],1);
-//         EXPECT_EQ(va_uint64[1],2);
-//         EXPECT_EQ(va_uint64[2],3);
-
-//         va_uint64 = {1l,2l,3l};
-//         va_uint64.print();
-//         EXPECT_EQ(va_uint64[0],1);
-//         EXPECT_EQ(va_uint64[1],2);
-//         EXPECT_EQ(va_uint64[2],3);
-
-//         va_uint64.set({1ul,2ul,3ul});
-//         va_uint64.print();
-//         EXPECT_EQ(va_uint64[0],1);
-//         EXPECT_EQ(va_uint64[1],2);
-//         EXPECT_EQ(va_uint64[2],3);
-
-//         va_uint64 = {1ul,2ul,3ul};
-//         va_uint64.print();
-//         EXPECT_EQ(va_uint64[0],1);
-//         EXPECT_EQ(va_uint64[1],2);
-//         EXPECT_EQ(va_uint64[2],3);
-
-//         va_uint64.set({1.0f,2.0f,3.0f});
-//         va_uint64.print();
-//         va_uint64 = {1.0f,2.0f,3.0f};
-//         va_uint64.print();
-
-//         va_uint64.set({1.0,2.0,3.0});
-//         va_uint64.print();
-//         va_uint64 = {1.0,2.0,3.0};
-//         va_uint64.print();
-//     }
-
-//     // float 32
-//     {
-//         va_float32.set({-1,-2,-3});
-//         va_float32.print();
-//         va_float32 = {-1,2,-3};
-//         va_float32.print();
-
-//         va_float32.set({1u,2u,3u});
-//         va_float32.print();
-//         va_float32 = {1u,2u,3u};
-//         va_float32.print();
-
-//         va_float32.set({1l,2l,3l});
-//         va_float32.print();
-//         va_float32 = {-1l,2l,-3l};
-//         va_float32.print();
-
-//         va_float32.set({1ul,2ul,3ul});
-//         va_float32.print();
-//         va_float32 = {1ul,2ul,3ul};
-//         va_float32.print();
-
-//         va_float32.set({1.0f,2.0f,3.0f});
-//         va_float32.print();
-//         EXPECT_EQ(va_float32[0],1.0f);
-//         EXPECT_EQ(va_float32[1],2.0f);
-//         EXPECT_EQ(va_float32[2],3.0f);
-
-//         va_float32 = {1.0f,2.0f,3.0f};
-//         va_float32.print();
-//         EXPECT_EQ(va_float32[0],1.0f);
-//         EXPECT_EQ(va_float32[1],2.0f);
-//         EXPECT_EQ(va_float32[2],3.0f);
-
-//         va_float32.set({1.0,2.0,3.0});
-//         va_float32.print();
-//         va_float32 = {1.0,2.0,3.0};
-//         va_float32.print();
-//     }
-
-//     // float 64
-//     {
-//         va_float64.set({-1,-2,-3});
-//         va_float64.print();
-//         va_float64 = {-1,2,-3};
-//         va_float64.print();
-
-//         va_float64.set({1u,2u,3u});
-//         va_float64.print();
-//         va_float64 = {1u,2u,3u};
-//         va_float64.print();
-
-//         va_float64.set({1l,2l,3l});
-//         va_float64.print();
-//         va_float64 = {-1l,2l,-3l};
-//         va_float64.print();
-
-//         va_float64.set({1ul,2ul,3ul});
-//         va_float64.print();
-//         va_float64 = {1ul,2ul,3ul};
-//         va_float64.print();
-
-//         va_float64.set({1.0f,2.0f,3.0f});
-//         va_float64.print();
-//         va_float64 = {1.0f,2.0f,3.0f};
-//         va_float64.print();
-
-//         va_float64.set({1.0,2.0,3.0});
-//         va_float64.print();
-//         EXPECT_EQ(va_float64[0],1.0);
-//         EXPECT_EQ(va_float64[1],2.0);
-//         EXPECT_EQ(va_float64[2],3.0);
-
-//         va_float64 = {1.0,2.0,3.0};
-//         va_float64.print();
-//         EXPECT_EQ(va_float64[0],1.0);
-//         EXPECT_EQ(va_float64[1],2.0);
-//         EXPECT_EQ(va_float64[2],3.0);
-//     }
-
-// }
+//-----------------------------------------------------------------------------
+TEST(conduit_exec_array, summary_print)
+{
+    std::vector<int64> v_int64(5,-64);
+    Node v_int64_node;
+    v_int64_node.set(v_int64);
+    int64_exec_array   va_int64(v_int64_node);
+
+    va_int64.set({1,2,3,4,5});
+
+    // default (thresh is 5)
+    std::string v = va_int64.to_summary_string();
+    std::cout << v << std::endl;
+    EXPECT_EQ(v,"[1, 2, 3, 4, 5]");
+
+    // above threshold, even # to display
+    v = va_int64.to_summary_string(2);
+    std::cout << v << std::endl;
+    EXPECT_EQ(v,"[1, ..., 5]");
+
+    // above threshold, od # to display
+    v = va_int64.to_summary_string(3);
+    std::cout << v << std::endl;
+    EXPECT_EQ(v,"[1, 2, ..., 5]");
+
+    // above threshold, threshold is much larger than # of eles
+    v = va_int64.to_summary_string(64);
+    std::cout << v << std::endl;
+    EXPECT_EQ(v,"[1, 2, 3, 4, 5]");
+
+    // above threshold, threshold is negative
+    v = va_int64.to_summary_string(-1);
+    std::cout << v << std::endl;
+    EXPECT_EQ(v,"[1, 2, 3, 4, 5]");
+
+
+    // single ele array
+    std::vector<int64> v_int64_single(1,-1);
+    Node v_int64_single_node;
+    v_int64_single_node.set(v_int64_single);
+    int64_exec_array   va_int64_single(v_int64_single_node);
+
+    va_int64_single.set({1});
+
+    v = va_int64_single.to_summary_string();
+    std::cout << v << std::endl;
+    EXPECT_EQ(v,"1");
+
+    v = va_int64_single.to_summary_string(64);
+    std::cout << v << std::endl;
+    EXPECT_EQ(v,"1");
+
+    v = va_int64_single.to_summary_string(-1);
+    std::cout << v << std::endl;
+    EXPECT_EQ(v,"1");
+
+
+    // single empty array
+    std::vector<int64> v_int64_empty(0,0);
+    Node v_int64_empty_node;
+    v_int64_empty_node.set(v_int64_empty);
+    int64_exec_array   va_int64_empty(v_int64_empty_node);
+
+    v = va_int64_empty.to_summary_string();
+    std::cout << v << std::endl;
+    EXPECT_EQ(v,"[]");
+
+    v = va_int64_empty.to_summary_string(64);
+    std::cout << v << std::endl;
+    EXPECT_EQ(v,"[]");
+
+    v = va_int64_empty.to_summary_string(-1);
+    std::cout << v << std::endl;
+    EXPECT_EQ(v,"[]");
+
+}
+
+
+//-----------------------------------------------------------------------------
+TEST(conduit_exec_array, cxx_11_init_lists)
+{
+    std::vector<int8>  v_int8(3,-8);
+    std::vector<int16> v_int16(3,-16);
+    std::vector<int32> v_int32(3,-32);
+    std::vector<int64> v_int64(3,-64);
+
+    std::vector<uint8>  v_uint8(3,8);
+    std::vector<uint16> v_uint16(3,16);
+    std::vector<uint32> v_uint32(3,32);
+    std::vector<uint64> v_uint64(3,64);
+
+    std::vector<float32>  v_float32(3,32.0);
+    std::vector<float64>  v_float64(3,64.0);
+
+    Node v_int8_node;
+    v_int8_node.set(v_int8);
+    Node v_int16_node;
+    v_int16_node.set(v_int16);
+    Node v_int32_node;
+    v_int32_node.set(v_int32);
+    Node v_int64_node;
+    v_int64_node.set(v_int64);
+
+    Node v_uint8_node;
+    v_uint8_node.set(v_uint8);
+    Node v_uint16_node;
+    v_uint16_node.set(v_uint16);
+    Node v_uint32_node;
+    v_uint32_node.set(v_uint32);
+    Node v_uint64_node;
+    v_uint64_node.set(v_uint64);
+
+    Node v_float32_node;
+    v_float32_node.set(v_float32);
+    Node v_float64_node;
+    v_float64_node.set(v_float64);
+
+    int8_exec_array    va_int8(v_int8_node);
+    int16_exec_array   va_int16(v_int16_node);
+    int32_exec_array   va_int32(v_int32_node);
+    int64_exec_array   va_int64(v_int64_node);
+
+    uint8_exec_array   va_uint8(v_uint8_node);
+    uint16_exec_array  va_uint16(v_uint16_node);
+    uint32_exec_array  va_uint32(v_uint32_node);
+    uint64_exec_array  va_uint64(v_uint64_node);
+
+    float32_exec_array  va_float32(v_float32_node);
+    float64_exec_array  va_float64(v_float64_node);
+
+
+    // int 8
+    {
+        va_int8.set({-1,2,-3});
+        va_int8.print();
+        EXPECT_EQ(va_int8[0],-1);
+        EXPECT_EQ(va_int8[1],2);
+        EXPECT_EQ(va_int8[2],-3);
+
+        va_int8 = {-1,2,-3};
+        EXPECT_EQ(va_int8[0],-1);
+        EXPECT_EQ(va_int8[1],2);
+        EXPECT_EQ(va_int8[2],-3);
+        va_int8.print();
+
+        va_int8.set({1u,2u,3u});
+        va_int8.print();
+        EXPECT_EQ(va_int8[0],1);
+        EXPECT_EQ(va_int8[1],2);
+        EXPECT_EQ(va_int8[2],3);
+
+        va_int8 = {1u,2u,3u};
+        va_int8.print();
+        EXPECT_EQ(va_int8[0],1);
+        EXPECT_EQ(va_int8[1],2);
+        EXPECT_EQ(va_int8[2],3);
+
+        va_int8.set({-1l,2l,-3l});
+        va_int8.print();
+        EXPECT_EQ(va_int8[0],-1);
+        EXPECT_EQ(va_int8[1],2);
+        EXPECT_EQ(va_int8[2],-3);
+
+        va_int8 = {-1l,2l,-3l};
+        va_int8.print();
+        EXPECT_EQ(va_int8[0],-1);
+        EXPECT_EQ(va_int8[1],2);
+        EXPECT_EQ(va_int8[2],-3);
+
+        va_int8.set({1ul,2ul,3ul});
+        EXPECT_EQ(va_int8[0],1);
+        EXPECT_EQ(va_int8[1],2);
+        EXPECT_EQ(va_int8[2],3);
+        va_int8.print();
+
+        va_int8 = {1ul,2ul,3ul};
+        va_int8.print();
+        EXPECT_EQ(va_int8[0],1);
+        EXPECT_EQ(va_int8[1],2);
+        EXPECT_EQ(va_int8[2],3);
+
+        va_int8.set({1.0f,2.0f,3.0f});
+        va_int8.print();
+        va_int8 = {1.0f,2.0f,3.0f};
+        va_int8.print();
+
+        va_int8.set({1.0,2.0,3.0});
+        va_int8.print();
+        va_int8 = {1.0,2.0,3.0};
+        va_int8.print();
+    }
+
+
+    // int 16
+    {
+        va_int16.set({-1,2,-3});
+        va_int16.print();
+        EXPECT_EQ(va_int16[0],-1);
+        EXPECT_EQ(va_int16[1],2);
+        EXPECT_EQ(va_int16[2],-3);
+
+        va_int16 = {-1,2,-3};
+        va_int16.print();
+        EXPECT_EQ(va_int16[0],-1);
+        EXPECT_EQ(va_int16[1],2);
+        EXPECT_EQ(va_int16[2],-3);
+
+        va_int16.set({1u,2u,3u});
+        va_int16.print();
+        EXPECT_EQ(va_int16[0],1);
+        EXPECT_EQ(va_int16[1],2);
+        EXPECT_EQ(va_int16[2],3);
+
+        va_int16 = {1u,2u,3u};
+        va_int16.print();
+        EXPECT_EQ(va_int16[0],1);
+        EXPECT_EQ(va_int16[1],2);
+        EXPECT_EQ(va_int16[2],3);
+
+        va_int16.set({-1l,2l,-3l});
+        EXPECT_EQ(va_int16[0],-1);
+        EXPECT_EQ(va_int16[1],2);
+        EXPECT_EQ(va_int16[2],-3);
+        va_int16.print();
+
+        va_int16 = {-1l,2l,-3l};
+        va_int16.print();
+        EXPECT_EQ(va_int16[0],-1);
+        EXPECT_EQ(va_int16[1],2);
+        EXPECT_EQ(va_int16[2],-3);
+
+        va_int16.set({1ul,2ul,3ul});
+        va_int16.print();
+        EXPECT_EQ(va_int16[0],1);
+        EXPECT_EQ(va_int16[1],2);
+        EXPECT_EQ(va_int16[2],3);
+
+        va_int16 = {1ul,2ul,3ul};
+        va_int16.print();
+        EXPECT_EQ(va_int16[0],1);
+        EXPECT_EQ(va_int16[1],2);
+        EXPECT_EQ(va_int16[2],3);
+
+        va_int16.set({1.0f,2.0f,3.0f});
+        va_int16.print();
+        va_int16 = {1.0f,2.0f,3.0f};
+        va_int16.print();
+
+        va_int16.set({1.0,2.0,3.0});
+        va_int16.print();
+        va_int16 = {1.0,2.0,3.0};
+        va_int16.print();
+    }
+
+    // int 32
+    {
+        va_int32.set({-1,2,-3});
+        va_int32.print();
+        EXPECT_EQ(va_int32[0],-1);
+        EXPECT_EQ(va_int32[1],2);
+        EXPECT_EQ(va_int32[2],-3);
+
+        va_int32 = {-1,2,-3};
+        va_int32.print();
+        EXPECT_EQ(va_int32[0],-1);
+        EXPECT_EQ(va_int32[1],2);
+        EXPECT_EQ(va_int32[2],-3);
+
+        va_int32.set({1u,2u,3u});
+        va_int32.print();
+        EXPECT_EQ(va_int32[0],1);
+        EXPECT_EQ(va_int32[1],2);
+        EXPECT_EQ(va_int32[2],3);
+
+        va_int32 = {1u,2u,3u};
+        va_int32.print();
+        EXPECT_EQ(va_int32[0],1);
+        EXPECT_EQ(va_int32[1],2);
+        EXPECT_EQ(va_int32[2],3);
+
+        va_int32.set({-1l,2l,-3l});
+        va_int32.print();
+        EXPECT_EQ(va_int32[0],-1);
+        EXPECT_EQ(va_int32[1],2);
+        EXPECT_EQ(va_int32[2],-3);
+
+        va_int32 = {-1l,2l,-3l};
+        va_int32.print();
+        EXPECT_EQ(va_int32[0],-1);
+        EXPECT_EQ(va_int32[1],2);
+        EXPECT_EQ(va_int32[2],-3);
+
+        va_int32.set({1ul,2ul,3ul});
+        va_int32.print();
+        EXPECT_EQ(va_int32[0],1);
+        EXPECT_EQ(va_int32[1],2);
+        EXPECT_EQ(va_int32[2],3);
+
+        va_int32 = {1ul,2ul,3ul};
+        va_int32.print();
+        EXPECT_EQ(va_int32[0],1);
+        EXPECT_EQ(va_int32[1],2);
+        EXPECT_EQ(va_int32[2],3);
+
+        va_int32.set({1.0f,2.0f,3.0f});
+        va_int32.print();
+        va_int32 = {1.0f,2.0f,3.0f};
+        va_int32.print();
+
+        va_int32.set({1.0,2.0,3.0});
+        va_int32.print();
+        va_int32 = {1.0,2.0,3.0};
+        va_int32.print();
+    }
+
+    // int 64
+    {
+        va_int64.set({-1,2,-3});
+        va_int64.print();
+        EXPECT_EQ(va_int64[0],-1);
+        EXPECT_EQ(va_int64[1],2);
+        EXPECT_EQ(va_int64[2],-3);
+
+        va_int64 = {-1,2,-3};
+        va_int64.print();
+        EXPECT_EQ(va_int64[0],-1);
+        EXPECT_EQ(va_int64[1],2);
+        EXPECT_EQ(va_int64[2],-3);
+
+
+        va_int64.set({1u,2u,3u});
+        va_int64.print();
+        EXPECT_EQ(va_int64[0],1);
+        EXPECT_EQ(va_int64[1],2);
+        EXPECT_EQ(va_int64[2],3);
+
+        va_int64 = {1u,2u,3u};
+        va_int64.print();
+        EXPECT_EQ(va_int64[0],1);
+        EXPECT_EQ(va_int64[1],2);
+        EXPECT_EQ(va_int64[2],3);
+
+        va_int64.set({-1l,2l,-3l});
+        va_int64.print();
+        EXPECT_EQ(va_int64[0],-1);
+        EXPECT_EQ(va_int64[1],2);
+        EXPECT_EQ(va_int64[2],-3);
+
+        va_int64 = {-1l,2l,-3l};
+        va_int64.print();
+        EXPECT_EQ(va_int64[0],-1);
+        EXPECT_EQ(va_int64[1],2);
+        EXPECT_EQ(va_int64[2],-3);
+
+        va_int64.set({1ul,2ul,3ul});
+        va_int64.print();
+        EXPECT_EQ(va_int64[0],1);
+        EXPECT_EQ(va_int64[1],2);
+        EXPECT_EQ(va_int64[2],3);
+
+        va_int64 = {1ul,2ul,3ul};
+        va_int64.print();
+        EXPECT_EQ(va_int64[0],1);
+        EXPECT_EQ(va_int64[1],2);
+        EXPECT_EQ(va_int64[2],3);
+
+        va_int64.set({1.0f,2.0f,3.0f});
+        va_int64.print();
+        va_int64 = {1.0f,2.0f,3.0f};
+        va_int64.print();
+
+        va_int64.set({1.0,2.0,3.0});
+        va_int64.print();
+        va_int64 = {1.0,2.0,3.0};
+        va_int64.print();
+    }
+
+    // uint 8
+    {
+        va_uint8.set({1,2,3});
+        EXPECT_EQ(va_uint8[0],1);
+        EXPECT_EQ(va_uint8[1],2);
+        EXPECT_EQ(va_uint8[2],3);
+        va_uint8.print();
+
+        va_uint8 = {1,2,3};
+        va_uint8.print();
+        EXPECT_EQ(va_uint8[0],1);
+        EXPECT_EQ(va_uint8[1],2);
+        EXPECT_EQ(va_uint8[2],3);
+
+        va_uint8.set({1u,2u,3u});
+        va_uint8.print();
+        EXPECT_EQ(va_uint8[0],1);
+        EXPECT_EQ(va_uint8[1],2);
+        EXPECT_EQ(va_uint8[2],3);
+
+        va_uint8 = {1u,2u,3u};
+        va_uint8.print();
+        EXPECT_EQ(va_uint8[0],1);
+        EXPECT_EQ(va_uint8[1],2);
+        EXPECT_EQ(va_uint8[2],3);
+
+        va_uint8.set({1l,2l,3l});
+        va_uint8.print();
+        EXPECT_EQ(va_uint8[0],1);
+        EXPECT_EQ(va_uint8[1],2);
+        EXPECT_EQ(va_uint8[2],3);
+
+        va_uint8 = {1l,2l,3l};
+        va_uint8.print();
+        EXPECT_EQ(va_uint8[0],1);
+        EXPECT_EQ(va_uint8[1],2);
+        EXPECT_EQ(va_uint8[2],3);
+
+
+        va_uint8.set({1ul,2ul,3ul});
+        va_uint8.print();
+        EXPECT_EQ(va_uint8[0],1);
+        EXPECT_EQ(va_uint8[1],2);
+        EXPECT_EQ(va_uint8[2],3);
+
+        va_uint8 = {1ul,2ul,3ul};
+        va_uint8.print();
+        EXPECT_EQ(va_uint8[0],1);
+        EXPECT_EQ(va_uint8[1],2);
+        EXPECT_EQ(va_uint8[2],3);
+
+        va_uint8.set({1.0f,2.0f,3.0f});
+        va_uint8.print();
+        va_uint8 = {1.0f,2.0f,3.0f};
+        va_uint8.print();
+
+        va_uint8.set({1.0,2.0,3.0});
+        va_uint8.print();
+        va_uint8 = {1.0,2.0,3.0};
+        va_uint8.print();
+    }
+
+    // uint 16
+    {
+        va_uint16.set({1,2,3});
+        va_uint16.print();
+        EXPECT_EQ(va_uint16[0],1);
+        EXPECT_EQ(va_uint16[1],2);
+        EXPECT_EQ(va_uint16[2],3);
+
+        va_uint16 = {1,2,3};
+        va_uint16.print();
+        EXPECT_EQ(va_uint16[0],1);
+        EXPECT_EQ(va_uint16[1],2);
+        EXPECT_EQ(va_uint16[2],3);
+
+        va_uint16.set({1u,2u,3u});
+        va_uint16.print();
+        EXPECT_EQ(va_uint16[0],1);
+        EXPECT_EQ(va_uint16[1],2);
+        EXPECT_EQ(va_uint16[2],3);
+
+        va_uint16 = {1u,2u,3u};
+        va_uint16.print();
+        EXPECT_EQ(va_uint16[0],1);
+        EXPECT_EQ(va_uint16[1],2);
+        EXPECT_EQ(va_uint16[2],3);
+
+        va_uint16.set({1l,2l,3l});
+        va_uint16.print();
+        EXPECT_EQ(va_uint16[0],1);
+        EXPECT_EQ(va_uint16[1],2);
+        EXPECT_EQ(va_uint16[2],3);
+
+        va_uint16 = {1l,2l,3l};
+        va_uint16.print();
+        EXPECT_EQ(va_uint16[0],1);
+        EXPECT_EQ(va_uint16[1],2);
+        EXPECT_EQ(va_uint16[2],3);
+
+        va_uint16.set({1ul,2ul,3ul});
+        va_uint16.print();
+        EXPECT_EQ(va_uint16[0],1);
+        EXPECT_EQ(va_uint16[1],2);
+        EXPECT_EQ(va_uint16[2],3);
+
+        va_uint16 = {1ul,2ul,3ul};
+        va_uint16.print();
+        EXPECT_EQ(va_uint16[0],1);
+        EXPECT_EQ(va_uint16[1],2);
+        EXPECT_EQ(va_uint16[2],3);
+
+        va_uint16.set({1.0f,2.0f,3.0f});
+        va_uint16.print();
+        va_uint16 = {1.0f,2.0f,3.0f};
+        va_uint16.print();
+
+        va_uint16.set({1.0,2.0,3.0});
+        va_uint16.print();
+        va_uint16 = {1.0,2.0,3.0};
+        va_uint16.print();
+    }
+
+    // uint 32
+    {
+        va_uint32.set({1,2,3});
+        va_uint32.print();
+        EXPECT_EQ(va_uint32[0],1);
+        EXPECT_EQ(va_uint32[1],2);
+        EXPECT_EQ(va_uint32[2],3);
+
+        va_uint32 = {1,2,3};
+        va_uint32.print();
+        EXPECT_EQ(va_uint32[0],1);
+        EXPECT_EQ(va_uint32[1],2);
+        EXPECT_EQ(va_uint32[2],3);
+
+
+        va_uint32.set({1u,2u,3u});
+        va_uint32.print();
+        EXPECT_EQ(va_uint32[0],1);
+        EXPECT_EQ(va_uint32[1],2);
+        EXPECT_EQ(va_uint32[2],3);
+
+        va_uint32 = {1u,2u,3u};
+        va_uint32.print();
+        EXPECT_EQ(va_uint32[0],1);
+        EXPECT_EQ(va_uint32[1],2);
+        EXPECT_EQ(va_uint32[2],3);
+
+
+        va_uint32.set({1l,2l,3l});
+        va_uint32.print();
+        EXPECT_EQ(va_uint32[0],1);
+        EXPECT_EQ(va_uint32[1],2);
+        EXPECT_EQ(va_uint32[2],3);
+
+        va_uint32 = {1l,2l,3l};
+        va_uint32.print();
+        EXPECT_EQ(va_uint32[0],1);
+        EXPECT_EQ(va_uint32[1],2);
+        EXPECT_EQ(va_uint32[2],3);
+
+        va_uint32.set({1ul,2ul,3ul});
+        va_uint32.print();
+        EXPECT_EQ(va_uint32[0],1);
+        EXPECT_EQ(va_uint32[1],2);
+        EXPECT_EQ(va_uint32[2],3);
+
+        va_uint32 = {1ul,2ul,3ul};
+        va_uint32.print();
+        EXPECT_EQ(va_uint32[0],1);
+        EXPECT_EQ(va_uint32[1],2);
+        EXPECT_EQ(va_uint32[2],3);
+
+        va_uint32.set({1.0f,2.0f,3.0f});
+        va_uint32.print();
+        va_uint32 = {1.0f,2.0f,3.0f};
+        va_uint32.print();
+
+        va_uint32.set({1.0,2.0,3.0});
+        va_uint32.print();
+        va_uint32 = {1.0,2.0,3.0};
+        va_uint32.print();
+    }
+
+    // uint 64
+    {
+        va_uint64.set({1,2,3});
+        va_uint64.print();
+        EXPECT_EQ(va_uint64[0],1);
+        EXPECT_EQ(va_uint64[1],2);
+        EXPECT_EQ(va_uint64[2],3);
+
+        va_uint64 = {1,2,3};
+        va_uint64.print();
+        EXPECT_EQ(va_uint64[0],1);
+        EXPECT_EQ(va_uint64[1],2);
+        EXPECT_EQ(va_uint64[2],3);
+
+        va_uint64.set({1u,2u,3u});
+        va_uint64.print();
+        EXPECT_EQ(va_uint64[0],1);
+        EXPECT_EQ(va_uint64[1],2);
+        EXPECT_EQ(va_uint64[2],3);
+
+        va_uint64 = {1u,2u,3u};
+        va_uint64.print();
+        EXPECT_EQ(va_uint64[0],1);
+        EXPECT_EQ(va_uint64[1],2);
+        EXPECT_EQ(va_uint64[2],3);
+
+        va_uint64.set({1l,2l,3l});
+        va_uint64.print();
+        EXPECT_EQ(va_uint64[0],1);
+        EXPECT_EQ(va_uint64[1],2);
+        EXPECT_EQ(va_uint64[2],3);
+
+        va_uint64 = {1l,2l,3l};
+        va_uint64.print();
+        EXPECT_EQ(va_uint64[0],1);
+        EXPECT_EQ(va_uint64[1],2);
+        EXPECT_EQ(va_uint64[2],3);
+
+        va_uint64.set({1ul,2ul,3ul});
+        va_uint64.print();
+        EXPECT_EQ(va_uint64[0],1);
+        EXPECT_EQ(va_uint64[1],2);
+        EXPECT_EQ(va_uint64[2],3);
+
+        va_uint64 = {1ul,2ul,3ul};
+        va_uint64.print();
+        EXPECT_EQ(va_uint64[0],1);
+        EXPECT_EQ(va_uint64[1],2);
+        EXPECT_EQ(va_uint64[2],3);
+
+        va_uint64.set({1.0f,2.0f,3.0f});
+        va_uint64.print();
+        va_uint64 = {1.0f,2.0f,3.0f};
+        va_uint64.print();
+
+        va_uint64.set({1.0,2.0,3.0});
+        va_uint64.print();
+        va_uint64 = {1.0,2.0,3.0};
+        va_uint64.print();
+    }
+
+    // float 32
+    {
+        va_float32.set({-1,-2,-3});
+        va_float32.print();
+        va_float32 = {-1,2,-3};
+        va_float32.print();
+
+        va_float32.set({1u,2u,3u});
+        va_float32.print();
+        va_float32 = {1u,2u,3u};
+        va_float32.print();
+
+        va_float32.set({1l,2l,3l});
+        va_float32.print();
+        va_float32 = {-1l,2l,-3l};
+        va_float32.print();
+
+        va_float32.set({1ul,2ul,3ul});
+        va_float32.print();
+        va_float32 = {1ul,2ul,3ul};
+        va_float32.print();
+
+        va_float32.set({1.0f,2.0f,3.0f});
+        va_float32.print();
+        EXPECT_EQ(va_float32[0],1.0f);
+        EXPECT_EQ(va_float32[1],2.0f);
+        EXPECT_EQ(va_float32[2],3.0f);
+
+        va_float32 = {1.0f,2.0f,3.0f};
+        va_float32.print();
+        EXPECT_EQ(va_float32[0],1.0f);
+        EXPECT_EQ(va_float32[1],2.0f);
+        EXPECT_EQ(va_float32[2],3.0f);
+
+        va_float32.set({1.0,2.0,3.0});
+        va_float32.print();
+        va_float32 = {1.0,2.0,3.0};
+        va_float32.print();
+    }
+
+    // float 64
+    {
+        va_float64.set({-1,-2,-3});
+        va_float64.print();
+        va_float64 = {-1,2,-3};
+        va_float64.print();
+
+        va_float64.set({1u,2u,3u});
+        va_float64.print();
+        va_float64 = {1u,2u,3u};
+        va_float64.print();
+
+        va_float64.set({1l,2l,3l});
+        va_float64.print();
+        va_float64 = {-1l,2l,-3l};
+        va_float64.print();
+
+        va_float64.set({1ul,2ul,3ul});
+        va_float64.print();
+        va_float64 = {1ul,2ul,3ul};
+        va_float64.print();
+
+        va_float64.set({1.0f,2.0f,3.0f});
+        va_float64.print();
+        va_float64 = {1.0f,2.0f,3.0f};
+        va_float64.print();
+
+        va_float64.set({1.0,2.0,3.0});
+        va_float64.print();
+        EXPECT_EQ(va_float64[0],1.0);
+        EXPECT_EQ(va_float64[1],2.0);
+        EXPECT_EQ(va_float64[2],3.0);
+
+        va_float64 = {1.0,2.0,3.0};
+        va_float64.print();
+        EXPECT_EQ(va_float64[0],1.0);
+        EXPECT_EQ(va_float64[1],2.0);
+        EXPECT_EQ(va_float64[2],3.0);
+    }
+
+}
 
 
 
