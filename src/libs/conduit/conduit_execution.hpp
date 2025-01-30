@@ -29,6 +29,43 @@
 #include <algorithm>
 
 //-----------------------------------------------------------------------------
+//
+/// The CONDUIT_DEVICE_ERROR_CHECK macro is the mechanism used for checks in conduit.
+//
+//-----------------------------------------------------------------------------
+#if defined(CONDUIT_USE_RAJA) && defined(CONDUIT_USE_CUDA)
+#define CONDUIT_DEVICE_ERROR_CHECK()                                     \
+{                                                                        \
+    cudaError_t err = cudaGetLastError();                                \
+    if (err != cudaSuccess)                                              \
+    {                                                                    \
+        std::cerr << "CUDA error: " << cudaGetErrorString(err)           \
+                  << " at " << __FILE__ << ":" << __LINE__ << std::endl; \
+        exit(err);                                                       \
+    }                                                                    \
+}                                                                        \
+#elif defined(CONDUIT_USE_RAJA) && defined(CONDUIT_USE_HIP)
+#define CONDUIT_DEVICE_ERROR_CHECK()                                     \
+{                                                                        \
+    hipError_t err = hipGetLastError();                                  \
+    if (err != cudaSuccess)                                              \
+    {                                                                    \
+        std::cerr << "HIP error: " << hipGetErrorString(err)             \
+                  << " at " << __FILE__ << ":" << __LINE__ << std::endl; \
+        exit(err);                                                       \
+    }                                                                    \
+}                                                                        \
+#else
+#define CONDUIT_DEVICE_ERROR_CHECK() do { } while (0)
+#endif
+
+// TODO why do I need to do this?
+// Ensure that CONDUIT_DEVICE_ERROR_CHECK is always defined
+#ifndef CONDUIT_DEVICE_ERROR_CHECK
+#define CONDUIT_DEVICE_ERROR_CHECK() do { } while (0)
+#endif
+
+//-----------------------------------------------------------------------------
 // -- begin conduit --
 //-----------------------------------------------------------------------------
 namespace conduit
