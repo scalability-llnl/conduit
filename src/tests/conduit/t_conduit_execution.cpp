@@ -273,6 +273,7 @@ TEST(conduit_execution, for_all_and_dispatch)
 // //-----------------------------------------------------------------------------
 // TEST(conduit_execution, strawman)
 // {
+//     // TODO are there other cases in the notes?
 //     //------------------------------------------------------
 //     // forall cases
 //     //------------------------------------------------------
@@ -305,179 +306,179 @@ TEST(conduit_execution, for_all_and_dispatch)
 //         acc_des.sync();
 //     }
 
-//     //------------------------------------------------------
-//     // run on device, 
-//     // result stays on device and is owned by node["des"],
-//     // even if not on the device before hand
-//     //------------------------------------------------------
-//     {
-//         Node node;
-//         ExecutionAccessor<float64> acc_src(node["src"]);
-//         ExecutionAccessor<float64> acc_des(node["des"]);
+    // //------------------------------------------------------
+    // // run on device, 
+    // // result stays on device and is owned by node["des"],
+    // // even if not on the device before hand
+    // //------------------------------------------------------
+    // {
+    //     Node node;
+    //     ExecutionAccessor<float64> acc_src(node["src"]);
+    //     ExecutionAccessor<float64> acc_des(node["des"]);
 
-//         ExecutionPolicy policy = ExecutionPolicy::device();
+    //     ExecutionPolicy policy = ExecutionPolicy::device();
 
-//         acc_src.use_with(policy);
-//         acc_des.use_with(policy);
+    //     acc_src.use_with(policy);
+    //     acc_des.use_with(policy);
 
-//         index_t size = acc_src.number_of_elements();
+    //     index_t size = acc_src.number_of_elements();
 
-//         forall(policy, 0, size, [=] EXEC_LAMBDA(index_t idx)
-//         {
-//             const float64 val = 2.0 * acc_src[idx];
-//             acc_des.set(idx,val);
-//         });
-//         CONDUIT_DEVICE_ERROR_CHECK();
+    //     forall(policy, 0, size, [=] EXEC_LAMBDA(index_t idx)
+    //     {
+    //         const float64 val = 2.0 * acc_src[idx];
+    //         acc_des.set(idx,val);
+    //     });
+    //     CONDUIT_DEVICE_ERROR_CHECK();
 
-//         // move results to be owned by node["des"]
-//         // (no op if node["des"] was originally device memory)
-//         acc_des.move(node["des"]); 
-//     }
+    //     // move results to be owned by node["des"]
+    //     // (no op if node["des"] was originally device memory)
+    //     acc_des.move(node["des"]); 
+    // }
 
-//     //------------------------------------------------------
-//     // run where the src data is
-//     //------------------------------------------------------
-//     {
-//         Node node;
-//         ExecutionAccessor<float64> acc_src(node["src"]);
-//         ExecutionAccessor<float64> acc_des(node["des"]);
+    // //------------------------------------------------------
+    // // run where the src data is
+    // //------------------------------------------------------
+    // {
+    //     Node node;
+    //     ExecutionAccessor<float64> acc_src(node["src"]);
+    //     ExecutionAccessor<float64> acc_des(node["des"]);
 
-//         ExecutionPolicy policy = acc_src.active_space().execution_policy();
-//         acc_des.use_with(policy);
-//         acc_des.use_with(policy);
+    //     ExecutionPolicy policy = acc_src.active_space().execution_policy();
+    //     acc_des.use_with(policy);
+    //     acc_des.use_with(policy);
 
-//         index_t size = acc_src.number_of_elements();
+    //     index_t size = acc_src.number_of_elements();
 
-//         forall(policy, 0, size, [=] EXEC_LAMBDA(index_t idx)
-//         {
-//             const float64 val = 2.0 * acc_src[idx];
-//             acc_des.set(idx,val);
-//         });
-//         CONDUIT_DEVICE_ERROR_CHECK();
+    //     forall(policy, 0, size, [=] EXEC_LAMBDA(index_t idx)
+    //     {
+    //         const float64 val = 2.0 * acc_src[idx];
+    //         acc_des.set(idx,val);
+    //     });
+    //     CONDUIT_DEVICE_ERROR_CHECK();
 
-//         // sync values to node["des"], 
-//         // (no op if node["des"] was originally in 
-//         //  same memory space as node["src"] )
-//         acc_des.sync(node["des"]); 
-//     }
+    //     // sync values to node["des"], 
+    //     // (no op if node["des"] was originally in 
+    //     //  same memory space as node["src"] )
+    //     acc_des.sync(node["des"]); 
+    // }
 
-//     //------------------------------------------------------
-//     // more complex cases
-//     //------------------------------------------------------
+    // //------------------------------------------------------
+    // // more complex cases
+    // //------------------------------------------------------
 
-//     //------------------------------------------------------
-//     // complex run on device 
-//     // double lambda forwarding concrete template tag
-//     // for use in lambda
-//     //
-//     // ( requires c++ 20 b/c of templated lambda)
-//     //------------------------------------------------------
-//     {
-//         Node node;
-//         ExecutionAccessor<float64> acc_src(node["src"]);
-//         ExecutionAccessor<float64> acc_des(node["des"]);
+    // //------------------------------------------------------
+    // // complex run on device 
+    // // double lambda forwarding concrete template tag
+    // // for use in lambda
+    // //
+    // // ( requires c++ 20 b/c of templated lambda)
+    // //------------------------------------------------------
+    // {
+    //     Node node;
+    //     ExecutionAccessor<float64> acc_src(node["src"]);
+    //     ExecutionAccessor<float64> acc_des(node["des"]);
 
-//         ExecutionPolicy policy = ExecutionPolicy::device();
-//         acc_des.use_with(policy);
-//         acc_des.use_with(policy);
+    //     ExecutionPolicy policy = ExecutionPolicy::device();
+    //     acc_des.use_with(policy);
+    //     acc_des.use_with(policy);
 
-//         index_t size = acc_src.number_of_elements();
+    //     index_t size = acc_src.number_of_elements();
 
-//         index_t min_loc = -1;
-//         float64 min_val = 0;
+    //     index_t min_loc = -1;
+    //     float64 min_val = 0;
 
-//         dispatch(policy, [&] <typename Exec>(Exec &exec)
-//         {
-//             float64 identity = std::numeric_limits<float64>::max();
-//             using for_policy    = typename Exec::for_policy;
-//             using reduce_policy = typename Exec::reduce_policy;
+    //     dispatch(policy, [&] <typename Exec>(Exec &exec)
+    //     {
+    //         float64 identity = std::numeric_limits<float64>::max();
+    //         using for_policy    = typename Exec::for_policy;
+    //         using reduce_policy = typename Exec::reduce_policy;
 
-//             ReduceMinLoc<reduce_policy,float64> reducer(identity,-1);
+    //         ReduceMinLoc<reduce_policy,float64> reducer(identity,-1);
 
-//             forall<for_policy>(0, size, [=] EXEC_LAMBDA (int i)
-//             {
-//                 const float64 val = 2.0 * acc_src[idx];
-//                 reducer.minloc(val,i);
-//                 acc_des.set(idx,val);
-//             });
-//             CONDUIT_DEVICE_ERROR_CHECK();
+    //         forall<for_policy>(0, size, [=] EXEC_LAMBDA (int i)
+    //         {
+    //             const float64 val = 2.0 * acc_src[idx];
+    //             reducer.minloc(val,i);
+    //             acc_des.set(idx,val);
+    //         });
+    //         CONDUIT_DEVICE_ERROR_CHECK();
 
-//             min_val = reducer.get();
-//             min_loc = reducer.getLoc();
-//         });
+    //         min_val = reducer.get();
+    //         min_loc = reducer.getLoc();
+    //     });
 
-//         // sync values to node["des"], 
-//         // (no op if node["des"] was originally in
-//         //  same memory space as node["src"] )
-//         acc_des.sync(node["des"]); 
-//     }
+    //     // sync values to node["des"], 
+    //     // (no op if node["des"] was originally in
+    //     //  same memory space as node["src"] )
+    //     acc_des.sync(node["des"]); 
+    // }
 
-//     //------------------------------------------------------
-//     // complex run on device using functor
-//     // (functor implementation)
-//     //------------------------------------------------------
-//     struct ExecFunctor
-//     {
-//         float64 min_val;
-//         index_t min_loc;
+    // //------------------------------------------------------
+    // // complex run on device using functor
+    // // (functor implementation)
+    // //------------------------------------------------------
+    // struct ExecFunctor
+    // {
+    //     float64 min_val;
+    //     index_t min_loc;
 
-//         ExecutionAccessor<float64> acc_src;
-//         ExecutionAccessor<float64> acc_des;
+    //     ExecutionAccessor<float64> acc_src;
+    //     ExecutionAccessor<float64> acc_des;
 
-//         template<typename Exec>
-//         void operator()(Exec &exec)
-//         {
-//             float64 identity = std::numeric_limits<float64>::max();
-//             using for_policy    = typename Exec::for_policy;
-//             using reduce_policy = typename Exec::reduce_policy;
+    //     template<typename Exec>
+    //     void operator()(Exec &exec)
+    //     {
+    //         float64 identity = std::numeric_limits<float64>::max();
+    //         using for_policy    = typename Exec::for_policy;
+    //         using reduce_policy = typename Exec::reduce_policy;
 
-//             ReduceMinLoc<reduce_policy,float64> reducer(identity, -1);
+    //         ReduceMinLoc<reduce_policy,float64> reducer(identity, -1);
 
-//             forall<for_policy>(0, size, [=] (int i)
-//             {
-//                 const float64 val = 2.0 * acc_src[idx];
-//                 reducer.minloc(val,i);
-//                 acc_des.set(idx,val);
-//             });
-//             CONDUIT_DEVICE_ERROR_CHECK();
+    //         forall<for_policy>(0, size, [=] (int i)
+    //         {
+    //             const float64 val = 2.0 * acc_src[idx];
+    //             reducer.minloc(val,i);
+    //             acc_des.set(idx,val);
+    //         });
+    //         CONDUIT_DEVICE_ERROR_CHECK();
 
-//             min_val = reducer.get();
-//             min_loc = reducer.getLoc();
-//         }
-//     };
+    //         min_val = reducer.get();
+    //         min_loc = reducer.getLoc();
+    //     }
+    // };
 
-//     //------------------------------------------------------
-//     // complex run on device using functor 
-//     // (functor dispatch)
-//     //------------------------------------------------------
-//     {
-//         Node node;
-//         ExecutionAccessor<float64> acc_src(node["src"]);
-//         ExecutionAccessor<float64> acc_des(node["des"]);
+    // //------------------------------------------------------
+    // // complex run on device using functor 
+    // // (functor dispatch)
+    // //------------------------------------------------------
+    // {
+    //     Node node;
+    //     ExecutionAccessor<float64> acc_src(node["src"]);
+    //     ExecutionAccessor<float64> acc_des(node["des"]);
 
-//         ExecutionPolicy policy = ExecutionPolicy::device();
-//         acc_des.use_with(policy);
-//         acc_des.use_with(policy);
+    //     ExecutionPolicy policy = ExecutionPolicy::device();
+    //     acc_des.use_with(policy);
+    //     acc_des.use_with(policy);
 
-//         index_t size = acc_src.number_of_elements();
+    //     index_t size = acc_src.number_of_elements();
 
-//         ExecFunctor f();
+    //     ExecFunctor f();
 
-//         // init functor
-//         f.acc_src = acc_src;
-//         f.acc_des = acc_des;
+    //     // init functor
+    //     f.acc_src = acc_src;
+    //     f.acc_des = acc_des;
 
-//         dispatch(policy,f);
+    //     dispatch(policy,f);
 
-//         // get results stored in functor
-//         float64 min_val = f.min_val;
-//         index_t min_loc = f.min_loc;
+    //     // get results stored in functor
+    //     float64 min_val = f.min_val;
+    //     index_t min_loc = f.min_loc;
 
-//         // sync values to node["des"], 
-//         // (no op if node["des"] was originally in
-//         //  same memory space as node["src"])
-//         acc_des.sync(node["des"]); 
-//     }
+    //     // sync values to node["des"], 
+    //     // (no op if node["des"] was originally in
+    //     //  same memory space as node["src"])
+    //     acc_des.sync(node["des"]); 
+    // }
 // }
 
 
