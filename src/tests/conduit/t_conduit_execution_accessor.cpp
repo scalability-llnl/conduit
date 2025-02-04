@@ -157,7 +157,7 @@ TEST(conduit_exec_accessor, as_cstyle)
 
 }
 
-// TODO
+// // TODO
 // //-----------------------------------------------------------------------------
 // TEST(conduit_exec_accessor, default_construct)
 // {
@@ -165,7 +165,22 @@ TEST(conduit_exec_accessor, as_cstyle)
 //     Node n;
 //     n.set({-1,2,-3,4,-5});
 
-//     n_acc = n.value();
+//     n_acc = n.value(); // .value() should give us an exec accessor
+//     EXPECT_EQ(n_acc[0],(index_t)(-1));
+//     EXPECT_EQ(n_acc[1],(index_t)( 2));
+//     EXPECT_EQ(n_acc[2],(index_t)(-3));
+//     EXPECT_EQ(n_acc[3],(index_t)( 4));
+//     EXPECT_EQ(n_acc[4],(index_t)(-5));
+
+
+// ///////////////////
+
+//     index_t_exec_accessor n_acc;
+//     Node n;
+//     n.set({-1,2,-3,4,-5});
+//     index_t_exec_accessor n_acc2(n);
+
+//     n_acc = n_acc2;
 //     EXPECT_EQ(n_acc[0],(index_t)(-1));
 //     EXPECT_EQ(n_acc[1],(index_t)( 2));
 //     EXPECT_EQ(n_acc[2],(index_t)(-3));

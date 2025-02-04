@@ -32,6 +32,10 @@
 //
 /// The CONDUIT_DEVICE_ERROR_CHECK macro is the mechanism used for checks in conduit.
 //
+// TODO if we don't execute on the device we don't want to check the device for error
+// macro should take an exec policy and only do something if we are executing on device
+// it will call something else to do the error checking
+// that we will write.
 //-----------------------------------------------------------------------------
 #if defined(CONDUIT_USE_RAJA) && defined(CONDUIT_USE_CUDA)
 #define CONDUIT_DEVICE_ERROR_CHECK()                                     \
@@ -48,7 +52,7 @@
 #define CONDUIT_DEVICE_ERROR_CHECK()                                     \
 {                                                                        \
     hipError_t err = hipGetLastError();                                  \
-    if (err != cudaSuccess)                                              \
+    if (err != hipSuccess)                                               \
     {                                                                    \
         std::cerr << "HIP error: " << hipGetErrorString(err)             \
                   << " at " << __FILE__ << ":" << __LINE__ << std::endl; \
@@ -64,6 +68,9 @@
 #ifndef CONDUIT_DEVICE_ERROR_CHECK
 #define CONDUIT_DEVICE_ERROR_CHECK() do { } while (0)
 #endif
+
+// TODO we'll need to figure this out
+#define EXEC_LAMBDA() do { } while (0)
 
 //-----------------------------------------------------------------------------
 // -- begin conduit --
@@ -291,6 +298,8 @@ struct SerialExec
 
 // TODO do we want this to be an option when RAJA is off?
 // TODO decide about if we want to provide this as an option when RAJA is on as well
+// if raja is on we don't want to use openmp not through raja
+// and we do want it to be an option when raja is off
 #if defined(CONDUIT_USE_OPENMP)
 //---------------------------------------------------------------------------
 struct OpenMPExec
@@ -308,7 +317,8 @@ struct OpenMPExec
 //---------------------------------------------------------------------------//
 template <typename ExecutionPolicy, typename Kernel>
 inline void
-forall_exec(const int& begin,
+forall_exec(ExecutionPolicy,
+            const int& begin,
             const int& end,
             Kernel&& kernel) noexcept
 {
@@ -324,9 +334,10 @@ forall_exec(const int& begin,
 //---------------------------------------------------------------------------//
 template <typename Kernel>
 inline void
-omp_forall_exec(const int& begin,
-                const int& end,
-                Kernel&& kernel) noexcept
+forall_exec(OpenMPExec,
+            const int& begin,
+            const int& end,
+            Kernel&& kernel) noexcept
 {
     // #pragma message("omp::for_policy -> OMP")
     #pragma omp parallel for
@@ -346,52 +357,45 @@ forall(const int& begin,
        const int& end,
        Kernel&& kernel) noexcept
 {
-    forall_exec<ExecutionPolicy>(begin, end, std::forward<Kernel>(kernel));
+    forall_exec(ExecutionPolicy{}, begin, end, std::forward<Kernel>(kernel));
 }
-
-#if defined(CONDUIT_USE_OPENMP)
-//---------------------------------------------------------------------------//
-// invoke forall with concrete template tag
-//---------------------------------------------------------------------------//
-template <typename Kernel>
-inline void
-forall<OpenMPExec, Kernel>(const int& begin,
-                           const int& end,
-                           Kernel&& kernel) noexcept
-{
-    omp_forall_exec(begin, end, std::forward<Kernel>(kernel));
-}
-#endif
 
 //---------------------------------------------------------------------------//
 // mock up of a raja like sort implementation 
 //---------------------------------------------------------------------------//
-template <typename Iterator>
+template <typename ExecutionPolicy, typename Iterator>
 inline void
-sort_exec(Iterator begin,
+sort_exec(ExecutionPolicy,
+          Iterator begin,
           Iterator end) noexcept
 {
+    std::cout << typeid(ExecutionPolicy).name() << "  START" << std::endl;
     std::sort(begin, end);
+    std::cout << typeid(ExecutionPolicy).name() << "  END" << std::endl;
 }
 
 //---------------------------------------------------------------------------//
 // mock up of a raja like sort implementation 
 //---------------------------------------------------------------------------//
-template <typename Iterator, typename Predicate>
+template <typename ExecutionPolicy, typename Iterator, typename Predicate>
 inline void
-sort_exec(Iterator begin,
+sort_exec(ExecutionPolicy,
+          Iterator begin,
           Iterator end,
           Predicate &&predicate) noexcept
 {
+    std::cout << typeid(ExecutionPolicy).name() << "  START" << std::endl;
     std::sort(begin, end, predicate);
+    std::cout << typeid(ExecutionPolicy).name() << "  END" << std::endl;
 }
 
 #if defined(CONDUIT_USE_OPENMP)
 //---------------------------------------------------------------------------//
 template <typename Iterator>
 inline void
-omp_sort_exec(Iterator begin,
-              Iterator end) noexcept
+sort_exec(OpenMPExec,
+          Iterator begin,
+          Iterator end) noexcept
 {
    // #pragma message("omp::sort_policy -> serial")
     // TODO: implement an OpenMP sort like in RAJA.
@@ -403,9 +407,10 @@ omp_sort_exec(Iterator begin,
 //---------------------------------------------------------------------------//
 template <typename Iterator, typename Predicate>
 inline void
-omp_sort_exec(Iterator begin,
-              Iterator end,
-              Predicate &&predicate) noexcept
+sort_exec(OpenMPExec,
+          Iterator begin,
+          Iterator end,
+          Predicate &&predicate) noexcept
 {
    // #pragma message("omp::sort_policy -> serial")
     // TODO: implement an OpenMP sort like in RAJA.
@@ -423,7 +428,7 @@ inline void
 sort(Iterator begin, 
      Iterator end) noexcept
 {
-    sort_exec(begin, end);
+    sort_exec(ExecutionPolicy{}, begin, end);
 }
 
 //---------------------------------------------------------------------------//
@@ -435,33 +440,8 @@ sort(Iterator begin,
      Iterator end,
      Predicate &&predicate) noexcept
 {
-    sort_exec(begin, end, std::forward<Predicate>(predicate));
+    sort_exec(ExecutionPolicy{}, begin, end, std::forward<Predicate>(predicate));
 }
-
-#if defined(CONDUIT_USE_OPENMP)
-//---------------------------------------------------------------------------//
-// invoke sort with concrete template tag
-//---------------------------------------------------------------------------//
-template <typename Iterator>
-inline void
-sort<OpenMPExec, Iterator>(Iterator begin, 
-                           Iterator end) noexcept
-{
-    omp_sort_exec(begin, end);
-}
-
-//---------------------------------------------------------------------------//
-// invoke sort with concrete template tag
-//---------------------------------------------------------------------------//
-template <typename Iterator, typename Predicate>
-inline void
-sort<OpenMPExec, Iterator, Predicate>(Iterator begin,
-                                      Iterator end,
-                                      Predicate &&predicate) noexcept
-{
-    omp_sort_exec(begin, end, std::forward<Predicate>(predicate));
-}
-#endif
 
 #endif
 //---------------------------------------------------------------------------//
