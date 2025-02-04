@@ -30,44 +30,10 @@
 
 //-----------------------------------------------------------------------------
 //
-/// The CONDUIT_DEVICE_ERROR_CHECK macro is the mechanism used for checks in conduit.
+/// The CONDUIT_DEVICE_ERROR_CHECK macro is TODO
 //
-// TODO if we don't execute on the device we don't want to check the device for error
-// macro should take an exec policy and only do something if we are executing on device
-// it will call something else to do the error checking
-// that we will write.
 //-----------------------------------------------------------------------------
-#if defined(CONDUIT_USE_RAJA) && defined(CONDUIT_USE_CUDA)
-#define CONDUIT_DEVICE_ERROR_CHECK()                                     \
-{                                                                        \
-    cudaError_t err = cudaGetLastError();                                \
-    if (err != cudaSuccess)                                              \
-    {                                                                    \
-        std::cerr << "CUDA error: " << cudaGetErrorString(err)           \
-                  << " at " << __FILE__ << ":" << __LINE__ << std::endl; \
-        exit(err);                                                       \
-    }                                                                    \
-}                                                                        \
-#elif defined(CONDUIT_USE_RAJA) && defined(CONDUIT_USE_HIP)
-#define CONDUIT_DEVICE_ERROR_CHECK()                                     \
-{                                                                        \
-    hipError_t err = hipGetLastError();                                  \
-    if (err != hipSuccess)                                               \
-    {                                                                    \
-        std::cerr << "HIP error: " << hipGetErrorString(err)             \
-                  << " at " << __FILE__ << ":" << __LINE__ << std::endl; \
-        exit(err);                                                       \
-    }                                                                    \
-}                                                                        \
-#else
-#define CONDUIT_DEVICE_ERROR_CHECK() do { } while (0)
-#endif
-
-// TODO why do I need to do this?
-// Ensure that CONDUIT_DEVICE_ERROR_CHECK is always defined
-#ifndef CONDUIT_DEVICE_ERROR_CHECK
-#define CONDUIT_DEVICE_ERROR_CHECK() do { } while (0)
-#endif
+#define CONDUIT_DEVICE_ERROR_CHECK( policy ) conduit::execution::device_error_check(policy, __FILE__, __LINE__);
 
 // TODO we'll need to figure this out
 #define EXEC_LAMBDA() do { } while (0)
@@ -207,6 +173,9 @@ private:
 // registers the fancy conduit memory handlers for
 // magic memset and memcpy
 void init_device_memory_handlers();
+
+// helper for the CONDUIT_DEVICE_ERROR_CHECK macro
+void device_error_check(ExecutionPolicy policy, const char *file, const int line);
 
 
 

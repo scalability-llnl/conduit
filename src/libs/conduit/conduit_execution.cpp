@@ -280,6 +280,40 @@ init_device_memory_handlers()
 #endif
 }
 
+//---------------------------------------------------------------------------//
+void
+device_error_check(ExecutionPolicy policy, const char *file, const int line)
+{
+    if (policy.is_hip())
+    {
+#if defined(CONDUIT_USE_RAJA) && defined(CONDUIT_USE_HIP)
+        hipError_t err = hipGetLastError();
+        if ( hipSuccess != err )
+        {
+            std::cerr<<"HIP error reported at: "<<file<<":"<<line;
+            std::cerr<<" : "<<hipGetErrorName(err)<<"\n";
+            //exit( -1 );
+        }
+#else
+        CONDUIT_ERROR("Conduit was not built with HIP.");
+#endif
+    }
+    else if (policy.is_cuda())
+    {
+#if defined(CONDUIT_USE_RAJA) && defined(CONDUIT_USE_CUDA)
+        cudaError err = cudaGetLastError();
+        if ( cudaSuccess != err )
+        {
+            std::cerr<<"CUDA error reported at: "<<file<<":"<<line;
+            std::cerr<<" : "<<cudaGetErrorString(err)<<"\n";
+            //exit( -1 );
+        }
+#else
+        CONDUIT_ERROR("Conduit was not built with CUDA.");
+#endif
+    }
+}
+
 }
 //-----------------------------------------------------------------------------
 // -- end conduit::execution --

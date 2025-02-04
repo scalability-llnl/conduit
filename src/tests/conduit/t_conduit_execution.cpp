@@ -126,7 +126,7 @@ TEST(conduit_execution, test_forall)
     {
         dev_vals_ptr[i] = i;
     });
-    CONDUIT_DEVICE_ERROR_CHECK();
+    CONDUIT_DEVICE_ERROR_CHECK(serial);
     
     conduit::execution::MagicMemory::copy(&host_vals[0], dev_vals_ptr, sizeof(index_t) * size);
 
