@@ -35,8 +35,11 @@
 //-----------------------------------------------------------------------------
 #define CONDUIT_DEVICE_ERROR_CHECK( policy ) conduit::execution::device_error_check(policy, __FILE__, __LINE__);
 
-// TODO we'll need to figure this out
-#define EXEC_LAMBDA() do { } while (0)
+#if defined(CONDUIT_USE_RAJA) && (defined(CONDUIT_USE_CUDA) || defined(CONDUIT_USE_HIP))
+#define EXEC_LAMBDA __device__ __host__
+#else
+#define EXEC_LAMBDA 
+#endif
 
 //-----------------------------------------------------------------------------
 // -- begin conduit --

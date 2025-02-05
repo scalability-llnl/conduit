@@ -270,41 +270,45 @@ TEST(conduit_execution, for_all_and_dispatch)
     }
 }
 
-// //-----------------------------------------------------------------------------
-// TEST(conduit_execution, strawman)
-// {
-//     // TODO are there other cases in the notes?
-//     //------------------------------------------------------
-//     // forall cases
-//     //------------------------------------------------------
+//-----------------------------------------------------------------------------
+TEST(conduit_execution, strawman)
+{
+    // TODO are there other cases in the notes?
+    //------------------------------------------------------
+    // forall cases
+    //------------------------------------------------------
 
-//     //------------------------------------------------------
-//     // run on device
-//     //------------------------------------------------------
-//     if (ExecutionPolicy::is_device_enabled())
-//     {
-//         Node node;
-//         ExecutionAccessor<float64> acc_src(node["src"]);
-//         ExecutionAccessor<float64> acc_des(node["des"]);
+    //------------------------------------------------------
+    // run on device
+    //------------------------------------------------------
+    if (ExecutionPolicy::is_device_enabled())
+    {
+        Node node;
+        std::vector<int64> data_src = {0, 1, 2, 3};
+        node["src"].set(data_src);
+        std::vector<int64> data_des = {0, 0, 0, 0};
+        node["src"].set(data_des);
+        ExecutionAccessor<float64> acc_src(node["src"]);
+        ExecutionAccessor<float64> acc_des(node["des"]);
 
-//         ExecutionPolicy policy = ExecutionPolicy::device();
+        ExecutionPolicy policy = ExecutionPolicy::device();
 
-//         acc_src.use_with(policy);
-//         acc_des.use_with(policy);
+        acc_src.use_with(policy);
+        acc_des.use_with(policy);
 
-//         index_t size = acc_src.number_of_elements();
+        index_t size = acc_src.number_of_elements();
 
-//         forall(policy, 0, size, [=] EXEC_LAMBDA(index_t idx)
-//         {
-//             const float64 val = 2.0 * acc_src[idx];
-//             acc_des.set(idx,val);
-//         });
-//         CONDUIT_DEVICE_ERROR_CHECK();
+        forall(policy, 0, size, [=] EXEC_LAMBDA(index_t idx)
+        {
+            const float64 val = 2.0 * acc_src[idx];
+            acc_des.set(idx,val);
+        });
+        CONDUIT_DEVICE_ERROR_CHECK();
 
-//         // sync values to node["des"]
-//         // (no op if node["des"] was originally device memory)
-//         acc_des.sync();
-//     }
+        // sync values to node["des"]
+        // (no op if node["des"] was originally device memory)
+        acc_des.sync();
+    }
 
     // //------------------------------------------------------
     // // run on device, 
@@ -479,6 +483,6 @@ TEST(conduit_execution, for_all_and_dispatch)
     //     //  same memory space as node["src"])
     //     acc_des.sync(node["des"]); 
     // }
-// }
+}
 
 

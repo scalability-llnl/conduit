@@ -312,6 +312,9 @@ device_error_check(ExecutionPolicy policy, const char *file, const int line)
         CONDUIT_ERROR("Conduit was not built with CUDA.");
 #endif
     }
+
+    (void)file; // suppress unused variable warnings
+    (void)line; // suppress unused variable warnings
 }
 
 }
