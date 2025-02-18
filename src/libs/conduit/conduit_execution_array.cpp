@@ -802,7 +802,7 @@ ExecutionArray<T>::assume()
 
 //---------------------------------------------------------------------------//
 template <typename T>
-void
+conduit::execution::ExecutionPolicy
 ExecutionArray<T>::active_space()
 {
     if (execution::DeviceMemory::is_device_ptr(m_data))
