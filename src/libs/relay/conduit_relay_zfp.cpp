@@ -9,7 +9,7 @@
 //-----------------------------------------------------------------------------
 
 #include "conduit_relay_zfp.hpp"
-#include "zfpfactory.h"
+#include "zfp/factory.hpp"
 
 //-----------------------------------------------------------------------------
 // -- begin conduit:: --
@@ -60,24 +60,33 @@ unwrap_zfparray(const Node &node)
             break;
     }
 
-    if(!is_readable) {
+    if(!is_readable)
+    {
         return NULL;
     }
 
+    /*
+    FIXME FIXME FIXME TODO NEW API
     zfp::array::header header;
     memcpy(header.buffer, node.fetch_existing(ZFP_HEADER_FIELD_NAME).data_ptr(), sizeof(header));
 
-    try {
-        return zfp::array::construct(header, static_cast<uchar*>(compressed_data.data_ptr()), compressed_data.allocated_bytes());
-    } catch(std::exception const &) {
+    try
+    {
+        return zfp::array::construct(header,
+                                     static_cast<uchar*>(compressed_data.data_ptr()),
+                                     compressed_data.allocated_bytes());
+    }
+    catch(std::exception const &)
+    {
         // could be zfp::array::header::exception, or std::bad_alloc
         return NULL;
     }
+    */
 }
 
 template<typename T>
 void
-cast_and_set_compressed_data(Node &dest, uchar* compressed_data, size_t num_data_words)
+cast_and_set_compressed_data(Node &dest, void* compressed_data, size_t num_data_words)
 {
     void* intermediate_ptr = static_cast<void*>(compressed_data);
     dest[ZFP_COMPRESSED_DATA_FIELD_NAME].set(static_cast<T*>(intermediate_ptr), num_data_words);
@@ -85,38 +94,53 @@ cast_and_set_compressed_data(Node &dest, uchar* compressed_data, size_t num_data
 
 int
 wrap_zfparray(const zfp::array *arr,
-         Node &dest)
+             Node &dest)
 {
+    /*
+    FIXME FIXME FIXME TODO NEW API
     // store header
     zfp::array::header header;
-    try {
+    try
+    {
         header = arr->get_header();
-    } catch(zfp::array::header::exception const &) {
+    }
+    catch(zfp::exception const &)
+    {
         return 1;
     }
-    dest[ZFP_HEADER_FIELD_NAME].set(static_cast<uint8*>(header.buffer), sizeof(header));
 
+    dest[ZFP_HEADER_FIELD_NAME].set(static_cast<uint8*>(header.buffer), sizeof(header));
+    */
     // store compressed data
     size_t compressed_data_len_bits = arr->compressed_size() * CHAR_BIT;
     // should already by a multiple of stream_word_bits (round for safety)
     size_t num_data_words = (compressed_data_len_bits + stream_word_bits - 1) / stream_word_bits;
 
     // store compressed-data under same dtype as bitstream's underlying word
-    switch(stream_word_bits) {
+    switch(stream_word_bits)
+    {
         case 64:
-            cast_and_set_compressed_data<uint64>(dest, arr->compressed_data(), num_data_words);
+            cast_and_set_compressed_data<uint64>(dest,
+                                                 static_cast<void*>(arr->compressed_data()),
+                                                 num_data_words);
             break;
 
         case 32:
-            cast_and_set_compressed_data<uint32>(dest, arr->compressed_data(), num_data_words);
+            cast_and_set_compressed_data<uint32>(dest,
+                                                 static_cast<void*>(arr->compressed_data()),
+                                                 num_data_words);
             break;
 
         case 16:
-            cast_and_set_compressed_data<uint16>(dest, arr->compressed_data(), num_data_words);
+            cast_and_set_compressed_data<uint16>(dest,
+                                                 static_cast<void*>(arr->compressed_data()),
+                                                 num_data_words);
             break;
 
         case 8:
-            cast_and_set_compressed_data<uint8>(dest, arr->compressed_data(), num_data_words);
+            cast_and_set_compressed_data<uint8>(dest,
+                                                 static_cast<void*>(arr->compressed_data()),
+                                                 num_data_words);
             break;
 
         default:

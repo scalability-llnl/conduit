@@ -14,9 +14,9 @@
 //-----------------------------------------------------------------------------
 // external lib includes
 //-----------------------------------------------------------------------------
-#include "zfparray1.h"
-#include "zfparray2.h"
-#include "zfparray3.h"
+#include "zfp/array1.hpp"
+#include "zfp/array2.hpp"
+#include "zfp/array3.hpp"
 
 //-----------------------------------------------------------------------------
 // conduit includes

@@ -17,6 +17,17 @@
 #include "conduit_fmt/conduit_fmt.h"
 
 //-----------------------------------------------------------------------------
+// zfp
+//-----------------------------------------------------------------------------
+#if defined(CONDUIT_RELAY_IO_H5ZZFP_ENABLED)
+    #include "H5Zzfp_lib.h"
+    #include "H5Zzfp_props.h"
+    #include "zfp.h"
+//-----------------------------------------------------------------------------
+#endif
+//-----------------------------------------------------------------------------
+
+//-----------------------------------------------------------------------------
 // standard lib includes
 //-----------------------------------------------------------------------------
 #include <iostream>
@@ -380,27 +391,27 @@ public:
 //-----------------------------------------------------------------------------
 #if defined(CONDUIT_RELAY_IO_H5ZZFP_ENABLED)
 
-        Node &zfp_ops = opts["chunking/compression/zfp"];
+        Node &zfp_opts = opts["chunking/compression/zfp"];
 
         if(zfp_mode == H5Z_ZFP_MODE_RATE)
         {
-            zfp_ops["mode"] = "rate";
+            zfp_opts["mode"] = "rate";
         }
         else if(zfp_mode == H5Z_ZFP_MODE_PRECISION)
         {
-            zfp_ops["mode"] = "precision";
+            zfp_opts["mode"] = "precision";
         }
         else if(zfp_mode == H5Z_ZFP_MODE_ACCURACY)
         {
-            zfp_ops["mode"] = "accuracy";
+            zfp_opts["mode"] = "accuracy";
         }
         else if(zfp_mode == H5Z_ZFP_MODE_EXPERT)
         {
-            zfp_ops["mode"] = "expert";
+            zfp_opts["mode"] = "expert";
         }
         else if(zfp_mode == H5Z_ZFP_MODE_REVERSIBLE)
         {
-            zfp_ops["mode"] = "reversible";
+            zfp_opts["mode"] = "reversible";
         }
 
         zfp_opts["rate"]    = zfp_rate;
