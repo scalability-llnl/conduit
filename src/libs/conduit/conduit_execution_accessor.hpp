@@ -122,11 +122,13 @@ public:
 //-----------------------------------------------------------------------------
 // Data movement
 //-----------------------------------------------------------------------------
-    void            use_with(conduit::execution::ExecutionPolicy policy);
+    void                                use_with(conduit::execution::ExecutionPolicy policy);
 
-    void            sync();
+    void                                sync();
 
-    void            assume();
+    void                                assume();
+
+    conduit::execution::ExecutionPolicy active_space();
 
 //-----------------------------------------------------------------------------
 // Setters

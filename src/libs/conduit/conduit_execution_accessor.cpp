@@ -654,6 +654,22 @@ ExecutionAccessor<T>::assume()
     }
 }
 
+
+//---------------------------------------------------------------------------//
+template <typename T>
+void
+ExecutionAccessor<T>::active_space()
+{
+    if (execution::DeviceMemory::is_device_ptr(m_data))
+    {
+        return execution::ExecutionPolicy::device();
+    }
+    else
+    {
+        return execution::ExecutionPolicy::host();
+    }
+}
+
 //---------------------------------------------------------------------------//
 //***************************************************************************//
 // Set from ExecutionArray

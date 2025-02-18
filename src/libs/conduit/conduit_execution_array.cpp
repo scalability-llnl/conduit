@@ -622,7 +622,7 @@ ExecutionArray<T>::count(T val) const
 //---------------------------------------------------------------------------//
 template <typename T>
 void
-ExecutionAccessor<T>::use_with(conduit::execution::ExecutionPolicy policy)
+ExecutionArray<T>::use_with(conduit::execution::ExecutionPolicy policy)
 {
     // we are being asked to execute on the device
     if (policy.is_device_policy())
@@ -756,7 +756,7 @@ ExecutionAccessor<T>::use_with(conduit::execution::ExecutionPolicy policy)
 //---------------------------------------------------------------------------//
 template <typename T>
 void
-ExecutionAccessor<T>::sync()
+ExecutionArray<T>::sync()
 {
     // if the ptrs don't point to the same place
     if (m_data != m_node_ptr->data_ptr())
@@ -779,7 +779,7 @@ ExecutionAccessor<T>::sync()
 //---------------------------------------------------------------------------//
 template <typename T>
 void
-ExecutionAccessor<T>::assume()
+ExecutionArray<T>::assume()
 {
     // if the ptrs don't point to the same place
     if (m_data != m_node_ptr->data_ptr())
@@ -796,6 +796,22 @@ ExecutionAccessor<T>::assume()
         m_other_ptr = nullptr;
         m_do_i_own_it = false;
         m_other_dtype = DataType::empty();
+    }
+}
+
+
+//---------------------------------------------------------------------------//
+template <typename T>
+void
+ExecutionArray<T>::active_space()
+{
+    if (execution::DeviceMemory::is_device_ptr(m_data))
+    {
+        return execution::ExecutionPolicy::device();
+    }
+    else
+    {
+        return execution::ExecutionPolicy::host();
     }
 }
 
