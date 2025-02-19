@@ -440,6 +440,7 @@ cmake -S ${zfp_src_dir} -B ${zfp_build_dir} ${cmake_compiler_settings} \
   -DCMAKE_VERBOSE_MAKEFILE:BOOL=${enable_verbose} \
   -DCMAKE_BUILD_TYPE=${build_config} \
   -DBUILD_SHARED_LIBS=${build_shared_libs} \
+  -DZFP_BIT_STREAM_WORD_SIZE=8 \
   -DCMAKE_INSTALL_PREFIX=${zfp_install_dir} ${zfp_extra_cmake_opts}
 
 echo "**** Building ZFP ${zfp_version}"
