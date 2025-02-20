@@ -41,13 +41,19 @@ namespace relay
 namespace io
 {
 
-static const std::string ZFP_HEADER_FIELD_NAME = "zfp_header";
-static const std::string ZFP_COMPRESSED_DATA_FIELD_NAME = "zfp_compressed_data";
+static const std::string ZFP_HEADER_FIELD = "zfp_header";
+static const std::string ZFP_HEADER_DIM_FIELD = "zfp_header_dim";
+static const std::string ZFP_HEADER_SCALAR_TYPE_FIELD = "zfp_header_scalar_type";
+static const std::string ZFP_COMPRESSED_DATA_FIELD = "zfp_compressed_data";
+
 
 zfp::array* CONDUIT_RELAY_API unwrap_zfparray(const Node &node);
 
-int CONDUIT_RELAY_API wrap_zfparray(const zfp::array* arr,
-                                    Node &node);
+void CONDUIT_RELAY_API        wrap_zfparray(const zfp::array &arr,
+                                            Node &node);
+
+void CONDUIT_RELAY_API        wrap_zfparray(const zfp::array *arr,
+                                            Node &node);
 
 }
 //-----------------------------------------------------------------------------

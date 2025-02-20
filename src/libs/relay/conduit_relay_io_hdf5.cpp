@@ -357,6 +357,7 @@ public:
                                                            minor_num,
                                                            release_num);
         opts["libver"] = libver;
+        opts["messages"] = messages;
 
         if(compact_storage_enabled)
         {
@@ -1546,8 +1547,11 @@ create_hdf5_chunked_plist_for_conduit_leaf(const DataType &dtype)
 // zfp options
 //-----------------------------------------------------------------------------
 #if defined(CONDUIT_RELAY_IO_H5ZZFP_ENABLED)
+    // else if(false)//HDF5Options::compression_method == "zfp" )
     else if(HDF5Options::compression_method == "zfp" )
     {
+        // TODO: call once?
+        H5Z_zfp_initialize();
         // Setup the filter using properties interface.
         if (HDF5Options::zfp_mode == H5Z_ZFP_MODE_RATE)
         {
