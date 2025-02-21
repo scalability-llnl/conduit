@@ -287,27 +287,31 @@ endif()
 message(STATUS "HDF5 Thirdparty Include Flags: ${hdf5_tpl_inc_flags}")
 message(STATUS "HDF5 Thirdparty Link Flags: ${hdf5_tpl_lnk_flags}")
 
+if(ZLIB_FOUND)
+    set(hdf5_zlib_target ZLIB::ZLIB)
+endif()
+
 # if newer style hdf5 imported targets exist, use these
 if(TARGET hdf5::hdf5-shared AND BUILD_SHARED_LIBS)
     # reg shared ver of imported lib target
     message(STATUS "HDF5 using hdf5::hdf5-shared target")
     blt_register_library(NAME hdf5
-                         LIBRARIES hdf5::hdf5-shared)
+                         LIBRARIES hdf5::hdf5-shared ${hdf5_zlib_target})
 elseif(TARGET hdf5::hdf5-static)
     # reg static ver of imported lib target
     message(STATUS "HDF5 using hdf5::hdf5-static target")
     blt_register_library(NAME hdf5
-                         LIBRARIES hdf5::hdf5-static)
+                         LIBRARIES hdf5::hdf5-static ${hdf5_zlib_target})
 elseif(TARGET hdf5-shared AND BUILD_SHARED_LIBS)
     # reg shared ver of imported lib target
     message(STATUS "HDF5 using hdf5-shared target")
     blt_register_library(NAME hdf5
-                         LIBRARIES hdf5-shared)
+                         LIBRARIES hdf5-shared ${hdf5_zlib_target})
 elseif(TARGET hdf5-static)
     # reg static ver of imported lib target
      message(STATUS "HDF5 using hdf5-static target")
      blt_register_library(NAME hdf5
-                          LIBRARIES hdf5-static)
+                          LIBRARIES hdf5-static ${hdf5_zlib_target})
 elseif(TARGET hdf5)
     # legacy hdf5 CMake build system support creates an hdf5 target we use directly
     message(STATUS "HDF5 using hdf5 target")

@@ -17,6 +17,17 @@
 #include "conduit_fmt/conduit_fmt.h"
 
 //-----------------------------------------------------------------------------
+// zfp
+//-----------------------------------------------------------------------------
+#if defined(CONDUIT_RELAY_IO_H5ZZFP_ENABLED)
+    #include "H5Zzfp_lib.h"
+    #include "H5Zzfp_props.h"
+    #include "zfp.h"
+//-----------------------------------------------------------------------------
+#endif
+//-----------------------------------------------------------------------------
+
+//-----------------------------------------------------------------------------
 // standard lib includes
 //-----------------------------------------------------------------------------
 #include <iostream>
@@ -138,6 +149,9 @@ static std::string conduit_hdf5_list_attr_name = "__conduit_list";
 class HDF5Options
 {
 public:
+    static std::string libver;
+    static std::string messages;
+
     static bool chunking_enabled;
     static int  chunk_threshold;
     static int  chunk_size;
@@ -146,10 +160,24 @@ public:
     static int  compact_storage_threshold;
 
     static std::string compression_method;
+    // gzip options (gzip level)
     static int         compression_level;
 
-    static std::string libver;
-    static std::string messages;
+//-----------------------------------------------------------------------------
+// zfp options
+//-----------------------------------------------------------------------------
+#if defined(CONDUIT_RELAY_IO_H5ZZFP_ENABLED)
+    static int          zfp_mode;
+    static double       zfp_rate;
+    static double       zfp_acc;
+    static unsigned int zfp_prec;
+    static unsigned int zfp_minbits;
+    static unsigned int zfp_maxbits;
+    static unsigned int zfp_maxprec;
+    static int          zfp_minexp;
+//-----------------------------------------------------------------------------
+#endif // zfp options
+//-----------------------------------------------------------------------------
 
 public:
 
@@ -205,7 +233,6 @@ public:
                 {
                     chunking_enabled = true;
                 }
-
             }
 
             if(chunking.has_child("threshold"))
@@ -226,13 +253,88 @@ public:
                 {
                     compression_method = comp["method"].as_string();
                 }
+
                 if(comp.has_path("level"))
                 {
                     compression_level = comp["level"].to_value();
                 }
+
+//-----------------------------------------------------------------------------
+// zfp options
+//-----------------------------------------------------------------------------
+#if defined(CONDUIT_RELAY_IO_H5ZZFP_ENABLED)
+                if(comp.has_path("zfp"))
+                {
+                    const Node &zfp_opts = comp["zfp"];
+                    if(zfp_opts.has_path("mode"))
+                    {
+                        std::string zfp_mode = zfp_opts["mode"].as_string();
+                        if(zfp_mode == "rate")
+                        {
+                            zfp_mode = H5Z_ZFP_MODE_RATE;
+                        }
+                        else if(zfp_mode == "precision")
+                        {
+                            zfp_mode = H5Z_ZFP_MODE_PRECISION;
+                        }
+                        else if(zfp_mode == "accuracy")
+                        {
+                            zfp_mode = H5Z_ZFP_MODE_ACCURACY;
+                        }
+                        else if(zfp_mode == "expert")
+                        {
+                            zfp_mode = H5Z_ZFP_MODE_EXPERT;
+                        }
+                        else if(zfp_mode == "reversible")
+                        {
+                            zfp_mode = H5Z_ZFP_MODE_REVERSIBLE;
+                        }
+                        else // unknown
+                        {
+                            // ERROR?
+                        }
+                    }
+
+                    if(zfp_opts.has_path("rate"))
+                    {
+                        zfp_rate = zfp_opts["rate"].to_value();
+                    }
+
+                    if(zfp_opts.has_path("acc"))
+                    {
+                        zfp_acc = zfp_opts["acc"].to_value();
+                    }
+
+                    if(zfp_opts.has_path("prec"))
+                    {
+                        zfp_prec = zfp_opts["prec"].to_value();
+                    }
+
+                    if(zfp_opts.has_path("minbits"))
+                    {
+                        zfp_minbits = zfp_opts["minbits"].to_value();
+                    }
+
+                    if(zfp_opts.has_path("maxbits"))
+                    {
+                        zfp_maxbits = zfp_opts["maxbits"].to_value();
+                    }
+
+                    if(zfp_opts.has_path("maxprec"))
+                    {
+                        zfp_maxprec = zfp_opts["maxprec"].to_value();
+                    }
+
+                    if(zfp_opts.has_path("minexp"))
+                    {
+                        zfp_minexp = zfp_opts["minexp"].to_value();
+                    }
+                }
+//-----------------------------------------------------------------------------
+#endif // zfp options
+//-----------------------------------------------------------------------------
             }
         }
-
     }
 
     //------------------------------------------------------------------------
@@ -255,6 +357,7 @@ public:
                                                            minor_num,
                                                            release_num);
         opts["libver"] = libver;
+        opts["messages"] = messages;
 
         if(compact_storage_enabled)
         {
@@ -284,11 +387,52 @@ public:
         {
             opts["chunking/compression/level"] = compression_level;
         }
+//-----------------------------------------------------------------------------
+// zfp options
+//-----------------------------------------------------------------------------
+#if defined(CONDUIT_RELAY_IO_H5ZZFP_ENABLED)
 
+        Node &zfp_opts = opts["chunking/compression/zfp"];
+
+        if(zfp_mode == H5Z_ZFP_MODE_RATE)
+        {
+            zfp_opts["mode"] = "rate";
+        }
+        else if(zfp_mode == H5Z_ZFP_MODE_PRECISION)
+        {
+            zfp_opts["mode"] = "precision";
+        }
+        else if(zfp_mode == H5Z_ZFP_MODE_ACCURACY)
+        {
+            zfp_opts["mode"] = "accuracy";
+        }
+        else if(zfp_mode == H5Z_ZFP_MODE_EXPERT)
+        {
+            zfp_opts["mode"] = "expert";
+        }
+        else if(zfp_mode == H5Z_ZFP_MODE_REVERSIBLE)
+        {
+            zfp_opts["mode"] = "reversible";
+        }
+
+        zfp_opts["rate"]    = zfp_rate;
+        zfp_opts["acc"]     = zfp_acc;
+        zfp_opts["prec"]    = zfp_prec;
+        zfp_opts["minbits"] = zfp_minbits;
+        zfp_opts["maxbits"] = zfp_maxbits;
+        zfp_opts["maxprec"] = zfp_maxprec;
+        zfp_opts["minexp"]  = zfp_minexp;
+//-----------------------------------------------------------------------------
+#endif // zfp options
+//-----------------------------------------------------------------------------
     }
 };
 
 // default hdf5 i/o settings
+
+std::string HDF5Options::libver             = "default";
+// quiet (default) suppresses hdf5 diag warnings in outer relay API layers
+std::string HDF5Options::messages           = "quiet";
 
 bool HDF5Options::compact_storage_enabled   = true;
 int  HDF5Options::compact_storage_threshold = 1024;
@@ -297,12 +441,27 @@ bool        HDF5Options::chunking_enabled   = true;
 int         HDF5Options::chunk_size         = 1000000; // 1 mb
 int         HDF5Options::chunk_threshold    = 2000000; // 2 mb
 
+// TODO: ndarray chunk heuristics
+
+
 std::string HDF5Options::compression_method = "gzip";
 int         HDF5Options::compression_level  = 5;
 
-std::string HDF5Options::libver             = "default";
-// quiet (default) suppresses hdf5 diag warnings in outer relay API layers
-std::string HDF5Options::messages           = "quiet";
+//-----------------------------------------------------------------------------
+// zfp options
+//-----------------------------------------------------------------------------
+#if defined(CONDUIT_RELAY_IO_H5ZZFP_ENABLED)
+int          HDF5Options::zfp_mode    = H5Z_ZFP_MODE_RATE;
+double       HDF5Options::zfp_rate    = 4;  // default from h5z-zfp example
+double       HDF5Options::zfp_acc     = 0;  // default from h5z-zfp example
+unsigned int HDF5Options::zfp_prec    = 11; // default from h5z-zfp example
+unsigned int HDF5Options::zfp_minbits = ZFP_MIN_BITS; // default from zfp
+unsigned int HDF5Options::zfp_maxbits = ZFP_MAX_BITS; // default from zfp
+unsigned int HDF5Options::zfp_maxprec = ZFP_MAX_PREC; // default from zfp
+int          HDF5Options::zfp_minexp  = ZFP_MIN_EXP;  // default from zfp
+//-----------------------------------------------------------------------------
+#endif // zfp options
+//-----------------------------------------------------------------------------
 
 //-----------------------------------------------------------------------------
 void
@@ -1368,6 +1527,8 @@ create_hdf5_chunked_plist_for_conduit_leaf(const DataType &dtype)
 {
     hid_t h5_cprops_id = H5Pcreate(H5P_DATASET_CREATE);
 
+    // TODO: add ndarray heuristics
+
     // Turn on chunking
 
     // hdf5 sets chunking in elements, not bytes,
@@ -1382,6 +1543,44 @@ create_hdf5_chunked_plist_for_conduit_leaf(const DataType &dtype)
         H5Pset_shuffle(h5_cprops_id);
         H5Pset_deflate(h5_cprops_id, HDF5Options::compression_level);
     }
+//-----------------------------------------------------------------------------
+// zfp options
+//-----------------------------------------------------------------------------
+#if defined(CONDUIT_RELAY_IO_H5ZZFP_ENABLED)
+    // else if(false)//HDF5Options::compression_method == "zfp" )
+    else if(HDF5Options::compression_method == "zfp" )
+    {
+        // TODO: call once?
+        H5Z_zfp_initialize();
+        // Setup the filter using properties interface.
+        if (HDF5Options::zfp_mode == H5Z_ZFP_MODE_RATE)
+        {
+            H5Pset_zfp_rate(h5_cprops_id, HDF5Options::zfp_rate);
+        }
+        else if (HDF5Options::zfp_mode == H5Z_ZFP_MODE_PRECISION)
+        {
+            H5Pset_zfp_precision(h5_cprops_id, HDF5Options::zfp_prec);
+        }
+        else if (HDF5Options::zfp_mode == H5Z_ZFP_MODE_ACCURACY)
+        {
+            H5Pset_zfp_accuracy(h5_cprops_id, HDF5Options::zfp_acc);
+        }
+        else if (HDF5Options::zfp_mode == H5Z_ZFP_MODE_EXPERT)
+        {
+            H5Pset_zfp_expert(h5_cprops_id,
+                              HDF5Options::zfp_minbits,
+                              HDF5Options::zfp_maxbits,
+                              HDF5Options::zfp_maxprec,
+                              HDF5Options::zfp_minexp);
+        }
+        else if (HDF5Options::zfp_mode == H5Z_ZFP_MODE_REVERSIBLE)
+        {
+            H5Pset_zfp_reversible(h5_cprops_id);
+        }
+    }
+//-----------------------------------------------------------------------------
+#endif // zfp options
+//-----------------------------------------------------------------------------
 
     return h5_cprops_id;
 }
@@ -1409,6 +1608,8 @@ create_hdf5_dataset_for_conduit_leaf(const DataType &dtype,
     {
         CONDUIT_ERROR("Chunking must be enabled to create an extendible array.");
     }
+
+    // TODO: add ndarray heuristics
 
     // if an offset is supplied, we will default to creating an extendible array
     if( !extendible && HDF5Options::compact_storage_enabled &&
@@ -1452,6 +1653,7 @@ create_hdf5_dataset_for_conduit_leaf(const DataType &dtype,
     }
     else
     {
+        // TODO: add ndarray heuristics
         h5_dspace_id = H5Screate_simple(1,
                                         &num_eles,
                                         NULL);
