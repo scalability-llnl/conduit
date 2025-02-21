@@ -2364,8 +2364,6 @@ TEST(conduit_relay_io_hdf5, conduit_hdf5_write_read_zfp_1d)
     // get objects in flight already
     int DO_NO_HARM = check_h5_open_ids();
 
-    const double pi_value = 3.14159265358979323846;
-
     Node rl_about;
     relay::io::about(rl_about["io"]);
     CONDUIT_INFO("hdf5 options:" << rl_about["io/options/hdf5"].to_yaml());
@@ -2382,9 +2380,12 @@ TEST(conduit_relay_io_hdf5, conduit_hdf5_write_read_zfp_1d)
     std::string tout_fbase = "tout_relay_io_hdf5_h5zzfp";
     io::save(n_src,tout_fbase + "_uncomp.hdf5");
 
+    // chunking threshold
     index_t cthreshold = 1024;
 
     Node opts;
+    // turn of compact_storage so we can test very small
+    // arrays if we need to
     opts["hdf5/compact_storage/enabled"] = "false";
     opts["hdf5/chunking/threshold"]  = cthreshold*4-1;
     opts["hdf5/chunking/chunk_size"] = cthreshold*4;
@@ -2415,6 +2416,7 @@ TEST(conduit_relay_io_hdf5, conduit_hdf5_write_read_zfp_1d)
     std::cout << "min/max of Diffs" << std::endl;
     std::cout << " vals_sin_double: " << vsd_diff.min() << " " << vsd_diff.max() << std::endl;
     std::cout << " vals_sin_int: "    << vsi_diff.min() << " " << vsi_diff.max() << std::endl;
+
     // expect double diff to be less than 2e-8
     EXPECT_TRUE(vsd_diff.max() < 2e-8);
     // expect int diff to be in between -2 and 0
