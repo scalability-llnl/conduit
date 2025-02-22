@@ -4,6 +4,16 @@ Notable changes to Conduit are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project aspires to adhere to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Added
+#### Relay
+- Added h5z-zfp compression support to relay io hdf5 methods.
+
+### Changed
+#### Relay
+- Ported relay and blueprint zfp support to use zfp 1.0 api. Added extra meta data to zfparray blueprint protocol to support roundtrip wrapping and unwrapping with zfp 1.0 api.
+
 ## [0.9.3] - Released 2025-01-27
 
 ### Added
