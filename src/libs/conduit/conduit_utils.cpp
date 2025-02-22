@@ -108,30 +108,22 @@ default_memcpy_handler(void * destination, const void * source, size_t num)
 
 //-----------------------------------------------------------------------------
 // Private namespace member that holds our memcpy callback.
-void (*conduit_handle_memcpy)(void * destination,
-                              const void * source,
-                              size_t num) = default_memcpy_handler;
+Handle_Memcpy conduit_handle_memcpy = default_memcpy_handler;
 
 //-----------------------------------------------------------------------------
 // Private namespace member that holds our memset callback.
-void (*conduit_handle_memset)(void * ptr,
-                              int value,
-                              size_t num ) = default_memset_handler;
+Handle_Memset conduit_handle_memset = default_memset_handler;
 
 //-----------------------------------------------------------------------------
 void
-set_memcpy_handler(void(*conduit_hnd_copy)(void*,
-                                           const void *,
-                                           size_t))
+set_memcpy_handler(Handle_Memcpy conduit_hnd_copy)
 {
     conduit_handle_memcpy = conduit_hnd_copy;
 }
 
 //-----------------------------------------------------------------------------
 void
-set_memset_handler(void(*conduit_hnd_memset)(void*,
-                                             int,
-                                             size_t))
+set_memset_handler(Handle_Memset conduit_hnd_memset)
 {
     conduit_handle_memset = conduit_hnd_memset;
 }
@@ -182,8 +174,8 @@ namespace detail
           }
 
           // reg interface
-          index_t register_allocator(void*(*conduit_hnd_allocate) (size_t, size_t),
-                                     void(*conduit_hnd_free)(void *))
+          index_t register_allocator(Handle_Allocate conduit_hnd_allocate,
+                                     Handle_Free conduit_hnd_free)
           {
               m_allocator_map[m_allocator_id] = conduit_hnd_allocate;
               m_free_map[m_allocator_id]      = conduit_hnd_free;
@@ -226,17 +218,17 @@ namespace detail
           }
 
           // vars
-          index_t                                    m_allocator_id;
-          std::map<index_t,void*(*)(size_t, size_t)> m_allocator_map;
-          std::map<index_t,void(*)(void*)>           m_free_map;
+          index_t                           m_allocator_id;
+          std::map<index_t,Handle_Allocate> m_allocator_map;
+          std::map<index_t,Handle_Free>     m_free_map;
 
     };
 }
 
 //-----------------------------------------------------------------------------
 index_t
-register_allocator(void*(*conduit_hnd_allocate) (size_t, size_t),
-                   void(*conduit_hnd_free)(void *))
+register_allocator(Handle_Alloc conduit_hnd_allocate,
+                   Handle_Free conduit_hnd_free)
 {
     return detail::AllocManager::instance().register_allocator(conduit_hnd_allocate,
                                                                conduit_hnd_free);
