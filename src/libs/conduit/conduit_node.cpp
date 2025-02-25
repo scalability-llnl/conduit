@@ -366,7 +366,7 @@ Node::load(const std::string &ibase,
         {
             CONDUIT_ERROR("<Node::load> (using protocol = "
                           << proto << ") "
-                          << "failed to open: \"`" << ibase << "\"");
+                          << "failed to open: \"" << ibase << "\"");
         }
         std::string data((std::istreambuf_iterator<char>(ifile)),
                           std::istreambuf_iterator<char>());
