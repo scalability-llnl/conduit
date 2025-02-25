@@ -2321,11 +2321,11 @@ void gen_sin_double_data(size_t len,
     const double pi_value = 3.14159265358979323846;
     data.set(DataType::c_double(len));
     double_array vals = data.value();
-    srandom(0xDeadBeef);
+    srand(0xDeadBeef);
     for (index_t i = 0; i < len; i++)
     {
         double x = 2 * pi_value * (double) i / (double) (len-1);
-        double n = noise * ((double) random() / ((double)(1<<31)-1) - 0.5);
+        double n = noise * ((double) rand() / ((double)(1<<31)-1) - 0.5);
         vals[i] = (double) (amp * (1 + sin(x)) + n);
     }
 }
@@ -2339,11 +2339,11 @@ void gen_sin_int_data(size_t len,
     const double pi_value = 3.14159265358979323846;
     data.set(DataType::c_int(len));
     int_array vals = data.value();
-    srandom(0xDeadBeef);
+    srand(0xDeadBeef);
     for (index_t i = 0; i < len; i++)
     {
         double x = 2 * pi_value * (double) i / (double) (len-1);
-        double n = noise * ((double) random() / ((double)(1<<31)-1) - 0.5);
+        double n = noise * ((double) rand() / ((double)(1<<31)-1) - 0.5);
         vals[i] = (int) (amp * (1 + sin(x)) + n);
     }
 }
