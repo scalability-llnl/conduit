@@ -174,7 +174,7 @@ namespace detail
           }
 
           // reg interface
-          index_t register_allocator(Handle_Allocate conduit_hnd_allocate,
+          index_t register_allocator(Handle_Alloc conduit_hnd_allocate,
                                      Handle_Free conduit_hnd_free)
           {
               m_allocator_map[m_allocator_id] = conduit_hnd_allocate;
@@ -219,7 +219,7 @@ namespace detail
 
           // vars
           index_t                           m_allocator_id;
-          std::map<index_t,Handle_Allocate> m_allocator_map;
+          std::map<index_t,Handle_Alloc>    m_allocator_map;
           std::map<index_t,Handle_Free>     m_free_map;
 
     };

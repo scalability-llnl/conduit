@@ -21,6 +21,7 @@
 #include <sstream>
 #include <chrono>
 #include <cstdlib>
+#include <functional>
 
 //-----------------------------------------------------------------------------
 // -- conduit includes --
@@ -272,8 +273,8 @@ namespace utils
     //-----------------------------------------------------------------------------
     /// Function types for memory handlers
     //-----------------------------------------------------------------------------
-    typedef std::function<void*(void*, const void*, size_t)> Handle_Memcpy;
-    typedef std::function<void*(void*, int, size_t)> Handle_Memset;
+    typedef std::function<void(void*, const void*, size_t)> Handle_Memcpy;
+    typedef std::function<void(void*, int, size_t)> Handle_Memset;
     typedef std::function<void*(size_t, size_t)> Handle_Alloc;
     typedef std::function<void(void*)> Handle_Free;
 
