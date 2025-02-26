@@ -101,7 +101,7 @@ void CONDUIT_RELAY_API conduit_relay_io_load_step_and_domain(const char *path,
                                                              conduit_node *cnode);
 
 ///
-/// ``query_number_of_time_steps`` returns the number of time steps.
+/// ``query_number_of_steps`` returns the number of time steps.
 ///
 //-----------------------------------------------------------------------------
 int CONDUIT_RELAY_API conduit_relay_io_query_number_of_steps(const char *path);
