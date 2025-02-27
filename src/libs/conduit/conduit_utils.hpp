@@ -21,6 +21,7 @@
 #include <sstream>
 #include <chrono>
 #include <cstdlib>
+#include <functional>
 
 //-----------------------------------------------------------------------------
 // -- conduit includes --
@@ -269,6 +270,14 @@ namespace utils
 /// Primary interface used by the conduit API to move memory.
 //-----------------------------------------------------------------------------
 
+    //-----------------------------------------------------------------------------
+    /// Function types for memory handlers
+    //-----------------------------------------------------------------------------
+    typedef std::function<void(void*, const void*, size_t)> Handle_Memcpy;
+    typedef std::function<void(void*, int, size_t)> Handle_Memset;
+    typedef std::function<void*(size_t, size_t)> Handle_Alloc;
+    typedef std::function<void(void*)> Handle_Free;
+
     // conduit uses a single pair of memset and memcpy functions to
     // manage data movement.
 
@@ -279,12 +288,8 @@ namespace utils
     // won't be tied into all of the places where source and dest pointers
     // need to be located.
     //
-    void CONDUIT_API set_memcpy_handler(void(*conduit_hnd_copy)(void*,
-                                                                const void *,
-                                                                size_t));
-    void CONDUIT_API set_memset_handler(void(*conduit_hnd_memset)(void*,
-                                                                  int,
-                                                                  size_t));
+    void CONDUIT_API set_memcpy_handler(Handle_Memcpy);
+    void CONDUIT_API set_memset_handler(Handle_Memset);
 
     void CONDUIT_API default_memset_handler(void *ptr,
                                             int value,
@@ -319,8 +324,8 @@ namespace utils
 //-----------------------------------------------------------------------------
 
     // register a custom allocator
-    index_t CONDUIT_API register_allocator(void*(*conduit_hnd_allocate) (size_t, size_t),
-                                           void(*conduit_hnd_free)(void *));
+    index_t CONDUIT_API register_allocator(Handle_Alloc,
+                                           Handle_Free);
 
     // generic allocate interface
     // allocator_id 0 is the default
