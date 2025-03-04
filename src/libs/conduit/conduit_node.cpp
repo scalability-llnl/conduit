@@ -17129,7 +17129,7 @@ Node::reset_allocator()
 
 //-----------------------------------------------------------------------------
 index_t
-Node::allocator()
+Node::allocator() const
 {
   return m_allocator_id;
 }
