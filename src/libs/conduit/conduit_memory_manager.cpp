@@ -192,6 +192,8 @@ DeviceMemory::is_device_ptr(const void *ptr, bool &is_gpu, bool &is_unified)
               atts.TYPE_ATTR ==  hipMemoryTypeUnified );
     // CYRUSH: this doens't look right:
     is_unified = (hipSuccess && atts.TYPE_ATTR == hipMemoryTypeDevice);
+#else
+    (void) ptr;
 #endif
 }
 

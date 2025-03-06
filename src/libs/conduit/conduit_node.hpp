@@ -31,6 +31,8 @@
 #include "conduit_data_type.hpp"
 #include "conduit_data_array.hpp"
 #include "conduit_data_accessor.hpp"
+#include "conduit_execution_array.hpp"
+#include "conduit_execution_accessor.hpp"
 #include "conduit_schema.hpp"
 #include "conduit_generator.hpp"
 #include "conduit_node_iterator.hpp"
@@ -4414,6 +4416,125 @@ public:
 
 #ifdef CONDUIT_USE_LONG_DOUBLE
     long_double_accessor  as_long_double_accessor() const;
+#endif
+
+
+    // c style array via conduit::ExecutionArray
+    char_exec_array        as_char_exec_array();
+    short_exec_array       as_short_exec_array();
+    int_exec_array         as_int_exec_array();
+    long_exec_array        as_long_exec_array();
+
+#ifdef CONDUIT_HAS_LONG_LONG
+    long_long_exec_array  as_long_long_exec_array();
+#endif
+
+    // signed integer array types via conduit::ExecutionArray
+    signed_char_exec_array  as_signed_char_exec_array();
+    signed_short_exec_array as_signed_short_exec_array();
+    signed_int_exec_array   as_signed_int_exec_array();
+    signed_long_exec_array  as_signed_long_exec_array();
+
+#ifdef CONDUIT_HAS_LONG_LONG
+    signed_long_long_exec_array  as_signed_long_long_exec_array();
+#endif
+
+    // unsigned integer array types via conduit::ExecutionArray
+    unsigned_char_exec_array    as_unsigned_char_exec_array();
+    unsigned_short_exec_array   as_unsigned_short_exec_array();
+    unsigned_int_exec_array     as_unsigned_int_exec_array();
+    unsigned_long_exec_array    as_unsigned_long_exec_array();
+
+#ifdef CONDUIT_HAS_LONG_LONG
+    unsigned_long_long_exec_array  as_unsigned_long_long_exec_array();
+#endif
+
+    // floating point array types via conduit::ExecutionArray
+    float_exec_array     as_float_exec_array();
+    double_exec_array    as_double_exec_array();
+
+#ifdef CONDUIT_USE_LONG_DOUBLE
+    long_double_exec_array as_long_double_exec_array();
+#endif
+
+    // c array type via conduit::ExecutionArray (const variant)
+    const char_exec_array       as_char_exec_array()  const;
+    const short_exec_array      as_short_exec_array() const;
+    const int_exec_array        as_int_exec_array()   const;
+    const long_exec_array       as_long_exec_array()  const;
+
+#ifdef CONDUIT_HAS_LONG_LONG
+    const long_long_exec_array  as_long_long_exec_array() const;
+#endif
+
+    // signed integer array types via conduit::ExecutionArray (const variants)
+    const signed_char_exec_array       as_signed_char_exec_array()  const;
+    const signed_short_exec_array      as_signed_short_exec_array() const;
+    const signed_int_exec_array        as_signed_int_exec_array()   const;
+    const signed_long_exec_array       as_signed_long_exec_array()  const;
+
+#ifdef CONDUIT_HAS_LONG_LONG
+    const signed_long_long_exec_array  as_signed_long_long_exec_array() const;
+#endif
+
+
+    // unsigned integer array types via conduit::ExecutionArray (const variants)
+    const unsigned_char_exec_array    as_unsigned_char_exec_array()  const;
+    const unsigned_short_exec_array   as_unsigned_short_exec_array() const;
+    const unsigned_int_exec_array     as_unsigned_int_exec_array()   const;
+    const unsigned_long_exec_array    as_unsigned_long_exec_array()  const;
+
+#ifdef CONDUIT_HAS_LONG_LONG
+    const unsigned_long_long_exec_array  as_unsigned_long_long_exec_array() const;
+#endif
+
+    // floating point array value via conduit::ExecutionArray (const variants)
+    const float_exec_array     as_float_exec_array()  const;
+    const double_exec_array    as_double_exec_array() const;
+
+#ifdef CONDUIT_USE_LONG_DOUBLE
+    const long_double_exec_array  as_long_double_exec_array() const;
+#endif
+
+    // accessors
+
+    // c array accessors
+    char_exec_accessor       as_char_exec_accessor()  const;
+    short_exec_accessor      as_short_exec_accessor() const;
+    int_exec_accessor        as_int_exec_accessor()   const;
+    long_exec_accessor       as_long_exec_accessor()  const;
+
+#ifdef CONDUIT_HAS_LONG_LONG
+    long_long_exec_accessor  as_long_long_exec_accessor() const;
+#endif
+
+    // signed integer accessors
+    signed_char_exec_accessor       as_signed_char_exec_accessor()  const;
+    signed_short_exec_accessor      as_signed_short_exec_accessor() const;
+    signed_int_exec_accessor        as_signed_int_exec_accessor()   const;
+    signed_long_exec_accessor       as_signed_long_exec_accessor()  const;
+
+#ifdef CONDUIT_HAS_LONG_LONG
+    signed_long_long_exec_accessor  as_signed_long_long_exec_accessor() const;
+#endif
+
+
+    // unsigned integer accessors
+    unsigned_char_exec_accessor    as_unsigned_char_exec_accessor()  const;
+    unsigned_short_exec_accessor   as_unsigned_short_exec_accessor() const;
+    unsigned_int_exec_accessor     as_unsigned_int_exec_accessor()   const;
+    unsigned_long_exec_accessor    as_unsigned_long_exec_accessor()  const;
+
+#ifdef CONDUIT_HAS_LONG_LONG
+    unsigned_long_long_exec_accessor  as_unsigned_long_long_exec_accessor() const;
+#endif
+
+    // floating point accessors
+    float_exec_accessor     as_float_exec_accessor()  const;
+    double_exec_accessor    as_double_exec_accessor() const;
+
+#ifdef CONDUIT_USE_LONG_DOUBLE
+    long_double_exec_accessor  as_long_double_exec_accessor() const;
 #endif
 
 

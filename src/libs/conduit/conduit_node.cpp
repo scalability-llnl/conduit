@@ -17092,6 +17092,485 @@ Node::as_long_double_array() const
 #endif
 //---------------------------------------------------------------------------//
 
+//---------------------------------------------------------------------------//
+// array via conduit::DataArray
+//---------------------------------------------------------------------------//
+
+//---------------------------------------------------------------------------//
+char_exec_array
+Node::as_char_exec_array()
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        CONDUIT_NATIVE_CHAR_ID,
+                        "as_char_exec_array()",
+                        char_exec_array());
+    return char_exec_array(this);
+}
+
+//---------------------------------------------------------------------------//
+short_exec_array
+Node::as_short_exec_array()
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        CONDUIT_NATIVE_SHORT_ID,
+                        "as_short_exec_array()",
+                        short_exec_array());
+    return short_exec_array(this);
+}
+
+//---------------------------------------------------------------------------//
+int_exec_array
+Node::as_int_exec_array()
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        CONDUIT_NATIVE_INT_ID,
+                        "as_int_exec_array()",
+                        int_exec_array());
+    return int_exec_array(this);
+}
+
+//---------------------------------------------------------------------------//
+long_exec_array
+Node::as_long_exec_array()
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        CONDUIT_NATIVE_LONG_ID,
+                        "as_long_exec_array()",
+                        long_exec_array());
+    return long_exec_array(this);
+}
+
+//---------------------------------------------------------------------------//
+#ifdef CONDUIT_HAS_LONG_LONG
+//---------------------------------------------------------------------------//
+//---------------------------------------------------------------------------//
+long_long_exec_array
+Node::as_long_long_exec_array()
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        CONDUIT_NATIVE_LONG_LONG_ID,
+                        "as_long_long_exec_array()",
+                        long_long_exec_array());
+    return long_long_exec_array(this);
+}
+//---------------------------------------------------------------------------//
+#endif
+//---------------------------------------------------------------------------//
+
+
+//---------------------------------------------------------------------------//
+// signed integer array types via conduit::DataArray
+//---------------------------------------------------------------------------//
+
+//---------------------------------------------------------------------------//
+signed_char_exec_array
+Node::as_signed_char_exec_array()
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        CONDUIT_NATIVE_SIGNED_CHAR_ID,
+                        "as_signed_char_exec_array()",
+                        signed_char_exec_array());
+    return signed_char_exec_array(this);
+}
+
+//---------------------------------------------------------------------------//
+signed_short_exec_array
+Node::as_signed_short_exec_array()
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        CONDUIT_NATIVE_SIGNED_SHORT_ID,
+                        "as_signed_short_exec_array()",
+                        signed_short_exec_array());
+    return signed_short_exec_array(this);
+}
+
+//---------------------------------------------------------------------------//
+signed_int_exec_array
+Node::as_signed_int_exec_array()
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        CONDUIT_NATIVE_SIGNED_INT_ID,
+                        "as_signed_int_exec_array()",
+                        int_exec_array());
+    return signed_int_exec_array(this);
+}
+
+//---------------------------------------------------------------------------//
+signed_long_exec_array
+Node::as_signed_long_exec_array()
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        CONDUIT_NATIVE_SIGNED_LONG_ID,
+                        "as_signed_long_exec_array()",
+                        signed_long_exec_array());
+    return signed_long_exec_array(this);
+}
+
+//---------------------------------------------------------------------------//
+#ifdef CONDUIT_HAS_LONG_LONG
+//---------------------------------------------------------------------------//
+//---------------------------------------------------------------------------//
+signed_long_long_exec_array
+Node::as_signed_long_long_exec_array()
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        CONDUIT_NATIVE_SIGNED_LONG_LONG_ID,
+                        "as_signed_long_long_exec_array()",
+                        signed_long_long_exec_array());
+    return signed_long_long_exec_array(this);
+}
+//---------------------------------------------------------------------------//
+#endif
+//---------------------------------------------------------------------------//
+
+
+//---------------------------------------------------------------------------//
+// unsigned integer array types via conduit::DataArray
+//---------------------------------------------------------------------------//
+
+//---------------------------------------------------------------------------//
+unsigned_char_exec_array
+Node::as_unsigned_char_exec_array()
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        CONDUIT_NATIVE_UNSIGNED_CHAR_ID,
+                        "as_unsigned_char_exec_array()",
+                        unsigned_char_exec_array());
+    return unsigned_char_exec_array(this);
+}
+
+//---------------------------------------------------------------------------//
+unsigned_short_exec_array
+Node::as_unsigned_short_exec_array()
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        CONDUIT_NATIVE_UNSIGNED_SHORT_ID,
+                        "as_unsigned_short_exec_array()",
+                        unsigned_short_exec_array());
+    return unsigned_short_exec_array(this);
+}
+
+//---------------------------------------------------------------------------//
+unsigned_int_exec_array
+Node::as_unsigned_int_exec_array()
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        CONDUIT_NATIVE_UNSIGNED_INT_ID,
+                        "as_unsigned_int_exec_array()",
+                        unsigned_int_exec_array());
+    return unsigned_int_exec_array(this);
+}
+
+//---------------------------------------------------------------------------//
+unsigned_long_exec_array
+Node::as_unsigned_long_exec_array()
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        CONDUIT_NATIVE_UNSIGNED_LONG_ID,
+                        "as_unsigned_long_exec_array()",
+                        unsigned_long_exec_array());
+    return unsigned_long_exec_array(this);
+}
+
+//---------------------------------------------------------------------------//
+#ifdef CONDUIT_HAS_LONG_LONG
+//---------------------------------------------------------------------------//
+//---------------------------------------------------------------------------//
+unsigned_long_long_exec_array
+Node::as_unsigned_long_long_exec_array()
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        CONDUIT_NATIVE_UNSIGNED_LONG_LONG_ID,
+                        "as_unsigned_long_long_exec_array()",
+                        unsigned_long_long_exec_array());
+    return unsigned_long_long_exec_array(this);
+}
+
+//---------------------------------------------------------------------------//
+#endif
+//---------------------------------------------------------------------------//
+
+
+//---------------------------------------------------------------------------//
+// floating point array types via conduit::DataArray
+//---------------------------------------------------------------------------//
+
+//---------------------------------------------------------------------------//
+float_exec_array
+Node::as_float_exec_array()
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        CONDUIT_NATIVE_FLOAT_ID,
+                        "as_float_exec_array()",
+                        float_exec_array());
+    return float_exec_array(this);
+}
+
+//---------------------------------------------------------------------------//
+double_exec_array
+Node::as_double_exec_array()
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        CONDUIT_NATIVE_DOUBLE_ID,
+                        "as_double_exec_array()",
+                        double_exec_array());
+    return double_exec_array(this);
+}
+
+//---------------------------------------------------------------------------//
+#ifdef CONDUIT_USE_LONG_DOUBLE
+//---------------------------------------------------------------------------//
+long_double_exec_array
+Node::as_long_double_exec_array()
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        CONDUIT_NATIVE_LONG_DOUBLE_ID,
+                        "as_long_double_exec_array()",
+                        long_double_exec_array());
+    return long_double_exec_array(this);
+}
+//---------------------------------------------------------------------------//
+#endif
+//---------------------------------------------------------------------------//
+
+//---------------------------------------------------------------------------//
+// array via conduit::DataArray (const variant)
+//---------------------------------------------------------------------------//
+
+//---------------------------------------------------------------------------//
+const char_exec_array
+Node::as_char_exec_array() const
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        CONDUIT_NATIVE_CHAR_ID,
+                        "as_char_exec_array() const",
+                        char_exec_array());
+    return char_exec_array(this);
+}
+
+//---------------------------------------------------------------------------//
+const short_exec_array
+Node::as_short_exec_array() const
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        CONDUIT_NATIVE_SHORT_ID,
+                        "as_short_exec_array() const",
+                        short_exec_array());
+    return short_exec_array(this);
+}
+
+//---------------------------------------------------------------------------//
+const int_exec_array
+Node::as_int_exec_array() const
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        CONDUIT_NATIVE_INT_ID,
+                        "as_int_exec_array() const",
+                        int_exec_array());
+    return int_exec_array(this);
+}
+
+//---------------------------------------------------------------------------//
+const long_exec_array
+Node::as_long_exec_array() const
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        CONDUIT_NATIVE_LONG_ID,
+                        "as_long_exec_array() const",
+                        long_exec_array());
+    return long_exec_array(this);
+}
+
+//---------------------------------------------------------------------------//
+#ifdef CONDUIT_HAS_LONG_LONG
+//---------------------------------------------------------------------------//
+const long_long_exec_array
+Node::as_long_long_exec_array() const
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        CONDUIT_NATIVE_LONG_LONG_ID,
+                        "as_long_long_exec_array() const",
+                        long_long_exec_array());
+    return long_long_exec_array(this);
+}
+//---------------------------------------------------------------------------//
+#endif
+//---------------------------------------------------------------------------//
+
+
+//---------------------------------------------------------------------------//
+// signed integer array types via conduit::DataArray (const variants)
+//---------------------------------------------------------------------------//
+
+//---------------------------------------------------------------------------//
+const signed_char_exec_array
+Node::as_signed_char_exec_array() const
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        CONDUIT_NATIVE_SIGNED_CHAR_ID,
+                        "as_signed_char_exec_array() const",
+                        signed_char_exec_array());
+    return signed_char_exec_array(this);
+}
+
+//---------------------------------------------------------------------------//
+const signed_short_exec_array
+Node::as_signed_short_exec_array() const
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        CONDUIT_NATIVE_SIGNED_SHORT_ID,
+                        "as_signed_short_exec_array() const",
+                        signed_short_exec_array());
+    return signed_short_exec_array(this);
+}
+
+//---------------------------------------------------------------------------//
+const signed_int_exec_array
+Node::as_signed_int_exec_array() const
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        CONDUIT_NATIVE_SIGNED_INT_ID,
+                        "as_signed_int_exec_array() const",
+                        signed_int_exec_array());
+    return signed_int_exec_array(this);
+}
+
+//---------------------------------------------------------------------------//
+const signed_long_exec_array
+Node::as_signed_long_exec_array() const
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        CONDUIT_NATIVE_SIGNED_LONG_ID,
+                        "as_signed_long_exec_array() const",
+                        signed_long_exec_array());
+    return signed_long_exec_array(this);
+}
+
+//---------------------------------------------------------------------------//
+#ifdef CONDUIT_HAS_LONG_LONG
+//---------------------------------------------------------------------------//
+const signed_long_long_exec_array
+Node::as_signed_long_long_exec_array() const
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        CONDUIT_NATIVE_SIGNED_LONG_LONG_ID,
+                        "as_signed_long_long_exec_array() const",
+                        signed_long_long_exec_array());
+    return signed_long_long_exec_array(this);
+}
+//---------------------------------------------------------------------------//
+#endif
+//---------------------------------------------------------------------------//
+
+
+//---------------------------------------------------------------------------//
+// unsigned integer array types via conduit::DataArray (const variants)
+//---------------------------------------------------------------------------//
+
+//---------------------------------------------------------------------------//
+const unsigned_char_exec_array
+Node::as_unsigned_char_exec_array() const
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        CONDUIT_NATIVE_UNSIGNED_CHAR_ID,
+                        "as_unsigned_char_exec_array() const",
+                        unsigned_char_exec_array());
+    return unsigned_char_exec_array(this);
+}
+
+//---------------------------------------------------------------------------//
+const unsigned_short_exec_array
+Node::as_unsigned_short_exec_array() const
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        CONDUIT_NATIVE_UNSIGNED_SHORT_ID,
+                        "as_unsigned_short_exec_array() const",
+                        unsigned_short_exec_array());
+    return unsigned_short_exec_array(this);
+}
+
+//---------------------------------------------------------------------------//
+const unsigned_int_exec_array
+Node::as_unsigned_int_exec_array() const
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        CONDUIT_NATIVE_UNSIGNED_INT_ID,
+                        "as_unsigned_int_exec_array() const",
+                        unsigned_int_exec_array());
+    return unsigned_int_exec_array(this);
+}
+
+//---------------------------------------------------------------------------//
+const unsigned_long_exec_array
+Node::as_unsigned_long_exec_array() const
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        CONDUIT_NATIVE_UNSIGNED_LONG_ID,
+                        "as_unsigned_long_exec_array() const",
+                        unsigned_long_exec_array());
+    return unsigned_long_exec_array(this);
+}
+
+//---------------------------------------------------------------------------//
+#ifdef CONDUIT_HAS_LONG_LONG
+//---------------------------------------------------------------------------//
+//---------------------------------------------------------------------------//
+const unsigned_long_long_exec_array
+Node::as_unsigned_long_long_exec_array() const
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        CONDUIT_NATIVE_UNSIGNED_LONG_LONG_ID,
+                        "as_unsigned_long_long_exec_array() const",
+                        unsigned_long_long_exec_array());
+    return unsigned_long_long_exec_array(this);
+}
+//---------------------------------------------------------------------------//
+#endif
+//---------------------------------------------------------------------------//
+
+
+//---------------------------------------------------------------------------//
+// floating point array value via conduit::DataArray (const variants)
+//---------------------------------------------------------------------------//
+
+//---------------------------------------------------------------------------//
+const float_exec_array
+Node::as_float_exec_array() const
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        CONDUIT_NATIVE_FLOAT_ID,
+                        "as_float_exec_array() const",
+                        float_exec_array());
+    return float_exec_array(this);
+}
+
+//---------------------------------------------------------------------------//
+const double_exec_array
+Node::as_double_exec_array() const
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        CONDUIT_NATIVE_DOUBLE_ID,
+                        "as_double_exec_array() const",
+                        double_exec_array());
+    return double_exec_array(this);
+}
+//---------------------------------------------------------------------------//
+#ifdef CONDUIT_USE_LONG_DOUBLE
+//---------------------------------------------------------------------------//
+const long_double_exec_array
+Node::as_long_double_exec_array() const
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        CONDUIT_NATIVE_LONG_DOUBLE_ID,
+                        "as_long_double_exec_array() const",
+                        long_double_exec_array());
+    return long_double_exec_array(this);
+}
+
+//---------------------------------------------------------------------------//
+#endif
+//---------------------------------------------------------------------------//
+
 
 //-----------------------------------------------------------------------------
 //
@@ -17309,6 +17788,171 @@ long_double_accessor
 Node::as_long_double_accessor() const
 {
     return long_double_accessor(m_data,dtype());
+}
+
+//---------------------------------------------------------------------------//
+#endif
+//---------------------------------------------------------------------------//
+
+
+//---------------------------------------------------------------------------//
+char_exec_accessor
+Node::as_char_exec_accessor() const
+{
+    return char_exec_accessor(this);
+}
+
+//---------------------------------------------------------------------------//
+short_exec_accessor
+Node::as_short_exec_accessor() const
+{
+    return short_exec_accessor(this);
+}
+
+//---------------------------------------------------------------------------//
+int_exec_accessor
+Node::as_int_exec_accessor() const
+{
+    return int_exec_accessor(this);
+}
+
+//---------------------------------------------------------------------------//
+long_exec_accessor
+Node::as_long_exec_accessor() const
+{
+    return long_exec_accessor(this);
+}
+
+//---------------------------------------------------------------------------//
+#ifdef CONDUIT_HAS_LONG_LONG
+//---------------------------------------------------------------------------//
+long_long_exec_accessor
+Node::as_long_long_exec_accessor() const
+{
+    return long_long_exec_accessor(this);
+}
+//---------------------------------------------------------------------------//
+#endif
+//---------------------------------------------------------------------------//
+
+
+//---------------------------------------------------------------------------//
+// signed integer accessors
+//---------------------------------------------------------------------------//
+
+//---------------------------------------------------------------------------//
+signed_char_exec_accessor
+Node::as_signed_char_exec_accessor() const
+{
+    return signed_char_exec_accessor(this);
+}
+
+//---------------------------------------------------------------------------//
+signed_short_exec_accessor
+Node::as_signed_short_exec_accessor() const
+{
+    return signed_short_exec_accessor(this);
+}
+
+//---------------------------------------------------------------------------//
+signed_int_exec_accessor
+Node::as_signed_int_exec_accessor() const
+{
+    return signed_int_exec_accessor(this);
+}
+
+//---------------------------------------------------------------------------//
+signed_long_exec_accessor
+Node::as_signed_long_exec_accessor() const
+{
+    return signed_long_exec_accessor(this);
+}
+
+//---------------------------------------------------------------------------//
+#ifdef CONDUIT_HAS_LONG_LONG
+//---------------------------------------------------------------------------//
+signed_long_long_exec_accessor
+Node::as_signed_long_long_exec_accessor() const
+{
+    return signed_long_long_exec_accessor(this);
+}
+//---------------------------------------------------------------------------//
+#endif
+//---------------------------------------------------------------------------//
+
+
+//---------------------------------------------------------------------------//
+// unsigned integer accessors
+//---------------------------------------------------------------------------//
+
+//---------------------------------------------------------------------------//
+unsigned_char_exec_accessor
+Node::as_unsigned_char_exec_accessor() const
+{
+    return unsigned_char_exec_accessor(this);
+}
+
+//---------------------------------------------------------------------------//
+unsigned_short_exec_accessor
+Node::as_unsigned_short_exec_accessor() const
+{
+    return unsigned_short_exec_accessor(this);
+}
+
+//---------------------------------------------------------------------------//
+unsigned_int_exec_accessor
+Node::as_unsigned_int_exec_accessor() const
+{
+    return unsigned_int_exec_accessor(this);
+}
+
+//---------------------------------------------------------------------------//
+unsigned_long_exec_accessor
+Node::as_unsigned_long_exec_accessor() const
+{
+    return unsigned_long_exec_accessor(this);
+}
+
+//---------------------------------------------------------------------------//
+#ifdef CONDUIT_HAS_LONG_LONG
+//---------------------------------------------------------------------------//
+//---------------------------------------------------------------------------//
+unsigned_long_long_exec_accessor
+Node::as_unsigned_long_long_exec_accessor() const
+{
+    return unsigned_long_long_exec_accessor(this);
+
+}
+//---------------------------------------------------------------------------//
+#endif
+//---------------------------------------------------------------------------//
+
+
+//---------------------------------------------------------------------------//
+// floating point accessors
+//---------------------------------------------------------------------------//
+
+//---------------------------------------------------------------------------//
+float_exec_accessor
+Node::as_float_exec_accessor() const
+{
+    return float_exec_accessor(this);
+}
+
+//---------------------------------------------------------------------------//
+double_exec_accessor
+Node::as_double_exec_accessor() const
+{
+    return double_exec_accessor(this);
+
+}
+//---------------------------------------------------------------------------//
+#ifdef CONDUIT_USE_LONG_DOUBLE
+//---------------------------------------------------------------------------//
+long_double_exec_accessor
+Node::as_long_double_exec_accessor() const
+{
+    return long_double_exec_accessor(this);
 }
 
 //---------------------------------------------------------------------------//
