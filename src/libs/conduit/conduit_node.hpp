@@ -4159,6 +4159,61 @@ public:
     index_t_accessor    as_index_t_accessor() const;
 
 
+    // signed integer array types via conduit::ExecutionArray
+    int8_exec_array       as_int8_exec_array();
+    int16_exec_array      as_int16_exec_array();
+    int32_exec_array      as_int32_exec_array();
+    int64_exec_array      as_int64_exec_array();
+
+    // unsigned integer array types via conduit::ExecutionArray
+    uint8_exec_array      as_uint8_exec_array();
+    uint16_exec_array     as_uint16_exec_array();
+    uint32_exec_array     as_uint32_exec_array();
+    uint64_exec_array     as_uint64_exec_array();
+
+    // floating point array types via conduit::ExecutionArray
+    float32_exec_array    as_float32_exec_array();
+    float64_exec_array    as_float64_exec_array();
+
+    // index type array types via conduit::ExecutionArray
+    index_t_exec_array    as_index_t_exec_array() const;
+
+    // signed integer array types via conduit::ExecutionArray (const variants)
+    const int8_exec_array       as_int8_exec_array()  const;
+    const int16_exec_array      as_int16_exec_array() const;
+    const int32_exec_array      as_int32_exec_array() const;
+    const int64_exec_array      as_int64_exec_array() const;
+
+    // unsigned integer array types via conduit::ExecutionArray (const variants)
+    const uint8_exec_array      as_uint8_exec_array()  const;
+    const uint16_exec_array     as_uint16_exec_array() const;
+    const uint32_exec_array     as_uint32_exec_array() const;
+    const uint64_exec_array     as_uint64_exec_array() const;
+
+    // floating point array value via conduit::ExecutionArray (const variants)
+    const float32_exec_array    as_float32_exec_array() const;
+    const float64_exec_array    as_float64_exec_array() const;
+
+    // signed integer accessors
+    int8_exec_accessor       as_int8_exec_accessor()  const;
+    int16_exec_accessor      as_int16_exec_accessor() const;
+    int32_exec_accessor      as_int32_exec_accessor() const;
+    int64_exec_accessor      as_int64_exec_accessor() const;
+
+    // unsigned integer accessors
+    uint8_exec_accessor      as_uint8_exec_accessor()  const;
+    uint16_exec_accessor     as_uint16_exec_accessor() const;
+    uint32_exec_accessor     as_uint32_exec_accessor() const;
+    uint64_exec_accessor     as_uint64_exec_accessor() const;
+
+    // floating point accessors
+    float32_exec_accessor    as_float32_exec_accessor() const;
+    float64_exec_accessor    as_float64_exec_accessor() const;
+
+    // index type array accessors
+    index_t_exec_accessor    as_index_t_exec_accessor() const;
+
+
     // char8_str cases
     char            *as_char8_str();
     const char      *as_char8_str() const;

@@ -15735,6 +15735,262 @@ Node::as_float64_array() const
 }
 
 //---------------------------------------------------------------------------//
+// signed integer array types via conduit::ExecutionArray
+//---------------------------------------------------------------------------//
+
+//---------------------------------------------------------------------------//
+int8_exec_array
+Node::as_int8_exec_array()
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        DataType::INT8_ID,
+                        "as_int8_exec_array()",
+                        int8_exec_array());
+    return int8_exec_array(this);
+}
+
+//---------------------------------------------------------------------------//
+int16_exec_array
+Node::as_int16_exec_array()
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        DataType::INT16_ID,
+                        "as_int16_exec_array()",
+                        int16_exec_array());
+    return int16_exec_array(this);
+}
+
+//---------------------------------------------------------------------------//
+int32_exec_array
+Node::as_int32_exec_array()
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        DataType::INT32_ID,
+                        "as_int32_exec_array()",
+                        int32_exec_array());
+    return int32_exec_array(this);
+}
+
+//---------------------------------------------------------------------------//
+int64_exec_array
+Node::as_int64_exec_array()
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        DataType::INT64_ID,
+                        "as_int64_exec_array()",
+                        int64_exec_array());
+    return int64_exec_array(this);
+}
+
+//---------------------------------------------------------------------------//
+// unsigned integer array types via conduit::ExecutionArray
+//---------------------------------------------------------------------------//
+
+//---------------------------------------------------------------------------//
+uint8_exec_array
+Node::as_uint8_exec_array()
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        DataType::UINT8_ID,
+                        "as_uint8_exec_array()",
+                        uint8_exec_array());
+    return uint8_exec_array(this);
+}
+
+//---------------------------------------------------------------------------//
+uint16_exec_array
+Node::as_uint16_exec_array()
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        DataType::UINT16_ID,
+                        "as_uint16_exec_array()",
+                        uint16_exec_array());
+    return uint16_exec_array(this);
+}
+
+//---------------------------------------------------------------------------//
+uint32_exec_array
+Node::as_uint32_exec_array()
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        DataType::UINT32_ID,
+                        "as_uint32_exec_array()",
+                        uint32_exec_array());
+    return uint32_exec_array(this);
+}
+
+//---------------------------------------------------------------------------//
+uint64_exec_array
+Node::as_uint64_exec_array()
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        DataType::UINT64_ID,
+                        "as_uint64_exec_array()",
+                        uint64_exec_array());
+    return uint64_exec_array(this);
+}
+
+//---------------------------------------------------------------------------//
+// floating point array types via conduit::ExecutionArray
+//---------------------------------------------------------------------------//
+
+//---------------------------------------------------------------------------//
+float32_exec_array
+Node::as_float32_exec_array()
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        DataType::FLOAT32_ID,
+                        "as_float32_exec_array()",
+                        float32_exec_array());
+    return float32_exec_array(this);
+}
+
+//---------------------------------------------------------------------------//
+float64_exec_array
+Node::as_float64_exec_array()
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        DataType::FLOAT64_ID,
+                        "as_float64_exec_array()",
+                        float64_exec_array());
+    return float64_exec_array(this);
+}
+
+//---------------------------------------------------------------------------//
+index_t_exec_array
+Node::as_index_t_exec_array() const
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        DataType::index_t(1).id(),
+                        "as_index_t_exec_array()",
+                        index_t_exec_array());
+    return index_t_exec_array(this);
+}
+
+//---------------------------------------------------------------------------//
+// signed integer array types via conduit::ExecutionArray (const variants)
+//---------------------------------------------------------------------------//
+
+//---------------------------------------------------------------------------//
+const int8_exec_array
+Node::as_int8_exec_array() const
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        DataType::INT8_ID,
+                        "as_int8_exec_array() const",
+                        int8_exec_array());
+    return int8_exec_array(this);
+}
+
+//---------------------------------------------------------------------------//
+const int16_exec_array
+Node::as_int16_exec_array() const
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        DataType::INT16_ID,
+                        "as_int16_exec_array() const",
+                        int16_exec_array());
+    return int16_exec_array(this);
+}
+
+//---------------------------------------------------------------------------//
+const int32_exec_array
+Node::as_int32_exec_array() const
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        DataType::INT32_ID,
+                        "as_int32_exec_array() const",
+                        int32_exec_array());
+    return int32_exec_array(this);
+}
+
+//---------------------------------------------------------------------------//
+const int64_exec_array
+Node::as_int64_exec_array() const
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        DataType::INT64_ID,
+                        "as_int64_exec_array() const",
+                        int64_exec_array());
+    return int64_exec_array(this);
+}
+
+
+//---------------------------------------------------------------------------//
+// unsigned integer array types via conduit::ExecutionArray (const variants)
+//---------------------------------------------------------------------------//
+
+//---------------------------------------------------------------------------//
+const uint8_exec_array
+Node::as_uint8_exec_array() const
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        DataType::UINT8_ID,
+                        "as_uint8_exec_array() const",
+                        uint8_exec_array());
+    return uint8_exec_array(this);
+}
+
+//---------------------------------------------------------------------------//
+const uint16_exec_array
+Node::as_uint16_exec_array() const
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        DataType::UINT16_ID,
+                        "as_uint16_exec_array() const",
+                        uint16_exec_array());
+    return uint16_exec_array(this);
+}
+
+//---------------------------------------------------------------------------//
+const uint32_exec_array
+Node::as_uint32_exec_array() const
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        DataType::UINT32_ID,
+                        "as_uint32_exec_array() const",
+                        uint32_exec_array());
+    return uint32_exec_array(this);
+}
+
+//---------------------------------------------------------------------------//
+const uint64_exec_array
+Node::as_uint64_exec_array() const
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        DataType::UINT64_ID,
+                        "as_uint64_exec_array() const",
+                        uint64_exec_array());
+    return uint64_exec_array(this);
+}
+
+//---------------------------------------------------------------------------//
+// floating point array value via conduit::ExecutionArray (const variants)
+//---------------------------------------------------------------------------//
+
+//---------------------------------------------------------------------------//
+const float32_exec_array
+Node::as_float32_exec_array() const
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        DataType::FLOAT32_ID,
+                        "as_float32_exec_array() const",
+                        float32_exec_array());
+    return float32_exec_array(this);
+}
+
+//---------------------------------------------------------------------------//
+const float64_exec_array
+Node::as_float64_exec_array() const
+{
+    CONDUIT_CHECK_DTYPE(this,
+                        DataType::FLOAT64_ID,
+                        "as_float64_exec_array() const",
+                        float64_exec_array());
+    return float64_exec_array(this);
+}
+
+//---------------------------------------------------------------------------//
 // char8_str cases
 //---------------------------------------------------------------------------//
 
@@ -15860,6 +16116,96 @@ index_t_accessor
 Node::as_index_t_accessor() const
 {
     return index_t_accessor(m_data,dtype());
+}
+
+
+//---------------------------------------------------------------------------//
+// signed integer accessors
+//---------------------------------------------------------------------------//
+
+//---------------------------------------------------------------------------//
+int8_exec_accessor
+Node::as_int8_exec_accessor() const
+{
+    return int8_exec_accessor(this);
+}
+
+//---------------------------------------------------------------------------//
+int16_exec_accessor
+Node::as_int16_exec_accessor() const
+{
+    return int16_exec_accessor(this);
+}
+
+//---------------------------------------------------------------------------//
+int32_exec_accessor
+Node::as_int32_exec_accessor() const
+{
+    return int32_exec_accessor(this);
+}
+
+//---------------------------------------------------------------------------//
+int64_exec_accessor
+Node::as_int64_exec_accessor() const
+{
+    return int64_exec_accessor(this);
+}
+
+//---------------------------------------------------------------------------//
+// unsigned integer accessors
+//---------------------------------------------------------------------------//
+
+//---------------------------------------------------------------------------//
+uint8_exec_accessor
+Node::as_uint8_exec_accessor() const
+{
+    return uint8_exec_accessor(this);
+}
+
+//---------------------------------------------------------------------------//
+uint16_exec_accessor
+Node::as_uint16_exec_accessor() const
+{
+    return uint16_exec_accessor(this);
+}
+
+//---------------------------------------------------------------------------//
+uint32_exec_accessor
+Node::as_uint32_exec_accessor() const
+{
+    return uint32_exec_accessor(this);
+}
+
+//---------------------------------------------------------------------------//
+uint64_exec_accessor
+Node::as_uint64_exec_accessor() const
+{
+    return uint64_exec_accessor(this);
+}
+
+//---------------------------------------------------------------------------//
+// floating point accessor
+//---------------------------------------------------------------------------//
+
+//---------------------------------------------------------------------------//
+float32_exec_accessor
+Node::as_float32_exec_accessor() const
+{
+    return float32_exec_accessor(this);
+}
+
+//---------------------------------------------------------------------------//
+float64_exec_accessor
+Node::as_float64_exec_accessor() const
+{
+    return float64_exec_accessor(this);
+}
+
+//---------------------------------------------------------------------------//
+index_t_exec_accessor
+Node::as_index_t_exec_accessor() const
+{
+    return index_t_exec_accessor(this);
 }
 
 
