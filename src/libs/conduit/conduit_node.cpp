@@ -12890,6 +12890,243 @@ Node::ConstValue::operator long_double_accessor() const
 #endif
 //---------------------------------------------------------------------------//
 
+//---------------------------------------------------------------------------//
+// -- array casts --
+// (no coercion)
+//---------------------------------------------------------------------------//
+
+//---------------------------------------------------------------------------//
+// c style signed arrays
+//---------------------------------------------------------------------------//
+
+//---------------------------------------------------------------------------//
+Node::ConstValue::operator const char_exec_array() const
+{
+    return m_node->as_char_exec_array();
+}
+
+//---------------------------------------------------------------------------//
+Node::ConstValue::operator const signed_char_exec_array() const
+{
+    return m_node->as_signed_char_exec_array();
+}
+
+//---------------------------------------------------------------------------//
+Node::ConstValue::operator const signed_short_exec_array() const
+{
+    return m_node->as_signed_short_exec_array();
+}
+
+//---------------------------------------------------------------------------//
+Node::ConstValue::operator const signed_int_exec_array() const
+{
+    return m_node->as_signed_int_exec_array();
+}
+
+//---------------------------------------------------------------------------//
+Node::ConstValue::operator const signed_long_exec_array() const
+{
+    return m_node->as_signed_long_exec_array();
+}
+
+//---------------------------------------------------------------------------//
+#ifdef CONDUIT_HAS_LONG_LONG
+//---------------------------------------------------------------------------//
+Node::ConstValue::operator const signed_long_long_exec_array() const
+{
+    return m_node->as_signed_long_long_exec_array();
+}
+//---------------------------------------------------------------------------//
+#endif
+//---------------------------------------------------------------------------//
+
+//---------------------------------------------------------------------------//
+// c style unsigned arrays
+//---------------------------------------------------------------------------//
+
+//---------------------------------------------------------------------------//
+Node::ConstValue::operator const unsigned_char_exec_array() const
+{
+    return m_node->as_unsigned_char_exec_array();
+}
+
+//---------------------------------------------------------------------------//
+Node::ConstValue::operator const unsigned_short_exec_array() const
+{
+    return m_node->as_unsigned_short_exec_array();
+}
+
+//---------------------------------------------------------------------------//
+Node::ConstValue::operator const unsigned_int_exec_array() const
+{
+    return m_node->as_unsigned_int_exec_array();
+}
+
+//---------------------------------------------------------------------------//
+Node::ConstValue::operator const unsigned_long_exec_array() const
+{
+    return m_node->as_unsigned_long_exec_array();
+}
+
+//---------------------------------------------------------------------------//
+#ifdef CONDUIT_HAS_LONG_LONG
+//---------------------------------------------------------------------------//
+Node::ConstValue::operator const unsigned_long_long_exec_array() const
+{
+    return m_node->as_unsigned_long_long_exec_array();
+}
+//---------------------------------------------------------------------------//
+#endif
+//---------------------------------------------------------------------------//
+
+//---------------------------------------------------------------------------//
+// c style floating point arrays
+//---------------------------------------------------------------------------//
+
+//---------------------------------------------------------------------------//
+Node::ConstValue::operator const float_exec_array() const
+{
+    return m_node->as_float_exec_array();
+}
+
+//---------------------------------------------------------------------------//
+Node::ConstValue::operator const double_exec_array() const
+{
+    return m_node->as_double_exec_array();
+}
+
+//---------------------------------------------------------------------------//
+#ifdef CONDUIT_USE_LONG_DOUBLE
+//---------------------------------------------------------------------------//
+Node::ConstValue::operator const long_double_exec_array() const
+{
+    return m_node->as_long_double_exec_array();
+}
+//---------------------------------------------------------------------------//
+#endif
+//---------------------------------------------------------------------------//
+
+
+//---------------------------------------------------------------------------//
+// -- accessor casts --
+// (no coercion)
+//---------------------------------------------------------------------------//
+
+//---------------------------------------------------------------------------//
+// c style accessors
+//---------------------------------------------------------------------------//
+
+//---------------------------------------------------------------------------//
+// c style signed accessor
+//---------------------------------------------------------------------------//
+
+//---------------------------------------------------------------------------//
+Node::ConstValue::operator char_exec_accessor() const
+{
+    return m_node->as_char_exec_accessor();
+}
+
+//---------------------------------------------------------------------------//
+Node::ConstValue::operator signed_char_exec_accessor() const
+{
+    return m_node->as_signed_char_exec_accessor();
+}
+
+//---------------------------------------------------------------------------//
+Node::ConstValue::operator signed_short_exec_accessor() const
+{
+    return m_node->as_signed_short_exec_accessor();
+}
+
+//---------------------------------------------------------------------------//
+Node::ConstValue::operator signed_int_exec_accessor() const
+{
+    return m_node->as_signed_int_exec_accessor();
+}
+
+//---------------------------------------------------------------------------//
+Node::ConstValue::operator signed_long_exec_accessor() const
+{
+    return m_node->as_signed_long_exec_accessor();
+}
+
+//---------------------------------------------------------------------------//
+#ifdef CONDUIT_HAS_LONG_LONG
+//---------------------------------------------------------------------------//
+Node::ConstValue::operator signed_long_long_exec_accessor() const
+{
+    return m_node->as_signed_long_long_exec_accessor();
+}
+//---------------------------------------------------------------------------//
+#endif
+//---------------------------------------------------------------------------//
+
+//---------------------------------------------------------------------------//
+// c style unsigned accessor
+//---------------------------------------------------------------------------//
+
+//---------------------------------------------------------------------------//
+Node::ConstValue::operator unsigned_char_exec_accessor() const
+{
+    return m_node->as_unsigned_char_exec_accessor();
+}
+
+//---------------------------------------------------------------------------//
+Node::ConstValue::operator unsigned_short_exec_accessor() const
+{
+    return m_node->as_unsigned_short_exec_accessor();
+}
+
+//---------------------------------------------------------------------------//
+Node::ConstValue::operator unsigned_int_exec_accessor() const
+{
+    return m_node->as_unsigned_int_exec_accessor();
+}
+
+//---------------------------------------------------------------------------//
+Node::ConstValue::operator unsigned_long_exec_accessor() const
+{
+    return m_node->as_unsigned_long_exec_accessor();
+}
+
+//---------------------------------------------------------------------------//
+#ifdef CONDUIT_HAS_LONG_LONG
+//---------------------------------------------------------------------------//
+Node::ConstValue::operator unsigned_long_long_exec_accessor() const
+{
+    return m_node->as_unsigned_long_long_exec_accessor();
+}
+//---------------------------------------------------------------------------//
+#endif
+//---------------------------------------------------------------------------//
+
+//---------------------------------------------------------------------------//
+// c style floating point accessor
+//---------------------------------------------------------------------------//
+
+//---------------------------------------------------------------------------//
+Node::ConstValue::operator float_exec_accessor() const
+{
+    return m_node->as_float_exec_accessor();
+}
+
+//---------------------------------------------------------------------------//
+Node::ConstValue::operator double_exec_accessor() const
+{
+    return m_node->as_double_exec_accessor();
+}
+
+//---------------------------------------------------------------------------//
+#ifdef CONDUIT_USE_LONG_DOUBLE
+//---------------------------------------------------------------------------//
+Node::ConstValue::operator long_double_exec_accessor() const
+{
+    return m_node->as_long_double_exec_accessor();
+}
+//---------------------------------------------------------------------------//
+#endif
+//---------------------------------------------------------------------------//
+
 //-----------------------------------------------------------------------------
 // End Node::ConstValue
 //-----------------------------------------------------------------------------

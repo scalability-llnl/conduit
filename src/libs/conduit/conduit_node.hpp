@@ -3600,6 +3600,63 @@ public:
             #endif
 
 
+            // -- as exec_array -- //
+            operator const char_exec_array() const;
+
+            // as signed exec_array
+            operator const signed_char_exec_array() const;
+            operator const signed_short_exec_array() const;
+            operator const signed_int_exec_array()   const;
+            operator const signed_long_exec_array()  const;
+            #ifdef CONDUIT_HAS_LONG_LONG
+                operator const signed_long_long_exec_array() const;
+            #endif
+
+            // as unsigned exec_array
+            operator const unsigned_char_exec_array()  const;
+            operator const unsigned_short_exec_array() const;
+            operator const unsigned_int_exec_array()   const;
+            operator const unsigned_long_exec_array()  const;
+            #ifdef CONDUIT_HAS_LONG_LONG
+                operator const unsigned_long_long_exec_array() const;
+            #endif
+
+            // as floating point exec_array
+            operator const float_exec_array()  const;
+            operator const double_exec_array() const;
+            #ifdef CONDUIT_USE_LONG_DOUBLE
+                operator const long_double_exec_array() const;
+            #endif
+
+            // -- as exec_accessor -- //
+            operator char_exec_accessor() const;
+
+            /// signed integer arrays
+            operator signed_char_exec_accessor()  const;
+            operator signed_short_exec_accessor() const;
+            operator signed_int_exec_accessor()   const;
+            operator signed_long_exec_accessor()  const;
+            #ifdef CONDUIT_HAS_LONG_LONG
+                operator  signed_long_long_exec_accessor() const;
+            #endif
+
+            /// unsigned integer arrays
+            operator unsigned_char_exec_accessor()  const;
+            operator unsigned_short_exec_accessor() const;
+            operator unsigned_int_exec_accessor()   const;
+            operator unsigned_long_exec_accessor()  const;
+            #ifdef CONDUIT_HAS_LONG_LONG
+                operator  unsigned_long_long_exec_accessor() const;
+            #endif
+
+            /// floating point arrays
+            operator float_exec_accessor() const;
+            operator double_exec_accessor() const;
+            #ifdef CONDUIT_USE_LONG_DOUBLE
+                operator long_double_exec_accessor() const;
+            #endif
+
+
         private:
             // This is private we only want conduit::Node to create a
             // conduit::Node::ConstValue instance
