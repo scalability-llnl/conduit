@@ -116,7 +116,7 @@ TEST(conduit_data_array, array_stride_int8)
     arr[1] = 100;
     EXPECT_EQ(data[2],100);
 
-        std::cout << "Full Data" << std::endl;
+    std::cout << "Full Data" << std::endl;
 
     for(int i=0;i<20;i++)
     {
