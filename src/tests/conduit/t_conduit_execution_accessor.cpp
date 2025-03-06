@@ -21,22 +21,94 @@ using namespace conduit;
 TEST(conduit_exec_accessor, value)
 {
 
+    {
+        Node n;
+        n.set((int8)10);
+    
+        int8_exec_accessor  i8_acc(n);
+        int16_exec_accessor i16_acc(n);
+        int32_exec_accessor i32_acc(n);
+        int64_exec_accessor i64_acc(n);
+    
+        uint8_exec_accessor  ui8_acc(n);
+        uint16_exec_accessor ui16_acc(n);
+        uint32_exec_accessor ui32_acc(n);
+        uint64_exec_accessor ui64_acc(n);
+        
+        
+        float32_exec_accessor f32_acc(n);
+        float64_exec_accessor f64_acc(n);
+        
+        EXPECT_EQ(i8_acc[0],(int8)(10));
+        EXPECT_EQ(i16_acc[0],(int16)(10));
+        EXPECT_EQ(i32_acc[0],(int32)(10));
+        EXPECT_EQ(i64_acc[0],(int64)(10));
+        
+        
+        EXPECT_EQ(ui8_acc[0],(uint8)(10));
+        EXPECT_EQ(ui16_acc[0],(uint16)(10));
+        EXPECT_EQ(ui32_acc[0],(uint32)(10));
+        EXPECT_EQ(ui64_acc[0],(uint64)(10));
+    
+        EXPECT_EQ(f32_acc[0],(float32)(10));
+        EXPECT_EQ(f64_acc[0],(float64)(10));
+    }
+
+    {
+        Node n;
+        n.set((int8)10);
+
+        int8_exec_accessor  i8_acc  = n.value();
+        int16_exec_accessor i16_acc = n.value();
+        int32_exec_accessor i32_acc = n.value();
+        int64_exec_accessor i64_acc = n.value();
+
+        uint8_exec_accessor  ui8_acc  = n.value();
+        uint16_exec_accessor ui16_acc = n.value();
+        uint32_exec_accessor ui32_acc = n.value();
+        uint64_exec_accessor ui64_acc = n.value();
+        
+        
+        float32_exec_accessor f32_acc = n.value();
+        float64_exec_accessor f64_acc = n.value();
+        
+        EXPECT_EQ(i8_acc[0],(int8)(10));
+        EXPECT_EQ(i16_acc[0],(int16)(10));
+        EXPECT_EQ(i32_acc[0],(int32)(10));
+        EXPECT_EQ(i64_acc[0],(int64)(10));
+        
+        
+        EXPECT_EQ(ui8_acc[0],(uint8)(10));
+        EXPECT_EQ(ui16_acc[0],(uint16)(10));
+        EXPECT_EQ(ui32_acc[0],(uint32)(10));
+        EXPECT_EQ(ui64_acc[0],(uint64)(10));
+
+        EXPECT_EQ(f32_acc[0],(float32)(10));
+        EXPECT_EQ(f64_acc[0],(float64)(10));
+    }
+
+}
+
+//-----------------------------------------------------------------------------
+TEST(conduit_data_accessor, as_bitwidth_style)
+{
+
     Node n;
     n.set((int8)10);
 
-    int8_exec_accessor  i8_acc(n);
-    int16_exec_accessor i16_acc(n);
-    int32_exec_accessor i32_acc(n);
-    int64_exec_accessor i64_acc(n);
+    int8_exec_accessor  i8_acc  = n.as_int8_exec_accessor();
+    int16_exec_accessor i16_acc = n.as_int16_exec_accessor();
+    int32_exec_accessor i32_acc = n.as_int32_exec_accessor();
+    int64_exec_accessor i64_acc = n.as_int64_exec_accessor();
 
-    uint8_exec_accessor  ui8_acc(n);
-    uint16_exec_accessor ui16_acc(n);
-    uint32_exec_accessor ui32_acc(n);
-    uint64_exec_accessor ui64_acc(n);
+    uint8_exec_accessor  ui8_acc  = n.as_uint8_exec_accessor();
+    uint16_exec_accessor ui16_acc = n.as_uint16_exec_accessor();
+    uint32_exec_accessor ui32_acc = n.as_uint32_exec_accessor();
+    uint64_exec_accessor ui64_acc = n.as_uint64_exec_accessor();
     
     
-    float32_exec_accessor f32_acc(n);
-    float64_exec_accessor f64_acc(n);
+    float32_exec_accessor f32_acc = n.as_float32_exec_accessor();
+    float64_exec_accessor f64_acc = n.as_float64_exec_accessor();
     
     EXPECT_EQ(i8_acc[0],(int8)(10));
     EXPECT_EQ(i16_acc[0],(int16)(10));
@@ -100,140 +172,231 @@ TEST(conduit_exec_accessor, summary_stats)
 TEST(conduit_exec_accessor, as_cstyle)
 {
 
-    Node n;
-    n.set((int8)10);
-
-    char_exec_accessor         c_acc(n);
-    signed_char_exec_accessor  sc_acc(n);
-    signed_short_exec_accessor ss_acc(n);
-    signed_int_exec_accessor   si_acc(n);
-    signed_long_exec_accessor  sl_acc(n);
-
+    {
+        Node n;
+        n.set((int8)10);
+    
+        char_exec_accessor         c_acc(n);
+        signed_char_exec_accessor  sc_acc(n);
+        signed_short_exec_accessor ss_acc(n);
+        signed_int_exec_accessor   si_acc(n);
+        signed_long_exec_accessor  sl_acc(n);
+    
 #ifdef CONDUIT_HAS_LONG_LONG
-    signed_long_long_exec_accessor  sll_acc(n);
+        signed_long_long_exec_accessor  sll_acc(n);
 #endif
-
-    unsigned_char_exec_accessor  usc_acc(n);
-    unsigned_short_exec_accessor uss_acc(n);
-    unsigned_int_exec_accessor   usi_acc(n);
-    unsigned_long_exec_accessor  usl_acc(n);
-
+    
+        unsigned_char_exec_accessor  usc_acc(n);
+        unsigned_short_exec_accessor uss_acc(n);
+        unsigned_int_exec_accessor   usi_acc(n);
+        unsigned_long_exec_accessor  usl_acc(n);
+    
 #ifdef CONDUIT_HAS_LONG_LONG
-    unsigned_long_long_exec_accessor  usll_acc(n);
+        unsigned_long_long_exec_accessor  usll_acc(n);
 #endif
-
-    float_exec_accessor  f_acc(n);
-    double_exec_accessor d_acc(n);
-
+    
+        float_exec_accessor  f_acc(n);
+        double_exec_accessor d_acc(n);
+    
 #ifdef CONDUIT_USE_LONG_DOUBLE
-    long_double_exec_accessor  ld_acc(n);
+        long_double_exec_accessor  ld_acc(n);
 #endif
-
-    EXPECT_EQ(c_acc[0],(char)(10));
-    EXPECT_EQ(sc_acc[0],(signed char)(10));
-    EXPECT_EQ(ss_acc[0],(signed short)(10));
-    EXPECT_EQ(si_acc[0],(signed int)(10));
-    EXPECT_EQ(sl_acc[0],(signed long)(10));
-
+    
+        EXPECT_EQ(c_acc[0],(char)(10));
+        EXPECT_EQ(sc_acc[0],(signed char)(10));
+        EXPECT_EQ(ss_acc[0],(signed short)(10));
+        EXPECT_EQ(si_acc[0],(signed int)(10));
+        EXPECT_EQ(sl_acc[0],(signed long)(10));
+    
 #ifdef CONDUIT_HAS_LONG_LONG
-    EXPECT_EQ(sll_acc[0],(signed long long)(10));
+        EXPECT_EQ(sll_acc[0],(signed long long)(10));
 #endif
-
-    EXPECT_EQ(usc_acc[0],(unsigned char)(10));
-    EXPECT_EQ(uss_acc[0],(unsigned short)(10));
-    EXPECT_EQ(usi_acc[0],(unsigned int)(10));
-    EXPECT_EQ(usl_acc[0],(unsigned long)(10));
-
+    
+        EXPECT_EQ(usc_acc[0],(unsigned char)(10));
+        EXPECT_EQ(uss_acc[0],(unsigned short)(10));
+        EXPECT_EQ(usi_acc[0],(unsigned int)(10));
+        EXPECT_EQ(usl_acc[0],(unsigned long)(10));
+    
 #ifdef CONDUIT_HAS_LONG_LONG
-    EXPECT_EQ(usll_acc[0],(unsigned long long)(10));
+        EXPECT_EQ(usll_acc[0],(unsigned long long)(10));
 #endif
-
-    EXPECT_EQ(f_acc[0],(float)(10));
-    EXPECT_EQ(d_acc[0],(double)(10));
-
+    
+        EXPECT_EQ(f_acc[0],(float)(10));
+        EXPECT_EQ(d_acc[0],(double)(10));
+    
 #ifdef CONDUIT_USE_LONG_DOUBLE
-    EXPECT_EQ(ld_acc[0],(long double)(10));
+        EXPECT_EQ(ld_acc[0],(long double)(10));
 #endif 
+    }
+
+    {
+        Node n;
+        n.set((int8)10);
+    
+        char_exec_accessor         c_acc  = n.as_char_exec_accessor();
+        signed_char_exec_accessor  sc_acc = n.as_signed_char_exec_accessor();
+        signed_short_exec_accessor ss_acc = n.as_signed_short_exec_accessor();
+        signed_int_exec_accessor   si_acc = n.as_signed_int_exec_accessor();
+        signed_long_exec_accessor  sl_acc = n.as_signed_long_exec_accessor();
+
+#ifdef CONDUIT_HAS_LONG_LONG
+        signed_long_long_exec_accessor  sll_acc = n.as_signed_long_long_exec_accessor();
+#endif
+
+        unsigned_char_exec_accessor  usc_acc = n.as_unsigned_char_exec_accessor();
+        unsigned_short_exec_accessor uss_acc = n.as_unsigned_short_exec_accessor();
+        unsigned_int_exec_accessor   usi_acc = n.as_unsigned_int_exec_accessor();
+        unsigned_long_exec_accessor  usl_acc = n.as_unsigned_long_exec_accessor();
+
+#ifdef CONDUIT_HAS_LONG_LONG
+        unsigned_long_long_exec_accessor  usll_acc = n.as_unsigned_long_long_exec_accessor();
+#endif
+
+        float_exec_accessor  f_acc = n.as_float_exec_accessor();
+        double_exec_accessor d_acc = n.as_double_exec_accessor();
+
+#ifdef CONDUIT_USE_LONG_DOUBLE
+        long_double_exec_accessor  ld_acc = n.as_long_double_exec_accessor();
+#endif
+    
+        EXPECT_EQ(c_acc[0],(char)(10));
+        EXPECT_EQ(sc_acc[0],(signed char)(10));
+        EXPECT_EQ(ss_acc[0],(signed short)(10));
+        EXPECT_EQ(si_acc[0],(signed int)(10));
+        EXPECT_EQ(sl_acc[0],(signed long)(10));
+    
+#ifdef CONDUIT_HAS_LONG_LONG
+        EXPECT_EQ(sll_acc[0],(signed long long)(10));
+#endif
+    
+        EXPECT_EQ(usc_acc[0],(unsigned char)(10));
+        EXPECT_EQ(uss_acc[0],(unsigned short)(10));
+        EXPECT_EQ(usi_acc[0],(unsigned int)(10));
+        EXPECT_EQ(usl_acc[0],(unsigned long)(10));
+    
+#ifdef CONDUIT_HAS_LONG_LONG
+        EXPECT_EQ(usll_acc[0],(unsigned long long)(10));
+#endif
+    
+        EXPECT_EQ(f_acc[0],(float)(10));
+        EXPECT_EQ(d_acc[0],(double)(10));
+    
+#ifdef CONDUIT_USE_LONG_DOUBLE
+        EXPECT_EQ(ld_acc[0],(long double)(10));
+#endif 
+    }
 
 }
 
-// // TODO
-// //-----------------------------------------------------------------------------
-// TEST(conduit_exec_accessor, default_construct)
-// {
-//     index_t_accessor n_acc;
-//     Node n;
-//     n.set({-1,2,-3,4,-5});
+//-----------------------------------------------------------------------------
+TEST(conduit_exec_accessor, default_construct)
+{
+    index_t_exec_accessor n_acc;
+    Node n;
+    n.set({-1,2,-3,4,-5});
 
-//     n_acc = n.value(); // .value() should give us an exec accessor
-//     EXPECT_EQ(n_acc[0],(index_t)(-1));
-//     EXPECT_EQ(n_acc[1],(index_t)( 2));
-//     EXPECT_EQ(n_acc[2],(index_t)(-3));
-//     EXPECT_EQ(n_acc[3],(index_t)( 4));
-//     EXPECT_EQ(n_acc[4],(index_t)(-5));
+    n_acc = n.value();
+    EXPECT_EQ(n_acc[0],(index_t)(-1));
+    EXPECT_EQ(n_acc[1],(index_t)( 2));
+    EXPECT_EQ(n_acc[2],(index_t)(-3));
+    EXPECT_EQ(n_acc[3],(index_t)( 4));
+    EXPECT_EQ(n_acc[4],(index_t)(-5));
 
 
-// ///////////////////
-
-//     index_t_exec_accessor n_acc;
-//     Node n;
-//     n.set({-1,2,-3,4,-5});
-//     index_t_exec_accessor n_acc2(n);
-
-//     n_acc = n_acc2;
-//     EXPECT_EQ(n_acc[0],(index_t)(-1));
-//     EXPECT_EQ(n_acc[1],(index_t)( 2));
-//     EXPECT_EQ(n_acc[2],(index_t)(-3));
-//     EXPECT_EQ(n_acc[3],(index_t)( 4));
-//     EXPECT_EQ(n_acc[4],(index_t)(-5));
-// }
+}
 
 
 //-----------------------------------------------------------------------------
 TEST(conduit_exec_accessor, set)
 {
 
-    Node n;
-    n.set(DataType::int8(10));
+    {
+        Node n;
+        n.set(DataType::int8(10));
+    
+        int8_exec_accessor  i8_acc(n);
+        int16_exec_accessor i16_acc(n);
+        int32_exec_accessor i32_acc(n);
+        int64_exec_accessor i64_acc(n);
+    
+        uint8_exec_accessor  ui8_acc(n);
+        uint16_exec_accessor ui16_acc(n);
+        uint32_exec_accessor ui32_acc(n);
+        uint64_exec_accessor ui64_acc(n);
+    
+        float32_exec_accessor f32_acc(n);
+        float64_exec_accessor f64_acc(n);
+    
+        i8_acc.set(0,-4);
+        i16_acc.set(1,-8);
+        i32_acc.set(2,-16);
+        i64_acc.set(3,-32);
+    
+        ui8_acc.set(4, 4);
+        ui16_acc.set(5,8);
+        ui32_acc.set(6,16);
+        ui64_acc.set(7,32);
+    
+        f32_acc.set(8,16);
+        f64_acc.set(9,32);
+    
+        EXPECT_EQ(i32_acc[0],-4);
+        EXPECT_EQ(i32_acc[1],-8);
+        EXPECT_EQ(i32_acc[2],-16);
+        EXPECT_EQ(i32_acc[3],-32);
+    
+        EXPECT_EQ(i32_acc[4],4);
+        EXPECT_EQ(i32_acc[5],8);
+        EXPECT_EQ(i32_acc[6],16);
+        EXPECT_EQ(i32_acc[7],32);
+    
+        EXPECT_EQ(i32_acc[8],16);
+        EXPECT_EQ(i32_acc[9],32);
+    }
 
-    int8_exec_accessor  i8_acc(n);
-    int16_exec_accessor i16_acc(n);
-    int32_exec_accessor i32_acc(n);
-    int64_exec_accessor i64_acc(n);
+    {
+        Node n;
+        n.set(DataType::int8(10));
 
-    uint8_exec_accessor  ui8_acc(n);
-    uint16_exec_accessor ui16_acc(n);
-    uint32_exec_accessor ui32_acc(n);
-    uint64_exec_accessor ui64_acc(n);
+        int8_exec_accessor  i8_acc  = n.value();
+        int16_exec_accessor i16_acc = n.value();
+        int32_exec_accessor i32_acc = n.value();
+        int64_exec_accessor i64_acc = n.value();
 
-    float32_exec_accessor f32_acc(n);
-    float64_exec_accessor f64_acc(n);
+        uint8_exec_accessor  ui8_acc  = n.value();
+        uint16_exec_accessor ui16_acc = n.value();
+        uint32_exec_accessor ui32_acc = n.value();
+        uint64_exec_accessor ui64_acc = n.value();
 
-    i8_acc.set(0,-4);
-    i16_acc.set(1,-8);
-    i32_acc.set(2,-16);
-    i64_acc.set(3,-32);
+        float32_exec_accessor f32_acc = n.value();
+        float64_exec_accessor f64_acc = n.value();
 
-    ui8_acc.set(4, 4);
-    ui16_acc.set(5,8);
-    ui32_acc.set(6,16);
-    ui64_acc.set(7,32);
+        i8_acc.set(0,-4);
+        i16_acc.set(1,-8);
+        i32_acc.set(2,-16);
+        i64_acc.set(3,-32);
 
-    f32_acc.set(8,16);
-    f64_acc.set(9,32);
+        ui8_acc.set(4, 4);
+        ui16_acc.set(5,8);
+        ui32_acc.set(6,16);
+        ui64_acc.set(7,32);
 
-    EXPECT_EQ(i32_acc[0],-4);
-    EXPECT_EQ(i32_acc[1],-8);
-    EXPECT_EQ(i32_acc[2],-16);
-    EXPECT_EQ(i32_acc[3],-32);
+        f32_acc.set(8,16);
+        f64_acc.set(9,32);
 
-    EXPECT_EQ(i32_acc[4],4);
-    EXPECT_EQ(i32_acc[5],8);
-    EXPECT_EQ(i32_acc[6],16);
-    EXPECT_EQ(i32_acc[7],32);
+        EXPECT_EQ(i32_acc[0],-4);
+        EXPECT_EQ(i32_acc[1],-8);
+        EXPECT_EQ(i32_acc[2],-16);
+        EXPECT_EQ(i32_acc[3],-32);
 
-    EXPECT_EQ(i32_acc[8],16);
-    EXPECT_EQ(i32_acc[9],32);
+        EXPECT_EQ(i32_acc[4],4);
+        EXPECT_EQ(i32_acc[5],8);
+        EXPECT_EQ(i32_acc[6],16);
+        EXPECT_EQ(i32_acc[7],32);
+
+        EXPECT_EQ(i32_acc[8],16);
+        EXPECT_EQ(i32_acc[9],32);
+    }
 
 }
 
@@ -310,8 +473,7 @@ TEST(conduit_exec_accessor, set_using_data_array)
 
     // int8_array
     n["vint8"].set(DataType::int8(10));
-    int8_exec_accessor vint8_acc(n["vint8"]);
-    vint8_acc.set(va_int8);
+    n["vint8"].as_int8_exec_accessor().set(va_int8);
     int8 *n_int8_ptr = n["vint8"].value();
     for(index_t i=0;i<10;i++)
     {
@@ -320,8 +482,7 @@ TEST(conduit_exec_accessor, set_using_data_array)
 
     // int16_array
     n["vint16"].set(DataType::int16(10));
-    int16_exec_accessor vint16_acc(n["vint16"]);
-    vint16_acc.set(va_int16);
+    n["vint16"].as_int16_exec_accessor().set(va_int16);
     int16 *n_int16_ptr = n["vint16"].value();
     for(index_t i=0;i<10;i++)
     {
@@ -330,8 +491,7 @@ TEST(conduit_exec_accessor, set_using_data_array)
 
     // int32_array
     n["vint32"].set(DataType::int32(10));
-    int32_exec_accessor vint32_acc(n["vint32"]);
-    vint32_acc.set(va_int32);
+    n["vint32"].as_int32_exec_accessor().set(va_int32);
     int32 *n_int32_ptr = n["vint32"].value();
     for(index_t i=0;i<10;i++)
     {
@@ -340,8 +500,7 @@ TEST(conduit_exec_accessor, set_using_data_array)
 
     // int64_array
     n["vint64"].set(DataType::int64(10));
-    int64_exec_accessor vint64_acc(n["vint64"]);
-    vint64_acc.set(va_int64);
+    n["vint64"].as_int64_exec_accessor().set(va_int64);
     int64 *n_int64_ptr = n["vint64"].value();
     for(index_t i=0;i<10;i++)
     {
@@ -350,8 +509,7 @@ TEST(conduit_exec_accessor, set_using_data_array)
 
     // uint8_array
     n["vuint8"].set(DataType::uint8(10));
-    uint8_exec_accessor vuint8_acc(n["vuint8"]);
-    vuint8_acc.set(va_uint8);
+    n["vuint8"].as_uint8_exec_accessor().set(va_uint8);
     uint8 *n_uint8_ptr = n["vuint8"].value();
     for(index_t i=0;i<10;i++)
     {
@@ -360,8 +518,7 @@ TEST(conduit_exec_accessor, set_using_data_array)
 
     // uint16_array
     n["vuint16"].set(DataType::uint16(10));
-    uint16_exec_accessor vuint16_acc(n["vuint16"]);
-    vuint16_acc.set(va_uint16);
+    n["vuint16"].as_uint16_exec_accessor().set(va_uint16);
     uint16 *n_uint16_ptr = n["vuint16"].value();
     for(index_t i=0;i<10;i++)
     {
@@ -370,8 +527,7 @@ TEST(conduit_exec_accessor, set_using_data_array)
 
     // uint32_array
     n["vuint32"].set(DataType::uint32(10));
-    uint32_exec_accessor vuint32_acc(n["vuint32"]);
-    vuint32_acc.set(va_uint32);
+    n["vuint32"].as_uint32_exec_accessor().set(va_uint32);
     uint32 *n_uint32_ptr = n["vuint32"].value();
     for(index_t i=0;i<10;i++)
     {
@@ -380,8 +536,7 @@ TEST(conduit_exec_accessor, set_using_data_array)
 
     // uint64_array
     n["vuint64"].set(DataType::uint64(10));
-    uint64_exec_accessor vuint64_acc(n["vuint64"]);
-    vuint64_acc.set(va_uint64);
+    n["vuint64"].as_uint64_exec_accessor().set(va_uint64);
     uint64 *n_uint64_ptr = n["vuint64"].value();
     for(index_t i=0;i<10;i++)
     {
@@ -391,8 +546,7 @@ TEST(conduit_exec_accessor, set_using_data_array)
 
     // float32_array
     n["vfloat32"].set(DataType::float32(10));
-    float32_exec_accessor vfloat32_acc(n["vfloat32"]);
-    vfloat32_acc.set(va_float32);
+    n["vfloat32"].as_float32_exec_accessor().set(va_float32);
     float32 *n_float32_ptr = n["vfloat32"].value();
     for(index_t i=0;i<10;i++)
     {
@@ -401,8 +555,7 @@ TEST(conduit_exec_accessor, set_using_data_array)
 
     // float64_array
     n["vfloat64"].set(DataType::float64(10));
-    float64_exec_accessor vfloat64_acc(n["vfloat64"]);
-    vfloat64_acc.set(va_float64);
+    n["vfloat64"].as_float64_exec_accessor().set(va_float64);
     float64 *n_float64_ptr = n["vfloat64"].value();
     for(index_t i=0;i<10;i++)
     {
@@ -447,8 +600,7 @@ TEST(conduit_exec_accessor, set_using_data_accessor)
 
     // int8_array
     n["vint8"].set(DataType::int8(10));
-    int8_exec_accessor vint8_acc(n["vint8"]);
-    vint8_acc.set(vacc_int8);
+    n["vint8"].as_int8_exec_accessor().set(vacc_int8);
     int8 *n_int8_ptr = n["vint8"].value();
     for(index_t i=0;i<10;i++)
     {
@@ -457,8 +609,7 @@ TEST(conduit_exec_accessor, set_using_data_accessor)
 
     // int16_array
     n["vint16"].set(DataType::int16(10));
-    int16_exec_accessor vint16_acc(n["vint16"]);
-    vint16_acc.set(vacc_int16);
+    n["vint16"].as_int16_exec_accessor().set(vacc_int16);
     int16 *n_int16_ptr = n["vint16"].value();
     for(index_t i=0;i<10;i++)
     {
@@ -467,8 +618,7 @@ TEST(conduit_exec_accessor, set_using_data_accessor)
 
     // int32_array
     n["vint32"].set(DataType::int32(10));
-    int32_exec_accessor vint32_acc(n["vint32"]);
-    vint32_acc.set(vacc_int32);
+    n["vint32"].as_int32_exec_accessor().set(vacc_int32);
     int32 *n_int32_ptr = n["vint32"].value();
     for(index_t i=0;i<10;i++)
     {
@@ -477,8 +627,7 @@ TEST(conduit_exec_accessor, set_using_data_accessor)
 
     // int64_array
     n["vint64"].set(DataType::int64(10));
-    int64_exec_accessor vint64_acc(n["vint64"]);
-    vint64_acc.set(vacc_int64);
+    n["vint64"].as_int64_exec_accessor().set(vacc_int64);
     int64 *n_int64_ptr = n["vint64"].value();
     for(index_t i=0;i<10;i++)
     {
@@ -487,8 +636,7 @@ TEST(conduit_exec_accessor, set_using_data_accessor)
 
     // uint8_array
     n["vuint8"].set(DataType::uint8(10));
-    uint8_exec_accessor vuint8_acc(n["vuint8"]);
-    vuint8_acc.set(vacc_uint8);
+    n["vuint8"].as_uint8_exec_accessor().set(vacc_uint8);
     uint8 *n_uint8_ptr = n["vuint8"].value();
     for(index_t i=0;i<10;i++)
     {
@@ -497,8 +645,7 @@ TEST(conduit_exec_accessor, set_using_data_accessor)
 
     // uint16_array
     n["vuint16"].set(DataType::uint16(10));
-    uint16_exec_accessor vuint16_acc(n["vuint16"]);
-    vuint16_acc.set(vacc_uint16);
+    n["vuint16"].as_uint16_exec_accessor().set(vacc_uint16);
     uint16 *n_uint16_ptr = n["vuint16"].value();
     for(index_t i=0;i<10;i++)
     {
@@ -507,8 +654,7 @@ TEST(conduit_exec_accessor, set_using_data_accessor)
 
     // uint32_array
     n["vuint32"].set(DataType::uint32(10));
-    uint32_exec_accessor vuint32_acc(n["vuint32"]);
-    vuint32_acc.set(vacc_uint32);
+    n["vuint32"].as_uint32_exec_accessor().set(vacc_uint32);
     uint32 *n_uint32_ptr = n["vuint32"].value();
     for(index_t i=0;i<10;i++)
     {
@@ -517,8 +663,7 @@ TEST(conduit_exec_accessor, set_using_data_accessor)
 
     // uint64_array
     n["vuint64"].set(DataType::uint64(10));
-    uint64_exec_accessor vuint64_acc(n["vuint64"]);
-    vuint64_acc.set(vacc_uint64);
+    n["vuint64"].as_uint64_exec_accessor().set(vacc_uint64);
     uint64 *n_uint64_ptr = n["vuint64"].value();
     for(index_t i=0;i<10;i++)
     {
@@ -528,8 +673,7 @@ TEST(conduit_exec_accessor, set_using_data_accessor)
 
     // float32_array
     n["vfloat32"].set(DataType::float32(10));
-    float32_exec_accessor vfloat32_acc(n["vfloat32"]);
-    vfloat32_acc.set(vacc_float32);
+    n["vfloat32"].as_float32_exec_accessor().set(vacc_float32);
     float32 *n_float32_ptr = n["vfloat32"].value();
     for(index_t i=0;i<10;i++)
     {
@@ -538,8 +682,7 @@ TEST(conduit_exec_accessor, set_using_data_accessor)
 
     // float64_array
     n["vfloat64"].set(DataType::float64(10));
-    float64_exec_accessor vfloat64_acc(n["vfloat64"]);
-    vfloat64_acc.set(vacc_float64);
+    n["vfloat64"].as_float64_exec_accessor().set(vacc_float64);
     float64 *n_float64_ptr = n["vfloat64"].value();
     for(index_t i=0;i<10;i++)
     {
@@ -606,8 +749,7 @@ TEST(conduit_exec_accessor, set_using_exec_array)
 
     // int8_array
     n["vint8"].set(DataType::int8(10));
-    int8_exec_accessor vint8_acc(n["vint8"]);
-    vint8_acc.set(va_int8);
+    n["vint8"].as_int8_exec_accessor().set(va_int8);
     int8 *n_int8_ptr = n["vint8"].value();
     for(index_t i=0;i<10;i++)
     {
@@ -616,8 +758,7 @@ TEST(conduit_exec_accessor, set_using_exec_array)
 
     // int16_array
     n["vint16"].set(DataType::int16(10));
-    int16_exec_accessor vint16_acc(n["vint16"]);
-    vint16_acc.set(va_int16);
+    n["vint16"].as_int16_exec_accessor().set(va_int16);
     int16 *n_int16_ptr = n["vint16"].value();
     for(index_t i=0;i<10;i++)
     {
@@ -626,8 +767,7 @@ TEST(conduit_exec_accessor, set_using_exec_array)
 
     // int32_array
     n["vint32"].set(DataType::int32(10));
-    int32_exec_accessor vint32_acc(n["vint32"]);
-    vint32_acc.set(va_int32);
+    n["vint32"].as_int32_exec_accessor().set(va_int32);
     int32 *n_int32_ptr = n["vint32"].value();
     for(index_t i=0;i<10;i++)
     {
@@ -636,8 +776,7 @@ TEST(conduit_exec_accessor, set_using_exec_array)
 
     // int64_array
     n["vint64"].set(DataType::int64(10));
-    int64_exec_accessor vint64_acc(n["vint64"]);
-    vint64_acc.set(va_int64);
+    n["vint64"].as_int64_exec_accessor().set(va_int64);
     int64 *n_int64_ptr = n["vint64"].value();
     for(index_t i=0;i<10;i++)
     {
@@ -646,8 +785,7 @@ TEST(conduit_exec_accessor, set_using_exec_array)
 
     // uint8_array
     n["vuint8"].set(DataType::uint8(10));
-    uint8_exec_accessor vuint8_acc(n["vuint8"]);
-    vuint8_acc.set(va_uint8);
+    n["vuint8"].as_uint8_exec_accessor().set(va_uint8);
     uint8 *n_uint8_ptr = n["vuint8"].value();
     for(index_t i=0;i<10;i++)
     {
@@ -656,8 +794,7 @@ TEST(conduit_exec_accessor, set_using_exec_array)
 
     // uint16_array
     n["vuint16"].set(DataType::uint16(10));
-    uint16_exec_accessor vuint16_acc(n["vuint16"]);
-    vuint16_acc.set(va_uint16);
+    n["vuint16"].as_uint16_exec_accessor().set(va_uint16);
     uint16 *n_uint16_ptr = n["vuint16"].value();
     for(index_t i=0;i<10;i++)
     {
@@ -666,8 +803,7 @@ TEST(conduit_exec_accessor, set_using_exec_array)
 
     // uint32_array
     n["vuint32"].set(DataType::uint32(10));
-    uint32_exec_accessor vuint32_acc(n["vuint32"]);
-    vuint32_acc.set(va_uint32);
+    n["vuint32"].as_uint32_exec_accessor().set(va_uint32);
     uint32 *n_uint32_ptr = n["vuint32"].value();
     for(index_t i=0;i<10;i++)
     {
@@ -676,8 +812,7 @@ TEST(conduit_exec_accessor, set_using_exec_array)
 
     // uint64_array
     n["vuint64"].set(DataType::uint64(10));
-    uint64_exec_accessor vuint64_acc(n["vuint64"]);
-    vuint64_acc.set(va_uint64);
+    n["vuint64"].as_uint64_exec_accessor().set(va_uint64);
     uint64 *n_uint64_ptr = n["vuint64"].value();
     for(index_t i=0;i<10;i++)
     {
@@ -687,8 +822,7 @@ TEST(conduit_exec_accessor, set_using_exec_array)
 
     // float32_array
     n["vfloat32"].set(DataType::float32(10));
-    float32_exec_accessor vfloat32_acc(n["vfloat32"]);
-    vfloat32_acc.set(va_float32);
+    n["vfloat32"].as_float32_exec_accessor().set(va_float32);
     float32 *n_float32_ptr = n["vfloat32"].value();
     for(index_t i=0;i<10;i++)
     {
@@ -697,8 +831,7 @@ TEST(conduit_exec_accessor, set_using_exec_array)
 
     // float64_array
     n["vfloat64"].set(DataType::float64(10));
-    float64_exec_accessor vfloat64_acc(n["vfloat64"]);
-    vfloat64_acc.set(va_float64);
+    n["vfloat64"].as_float64_exec_accessor().set(va_float64);
     float64 *n_float64_ptr = n["vfloat64"].value();
     for(index_t i=0;i<10;i++)
     {
@@ -766,8 +899,7 @@ TEST(conduit_exec_accessor, set_using_exec_accessor)
 
     // int8_array
     n["vint8"].set(DataType::int8(10));
-    int8_exec_accessor vint8_acc(n["vint8"]);
-    vint8_acc.set(vacc_int8);
+    n["vint8"].as_int8_exec_accessor().set(vacc_int8);
     int8 *n_int8_ptr = n["vint8"].value();
     for(index_t i=0;i<10;i++)
     {
@@ -776,8 +908,7 @@ TEST(conduit_exec_accessor, set_using_exec_accessor)
 
     // int16_array
     n["vint16"].set(DataType::int16(10));
-    int16_exec_accessor vint16_acc(n["vint16"]);
-    vint16_acc.set(vacc_int16);
+    n["vint16"].as_int16_exec_accessor().set(vacc_int16);
     int16 *n_int16_ptr = n["vint16"].value();
     for(index_t i=0;i<10;i++)
     {
@@ -786,8 +917,7 @@ TEST(conduit_exec_accessor, set_using_exec_accessor)
 
     // int32_array
     n["vint32"].set(DataType::int32(10));
-    int32_exec_accessor vint32_acc(n["vint32"]);
-    vint32_acc.set(vacc_int32);
+    n["vint32"].as_int32_exec_accessor().set(vacc_int32);
     int32 *n_int32_ptr = n["vint32"].value();
     for(index_t i=0;i<10;i++)
     {
@@ -796,8 +926,7 @@ TEST(conduit_exec_accessor, set_using_exec_accessor)
 
     // int64_array
     n["vint64"].set(DataType::int64(10));
-    int64_exec_accessor vint64_acc(n["vint64"]);
-    vint64_acc.set(vacc_int64);
+    n["vint64"].as_int64_exec_accessor().set(vacc_int64);
     int64 *n_int64_ptr = n["vint64"].value();
     for(index_t i=0;i<10;i++)
     {
@@ -806,8 +935,7 @@ TEST(conduit_exec_accessor, set_using_exec_accessor)
 
     // uint8_array
     n["vuint8"].set(DataType::uint8(10));
-    uint8_exec_accessor vuint8_acc(n["vuint8"]);
-    vuint8_acc.set(vacc_uint8);
+    n["vuint8"].as_uint8_exec_accessor().set(vacc_uint8);
     uint8 *n_uint8_ptr = n["vuint8"].value();
     for(index_t i=0;i<10;i++)
     {
@@ -816,8 +944,7 @@ TEST(conduit_exec_accessor, set_using_exec_accessor)
 
     // uint16_array
     n["vuint16"].set(DataType::uint16(10));
-    uint16_exec_accessor vuint16_acc(n["vuint16"]);
-    vuint16_acc.set(vacc_uint16);
+    n["vuint16"].as_uint16_exec_accessor().set(vacc_uint16);
     uint16 *n_uint16_ptr = n["vuint16"].value();
     for(index_t i=0;i<10;i++)
     {
@@ -826,8 +953,7 @@ TEST(conduit_exec_accessor, set_using_exec_accessor)
 
     // uint32_array
     n["vuint32"].set(DataType::uint32(10));
-    uint32_exec_accessor vuint32_acc(n["vuint32"]);
-    vuint32_acc.set(vacc_uint32);
+    n["vuint32"].as_uint32_exec_accessor().set(vacc_uint32);
     uint32 *n_uint32_ptr = n["vuint32"].value();
     for(index_t i=0;i<10;i++)
     {
@@ -836,8 +962,7 @@ TEST(conduit_exec_accessor, set_using_exec_accessor)
 
     // uint64_array
     n["vuint64"].set(DataType::uint64(10));
-    uint64_exec_accessor vuint64_acc(n["vuint64"]);
-    vuint64_acc.set(vacc_uint64);
+    n["vuint64"].as_uint64_exec_accessor().set(vacc_uint64);
     uint64 *n_uint64_ptr = n["vuint64"].value();
     for(index_t i=0;i<10;i++)
     {
@@ -847,8 +972,7 @@ TEST(conduit_exec_accessor, set_using_exec_accessor)
 
     // float32_array
     n["vfloat32"].set(DataType::float32(10));
-    float32_exec_accessor vfloat32_acc(n["vfloat32"]);
-    vfloat32_acc.set(vacc_float32);
+    n["vfloat32"].as_float32_exec_accessor().set(vacc_float32);
     float32 *n_float32_ptr = n["vfloat32"].value();
     for(index_t i=0;i<10;i++)
     {
@@ -857,8 +981,7 @@ TEST(conduit_exec_accessor, set_using_exec_accessor)
 
     // float64_array
     n["vfloat64"].set(DataType::float64(10));
-    float64_exec_accessor vfloat64_acc(n["vfloat64"]);
-    vfloat64_acc.set(vacc_float64);
+    n["vfloat64"].as_float64_exec_accessor().set(vacc_float64);
     float64 *n_float64_ptr = n["vfloat64"].value();
     for(index_t i=0;i<10;i++)
     {
