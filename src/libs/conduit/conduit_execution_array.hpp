@@ -4,12 +4,12 @@
 
 //-----------------------------------------------------------------------------
 ///
-/// file: conduit_data_array.hpp
+/// file: conduit_execution_array.hpp
 ///
 //-----------------------------------------------------------------------------
 
-#ifndef CONDUIT_DATA_ARRAY_HPP
-#define CONDUIT_DATA_ARRAY_HPP
+#ifndef CONDUIT_EXECUTION_ARRAY_HPP
+#define CONDUIT_EXECUTION_ARRAY_HPP
 
 #include <initializer_list>
 
@@ -19,6 +19,7 @@
 #include "conduit_core.hpp"
 #include "conduit_data_type.hpp"
 #include "conduit_utils.hpp"
+#include "conduit_execution.hpp"
 #include "conduit_data_accessor.hpp"
 #include "conduit_execution_accessor.hpp"
 
@@ -29,28 +30,33 @@ namespace conduit
 {
 
 //-----------------------------------------------------------------------------
-// -- forward declarations required for conduit::DataArray --
+// -- forward declarations required for conduit::ExecutionAccessor --
 //-----------------------------------------------------------------------------
+class Node;
 template <typename T>
-class ExecutionArray;
+class DataArray;
+template <typename T>
+class ExecutionAccessor;
 
 //-----------------------------------------------------------------------------
-// -- begin conduit::DataArray --
+// -- begin conduit::ExecutionArray --
 //-----------------------------------------------------------------------------
 ///
-/// class: conduit::DataArray
+/// class: conduit::ExecutionArray
 ///
 /// description:
-///  Light weight pointer wrapper that handles addressing for ragged arrays.
+///  Light weight pointer wrapper that handles addressing for ragged arrays 
+///  stored in Nodes; also supports memory movement between host and device.
 ///
 //-----------------------------------------------------------------------------
 template <typename T> 
-class CONDUIT_API DataArray
+class CONDUIT_API ExecutionArray
 {
 public: 
+    
 //-----------------------------------------------------------------------------
 //
-// -- conduit::DataType public methods --
+// -- conduit::ExecutionArray public methods --
 //
 //-----------------------------------------------------------------------------
 
@@ -58,18 +64,22 @@ public:
 // Construction and Destruction
 //-----------------------------------------------------------------------------
         /// default constructor
-        DataArray();
+        ExecutionArray();
         /// copy constructor
-        DataArray(const DataArray<T> &array);
-        /// Access a pointer to raw data according to dtype description.
-        DataArray(void *data, const DataType &dtype);
-        /// Access a const pointer to raw data according to dtype description.
-        DataArray(const void *data, const DataType &dtype);
-        /// Destructor
-       ~DataArray();
+        ExecutionArray(const ExecutionArray<T> &array);
+        /// Access a pointer to node data according to node dtype description.
+        ExecutionArray(Node &node);
+        // /// Access a const pointer to node data according to node dtype description.
+        ExecutionArray(const Node &node);
+        /// Access a pointer to node data according to node dtype description.
+        ExecutionArray(Node *node);
+        /// Access a const pointer to node data according to node dtype description.
+        ExecutionArray(const Node *node);
+        /// Destructor.
+       ~ExecutionArray();
 
     /// Assignment operator
-    DataArray<T>   &operator=(const DataArray<T> &array);
+    ExecutionArray<T>   &operator=(const ExecutionArray<T> &array);
 
 //-----------------------------------------------------------------------------
 // Data and Info Access
@@ -87,27 +97,32 @@ public:
     void           *element_ptr(index_t idx)
                     {
                         return static_cast<char*>(m_data) +
-                            m_dtype.element_index(idx);
+                            dtype().element_index(idx);
                     };
 
     const void     *element_ptr(index_t idx) const 
                     {
                          return static_cast<char*>(m_data) +
-                            m_dtype.element_index(idx);
+                            dtype().element_index(idx);
                     };
 
     index_t         number_of_elements() const 
-                        {return m_dtype.number_of_elements();}
-    const DataType &dtype()    const 
-                        { return m_dtype;} 
+                        {return dtype().number_of_elements();}
+
+    const DataType &dtype() const;
+
+    const DataType &orig_dtype() const;
+
+    const DataType &other_dtype() const;
+
     void           *data_ptr() const 
                         { return m_data;}
 
-    bool            compatible(const DataArray<T> &array) const;
-    bool            diff(const DataArray<T> &array,
+    bool            compatible(const ExecutionArray<T> &array) const;
+    bool            diff(const ExecutionArray<T> &array,
                          Node &info,
                          const float64 epsilon = CONDUIT_EPSILON) const;
-    bool            diff_compatible(const DataArray<T> &array,
+    bool            diff_compatible(const ExecutionArray<T> &array,
                                     Node &info,
                                     const float64 epsilon = CONDUIT_EPSILON) const;
 
@@ -121,6 +136,17 @@ public:
     
     /// counts number of occurrences of given value
     index_t         count(T value) const;
+
+//-----------------------------------------------------------------------------
+// Data movement
+//-----------------------------------------------------------------------------
+    void                                use_with(conduit::execution::ExecutionPolicy policy);
+
+    void                                sync();
+
+    void                                assume();
+
+    conduit::execution::ExecutionPolicy active_space();
 
 //-----------------------------------------------------------------------------
 // Setters
@@ -246,58 +272,58 @@ public:
     // -- assignment operators for std::initializer_list types ---
     //-------------------------------------------------------------------------
     // signed integer array types via std::initializer_list
-    DataArray &operator=(const std::initializer_list<int8>   &values);
-    DataArray &operator=(const std::initializer_list<int16>  &values);
-    DataArray &operator=(const std::initializer_list<int32>  &values);
-    DataArray &operator=(const std::initializer_list<int64>  &values);
+    ExecutionArray &operator=(const std::initializer_list<int8>   &values);
+    ExecutionArray &operator=(const std::initializer_list<int16>  &values);
+    ExecutionArray &operator=(const std::initializer_list<int32>  &values);
+    ExecutionArray &operator=(const std::initializer_list<int64>  &values);
 
     // unsigned integer array types via std::initialize_list
-    DataArray &operator=(const std::initializer_list<uint8>   &values);
-    DataArray &operator=(const std::initializer_list<uint16>  &values);
-    DataArray &operator=(const std::initializer_list<uint32>  &values);
-    DataArray &operator=(const std::initializer_list<uint64>  &values);
+    ExecutionArray &operator=(const std::initializer_list<uint8>   &values);
+    ExecutionArray &operator=(const std::initializer_list<uint16>  &values);
+    ExecutionArray &operator=(const std::initializer_list<uint32>  &values);
+    ExecutionArray &operator=(const std::initializer_list<uint64>  &values);
 
     // floating point array types via std::initializer_list
-    DataArray &operator=(const std::initializer_list<float32> &values);
-    DataArray &operator=(const std::initializer_list<float64> &values);
+    ExecutionArray &operator=(const std::initializer_list<float32> &values);
+    ExecutionArray &operator=(const std::initializer_list<float64> &values);
 
     //-------------------------------------------------------------------------
     // --  assignment c-native gap operators for initializer_list types ---
     //-------------------------------------------------------------------------
 
-    DataArray &operator=(const std::initializer_list<char> &values);
+    ExecutionArray &operator=(const std::initializer_list<char> &values);
 
     #ifndef CONDUIT_USE_CHAR
-        DataArray &operator=(const std::initializer_list<signed char> &values);
-        DataArray &operator=(const std::initializer_list<unsigned char> &values);
+        ExecutionArray &operator=(const std::initializer_list<signed char> &values);
+        ExecutionArray &operator=(const std::initializer_list<unsigned char> &values);
     #endif
 
     #ifndef CONDUIT_USE_SHORT
-        DataArray &operator=(const std::initializer_list<short> &values);
-        DataArray &operator=(const std::initializer_list<unsigned short> &values);
+        ExecutionArray &operator=(const std::initializer_list<short> &values);
+        ExecutionArray &operator=(const std::initializer_list<unsigned short> &values);
     #endif
 
     #ifndef CONDUIT_USE_INT
-        DataArray &operator=(const std::initializer_list<int> &values);
-        DataArray &operator=(const std::initializer_list<unsigned int> &values);
+        ExecutionArray &operator=(const std::initializer_list<int> &values);
+        ExecutionArray &operator=(const std::initializer_list<unsigned int> &values);
     #endif
 
     #ifndef CONDUIT_USE_LONG
-        DataArray &operator=(const std::initializer_list<long> &values);
-        DataArray &operator=(const std::initializer_list<unsigned long> &values);
+        ExecutionArray &operator=(const std::initializer_list<long> &values);
+        ExecutionArray &operator=(const std::initializer_list<unsigned long> &values);
     #endif
 
     #if defined(CONDUIT_HAS_LONG_LONG) && !defined(CONDUIT_USE_LONG_LONG)
-        DataArray &operator=(const std::initializer_list<long long> &values);
-        DataArray &operator=(const std::initializer_list<unsigned long long> &values);
+        ExecutionArray &operator=(const std::initializer_list<long long> &values);
+        ExecutionArray &operator=(const std::initializer_list<unsigned long long> &values);
     #endif
 
     #ifndef CONDUIT_USE_FLOAT
-        DataArray &operator=(const std::initializer_list<float> &values);
+        ExecutionArray &operator=(const std::initializer_list<float> &values);
     #endif
 
     #ifndef CONDUIT_USE_DOUBLE
-        DataArray &operator=(const std::initializer_list<double> &values);
+        ExecutionArray &operator=(const std::initializer_list<double> &values);
     #endif
 
     /// signed integer arrays via DataArray
@@ -426,81 +452,89 @@ private:
 
 //-----------------------------------------------------------------------------
 //
-// -- conduit::DataArray private data members --
+// -- conduit::ExecutionArray private data members --
 //
 //-----------------------------------------------------------------------------
-    /// holds data (always external, never allocated)
-    void           *m_data;
+    Node           *m_node_ptr;
+
+    /// holds data
+    void           *m_other_ptr;
     /// holds data description
-    DataType        m_dtype;
+    DataType        m_other_dtype;
+    
+    bool            m_do_i_own_it;
+
+    void           *m_data;
+    index_t         m_offset;
+    index_t         m_stride;
     
 };
 //-----------------------------------------------------------------------------
-// -- end conduit::DataArray --
+// -- end conduit::ExecutionArray --
 //-----------------------------------------------------------------------------
 
 //-----------------------------------------------------------------------------
 //
-// -- conduit::DataArray typedefs for supported array types --
+// -- conduit::ExecutionArray typedefs for supported array types --
 //
 //-----------------------------------------------------------------------------
 
 /// Note: these are also the types we explicitly instantiate.
 
 /// signed integer arrays
-typedef DataArray<int8>     int8_array;
-typedef DataArray<int16>    int16_array;
-typedef DataArray<int32>    int32_array;
-typedef DataArray<int64>    int64_array;
+typedef ExecutionArray<int8>     int8_exec_array;
+typedef ExecutionArray<int16>    int16_exec_array;
+typedef ExecutionArray<int32>    int32_exec_array;
+typedef ExecutionArray<int64>    int64_exec_array;
 
 /// unsigned integer arrays
-typedef DataArray<uint8>    uint8_array;
-typedef DataArray<uint16>   uint16_array;
-typedef DataArray<uint32>   uint32_array;
-typedef DataArray<uint64>   uint64_array;
+typedef ExecutionArray<uint8>    uint8_exec_array;
+typedef ExecutionArray<uint16>   uint16_exec_array;
+typedef ExecutionArray<uint32>   uint32_exec_array;
+typedef ExecutionArray<uint64>   uint64_exec_array;
 
 /// floating point arrays
-typedef DataArray<float32>  float32_array;
-typedef DataArray<float64>  float64_array;
+typedef ExecutionArray<float32>  float32_exec_array;
+typedef ExecutionArray<float64>  float64_exec_array;
 
 /// index type arrays
-typedef DataArray<index_t>  index_t_array;
+typedef ExecutionArray<index_t>  index_t_exec_array;
 
 /// native c types arrays
-typedef DataArray<char>       char_array;
-typedef DataArray<short>      short_array;
-typedef DataArray<int>        int_array;
-typedef DataArray<long>       long_array;
+typedef ExecutionArray<char>       char_exec_array;
+typedef ExecutionArray<short>      short_exec_array;
+typedef ExecutionArray<int>        int_exec_array;
+typedef ExecutionArray<long>       long_exec_array;
 #ifdef CONDUIT_HAS_LONG_LONG
-typedef DataArray<long long>  long_long_array;
+typedef ExecutionArray<long long>  long_long_exec_array;
 #endif
 
 
 /// signed integer arrays
-typedef DataArray<signed char>       signed_char_array;
-typedef DataArray<signed short>      signed_short_array;
-typedef DataArray<signed int>        signed_int_array;
-typedef DataArray<signed long>       signed_long_array;
+typedef ExecutionArray<signed char>       signed_char_exec_array;
+typedef ExecutionArray<signed short>      signed_short_exec_array;
+typedef ExecutionArray<signed int>        signed_int_exec_array;
+typedef ExecutionArray<signed long>       signed_long_exec_array;
 #ifdef CONDUIT_HAS_LONG_LONG
-typedef DataArray<signed long long>  signed_long_long_array;
+typedef ExecutionArray<signed long long>  signed_long_long_exec_array;
 #endif
 
 
 /// unsigned integer arrays
-typedef DataArray<unsigned char>   unsigned_char_array;
-typedef DataArray<unsigned short>  unsigned_short_array;
-typedef DataArray<unsigned int>    unsigned_int_array;
-typedef DataArray<unsigned long>   unsigned_long_array;
+typedef ExecutionArray<unsigned char>   unsigned_char_exec_array;
+typedef ExecutionArray<unsigned short>  unsigned_short_exec_array;
+typedef ExecutionArray<unsigned int>    unsigned_int_exec_array;
+typedef ExecutionArray<unsigned long>   unsigned_long_exec_array;
 #ifdef CONDUIT_HAS_LONG_LONG
-typedef DataArray<unsigned long long>  unsigned_long_long_array;
+typedef ExecutionArray<unsigned long long>  unsigned_long_long_exec_array;
 #endif
 
 
 /// floating point arrays
-typedef DataArray<float>   float_array;
-typedef DataArray<double>  double_array;
+typedef ExecutionArray<float>   float_exec_array;
+typedef ExecutionArray<double>  double_exec_array;
 #ifdef CONDUIT_USE_LONG_DOUBLE
-typedef DataArray<long double>  long_double_array;
+typedef ExecutionArray<long double>  long_double_exec_array;
 #endif
 
 }

@@ -16,7 +16,7 @@
 using namespace conduit;
 
 //-----------------------------------------------------------------------------
-TEST(conduit_array, basic_construction)
+TEST(conduit_data_array, basic_construction)
 {
     std::vector<int8> data1(10,8);
     std::vector<int8> data2(10,-8);
@@ -70,7 +70,7 @@ TEST(conduit_array, basic_construction)
 }
 
 //-----------------------------------------------------------------------------
-TEST(conduit_array, array_stride_int8)
+TEST(conduit_data_array, array_stride_int8)
 {
     std::vector<int8> data(20,0);
 
@@ -116,7 +116,7 @@ TEST(conduit_array, array_stride_int8)
     arr[1] = 100;
     EXPECT_EQ(data[2],100);
 
-        std::cout << "Full Data" << std::endl;
+    std::cout << "Full Data" << std::endl;
 
     for(int i=0;i<20;i++)
     {
@@ -144,7 +144,7 @@ TEST(conduit_array, array_stride_int8)
 }
 
 //-----------------------------------------------------------------------------
-TEST(conduit_array, array_stride_int8_external)
+TEST(conduit_data_array, array_stride_int8_external)
 {
     std::vector<int64> data(20,0);
 
@@ -187,7 +187,7 @@ TEST(conduit_array, array_stride_int8_external)
 
 
 //-----------------------------------------------------------------------------
-TEST(conduit_array, set_using_ptrs)
+TEST(conduit_data_array, set_using_ptrs)
 {
     //in this case we are  using std vectors to init data conveniently
     // we are actually testing the pointer set cases
@@ -304,7 +304,7 @@ TEST(conduit_array, set_using_ptrs)
 
 
 //-----------------------------------------------------------------------------
-TEST(conduit_array, set_using_data_array)
+TEST(conduit_data_array, set_using_data_array)
 {
     std::vector<int8>  v_int8(10,-8);
     std::vector<int16> v_int16(10,-16);
@@ -428,8 +428,157 @@ TEST(conduit_array, set_using_data_array)
 
 }
 
+
 //-----------------------------------------------------------------------------
-TEST(conduit_array, set_single_element)
+TEST(conduit_data_array, set_using_exec_array)
+{
+    std::vector<int8>  v_int8(10,-8);
+    std::vector<int16> v_int16(10,-16);
+    std::vector<int32> v_int32(10,-32);
+    std::vector<int64> v_int64(10,-64);
+
+    std::vector<uint8>  v_uint8(10,8);
+    std::vector<uint16> v_uint16(10,16);
+    std::vector<uint32> v_uint32(10,32);
+    std::vector<uint64> v_uint64(10,64);
+
+    std::vector<float32>  v_float32(10,32.0);
+    std::vector<float64>  v_float64(10,64.0);
+
+    Node v_int8_node;
+    v_int8_node.set(v_int8);
+    Node v_int16_node;
+    v_int16_node.set(v_int16);
+    Node v_int32_node;
+    v_int32_node.set(v_int32);
+    Node v_int64_node;
+    v_int64_node.set(v_int64);
+
+    Node v_uint8_node;
+    v_uint8_node.set(v_uint8);
+    Node v_uint16_node;
+    v_uint16_node.set(v_uint16);
+    Node v_uint32_node;
+    v_uint32_node.set(v_uint32);
+    Node v_uint64_node;
+    v_uint64_node.set(v_uint64);
+
+    Node v_float32_node;
+    v_float32_node.set(v_float32);
+    Node v_float64_node;
+    v_float64_node.set(v_float64);
+
+    int8_exec_array    va_int8(v_int8_node);
+    int16_exec_array   va_int16(v_int16_node);
+    int32_exec_array   va_int32(v_int32_node);
+    int64_exec_array   va_int64(v_int64_node);
+
+    uint8_exec_array   va_uint8(v_uint8_node);
+    uint16_exec_array  va_uint16(v_uint16_node);
+    uint32_exec_array  va_uint32(v_uint32_node);
+    uint64_exec_array  va_uint64(v_uint64_node);
+
+    float32_exec_array  va_float32(v_float32_node);
+    float64_exec_array  va_float64(v_float64_node);
+
+
+    Node n;
+
+    // int8_array
+    n["vint8"].set(DataType::int8(10));
+    n["vint8"].as_int8_array().set(va_int8);
+    int8 *n_int8_ptr = n["vint8"].value();
+    for(index_t i=0;i<10;i++)
+    {
+        EXPECT_EQ(n_int8_ptr[i],va_int8[i]);
+    }
+
+    // int16_array
+    n["vint16"].set(DataType::int16(10));
+    n["vint16"].as_int16_array().set(va_int16);
+    int16 *n_int16_ptr = n["vint16"].value();
+    for(index_t i=0;i<10;i++)
+    {
+        EXPECT_EQ(n_int16_ptr[i],va_int16[i]);
+    }
+
+    // int32_array
+    n["vint32"].set(DataType::int32(10));
+    n["vint32"].as_int32_array().set(va_int32);
+    int32 *n_int32_ptr = n["vint32"].value();
+    for(index_t i=0;i<10;i++)
+    {
+        EXPECT_EQ(n_int32_ptr[i],va_int32[i]);
+    }
+
+    // int64_array
+    n["vint64"].set(DataType::int64(10));
+    n["vint64"].as_int64_array().set(va_int64);
+    int64 *n_int64_ptr = n["vint64"].value();
+    for(index_t i=0;i<10;i++)
+    {
+        EXPECT_EQ(n_int64_ptr[i],va_int64[i]);
+    }
+
+    // uint8_array
+    n["vuint8"].set(DataType::uint8(10));
+    n["vuint8"].as_uint8_array().set(va_uint8);
+    uint8 *n_uint8_ptr = n["vuint8"].value();
+    for(index_t i=0;i<10;i++)
+    {
+        EXPECT_EQ(n_uint8_ptr[i],va_uint8[i]);
+    }
+
+    // uint16_array
+    n["vuint16"].set(DataType::uint16(10));
+    n["vuint16"].as_uint16_array().set(va_uint16);
+    uint16 *n_uint16_ptr = n["vuint16"].value();
+    for(index_t i=0;i<10;i++)
+    {
+        EXPECT_EQ(n_uint16_ptr[i],va_uint16[i]);
+    }
+
+    // uint32_array
+    n["vuint32"].set(DataType::uint32(10));
+    n["vuint32"].as_uint32_array().set(va_uint32);
+    uint32 *n_uint32_ptr = n["vuint32"].value();
+    for(index_t i=0;i<10;i++)
+    {
+        EXPECT_EQ(n_uint32_ptr[i],va_uint32[i]);
+    }
+
+    // uint64_array
+    n["vuint64"].set(DataType::uint64(10));
+    n["vuint64"].as_uint64_array().set(va_uint64);
+    uint64 *n_uint64_ptr = n["vuint64"].value();
+    for(index_t i=0;i<10;i++)
+    {
+        EXPECT_EQ(n_uint64_ptr[i],va_uint64[i]);
+    }
+
+
+    // float32_array
+    n["vfloat32"].set(DataType::float32(10));
+    n["vfloat32"].as_float32_array().set(va_float32);
+    float32 *n_float32_ptr = n["vfloat32"].value();
+    for(index_t i=0;i<10;i++)
+    {
+        EXPECT_EQ(n_float32_ptr[i],va_float32[i]);
+    }
+
+    // float64_array
+    n["vfloat64"].set(DataType::float64(10));
+    n["vfloat64"].as_float64_array().set(va_float64);
+    float64 *n_float64_ptr = n["vfloat64"].value();
+    for(index_t i=0;i<10;i++)
+    {
+        EXPECT_EQ(n_float64_ptr[i],va_float64[i]);
+    }
+
+}
+
+//-----------------------------------------------------------------------------
+TEST(conduit_data_array, set_single_element)
 {
     std::vector<int8>  v_int8(10,-8);
     std::vector<int16> v_int16(10,-16);
@@ -499,7 +648,7 @@ TEST(conduit_array, set_single_element)
 }
 
 //-----------------------------------------------------------------------------
-TEST(conduit_array, set_using_data_accessor)
+TEST(conduit_data_array, set_using_data_accessor)
 {
     std::vector<int8>  v_int8(10,-8);
     std::vector<int16> v_int16(10,-16);
@@ -622,8 +771,156 @@ TEST(conduit_array, set_using_data_accessor)
 
 }
 
+
 //-----------------------------------------------------------------------------
-TEST(conduit_array, set_using_std_vectors)
+TEST(conduit_data_array, set_using_exec_accessor)
+{
+    std::vector<int8>  v_int8(10,-8);
+    std::vector<int16> v_int16(10,-16);
+    std::vector<int32> v_int32(10,-32);
+    std::vector<int64> v_int64(10,-64);
+
+    std::vector<uint8>  v_uint8(10,8);
+    std::vector<uint16> v_uint16(10,16);
+    std::vector<uint32> v_uint32(10,32);
+    std::vector<uint64> v_uint64(10,64);
+
+    std::vector<float32>  v_float32(10,32.0);
+    std::vector<float64>  v_float64(10,64.0);
+
+    Node v_int8_node;
+    v_int8_node.set(v_int8);
+    Node v_int16_node;
+    v_int16_node.set(v_int16);
+    Node v_int32_node;
+    v_int32_node.set(v_int32);
+    Node v_int64_node;
+    v_int64_node.set(v_int64);
+
+    Node v_uint8_node;
+    v_uint8_node.set(v_uint8);
+    Node v_uint16_node;
+    v_uint16_node.set(v_uint16);
+    Node v_uint32_node;
+    v_uint32_node.set(v_uint32);
+    Node v_uint64_node;
+    v_uint64_node.set(v_uint64);
+
+    Node v_float32_node;
+    v_float32_node.set(v_float32);
+    Node v_float64_node;
+    v_float64_node.set(v_float64);
+
+    int8_exec_accessor    vacc_int8(v_int8_node);
+    int16_exec_accessor   vacc_int16(v_int16_node);
+    int32_exec_accessor   vacc_int32(v_int32_node);
+    int64_exec_accessor   vacc_int64(v_int64_node);
+
+    uint8_exec_accessor   vacc_uint8(v_uint8_node);
+    uint16_exec_accessor  vacc_uint16(v_uint16_node);
+    uint32_exec_accessor  vacc_uint32(v_uint32_node);
+    uint64_exec_accessor  vacc_uint64(v_uint64_node);
+
+    float32_exec_accessor  vacc_float32(v_float32_node);
+    float64_exec_accessor  vacc_float64(v_float64_node);
+
+    Node n;
+
+    // int8_array
+    n["vint8"].set(DataType::int8(10));
+    n["vint8"].as_int8_array().set(vacc_int8);
+    int8 *n_int8_ptr = n["vint8"].value();
+    for(index_t i=0;i<10;i++)
+    {
+        EXPECT_EQ(n_int8_ptr[i],v_int8[i]);
+    }
+
+    // int16_array
+    n["vint16"].set(DataType::int16(10));
+    n["vint16"].as_int16_array().set(vacc_int16);
+    int16 *n_int16_ptr = n["vint16"].value();
+    for(index_t i=0;i<10;i++)
+    {
+        EXPECT_EQ(n_int16_ptr[i],v_int16[i]);
+    }
+
+    // int32_array
+    n["vint32"].set(DataType::int32(10));
+    n["vint32"].as_int32_array().set(vacc_int32);
+    int32 *n_int32_ptr = n["vint32"].value();
+    for(index_t i=0;i<10;i++)
+    {
+        EXPECT_EQ(n_int32_ptr[i],v_int32[i]);
+    }
+
+    // int64_array
+    n["vint64"].set(DataType::int64(10));
+    n["vint64"].as_int64_array().set(vacc_int64);
+    int64 *n_int64_ptr = n["vint64"].value();
+    for(index_t i=0;i<10;i++)
+    {
+        EXPECT_EQ(n_int64_ptr[i],v_int64[i]);
+    }
+
+    // uint8_array
+    n["vuint8"].set(DataType::uint8(10));
+    n["vuint8"].as_uint8_array().set(vacc_uint8);
+    uint8 *n_uint8_ptr = n["vuint8"].value();
+    for(index_t i=0;i<10;i++)
+    {
+        EXPECT_EQ(n_uint8_ptr[i],v_uint8[i]);
+    }
+
+    // uint16_array
+    n["vuint16"].set(DataType::uint16(10));
+    n["vuint16"].as_uint16_array().set(vacc_uint16);
+    uint16 *n_uint16_ptr = n["vuint16"].value();
+    for(index_t i=0;i<10;i++)
+    {
+        EXPECT_EQ(n_uint16_ptr[i],v_uint16[i]);
+    }
+
+    // uint32_array
+    n["vuint32"].set(DataType::uint32(10));
+    n["vuint32"].as_uint32_array().set(vacc_uint32);
+    uint32 *n_uint32_ptr = n["vuint32"].value();
+    for(index_t i=0;i<10;i++)
+    {
+        EXPECT_EQ(n_uint32_ptr[i],v_uint32[i]);
+    }
+
+    // uint64_array
+    n["vuint64"].set(DataType::uint64(10));
+    n["vuint64"].as_uint64_array().set(vacc_uint64);
+    uint64 *n_uint64_ptr = n["vuint64"].value();
+    for(index_t i=0;i<10;i++)
+    {
+        EXPECT_EQ(n_uint64_ptr[i],v_uint64[i]);
+    }
+
+
+    // float32_array
+    n["vfloat32"].set(DataType::float32(10));
+    n["vfloat32"].as_float32_array().set(vacc_float32);
+    float32 *n_float32_ptr = n["vfloat32"].value();
+    for(index_t i=0;i<10;i++)
+    {
+        EXPECT_EQ(n_float32_ptr[i],v_float32[i]);
+    }
+
+    // float64_array
+    n["vfloat64"].set(DataType::float64(10));
+    n["vfloat64"].as_float64_array().set(vacc_float64);
+    float64 *n_float64_ptr = n["vfloat64"].value();
+    for(index_t i=0;i<10;i++)
+    {
+        EXPECT_EQ(n_float64_ptr[i],v_float64[i]);
+    }
+
+}
+
+//-----------------------------------------------------------------------------
+TEST(conduit_data_array, set_using_std_vectors)
 {
     std::vector<int8>  v_int8(10,-8);
     std::vector<int16> v_int16(10,-16);
@@ -735,7 +1032,7 @@ TEST(conduit_array, set_using_std_vectors)
 }
 
 //-----------------------------------------------------------------------------
-TEST(conduit_array, print_bells_and_whistles)
+TEST(conduit_data_array, print_bells_and_whistles)
 {
     Node n;
 
@@ -797,7 +1094,7 @@ TEST(conduit_array, print_bells_and_whistles)
 }
 
 //-----------------------------------------------------------------------------
-TEST(conduit_array, fill)
+TEST(conduit_data_array, fill)
 {
     int num_ele = 5;
 
@@ -864,12 +1161,12 @@ TEST(conduit_array, fill)
     va_int8.fill((int8)   -1);
     va_int16.fill((int16) -1);
     va_int32.fill((int32) -1);
-    va_int64.fill((int32) -1);
+    va_int64.fill((int64) -1);
 
     va_uint8.fill((uint8)   1);
     va_uint16.fill((uint16) 1);
     va_uint32.fill((uint32) 1);
-    va_uint64.fill((uint32) 1);
+    va_uint64.fill((uint64) 1);
 
     va_float32.fill((float32) 1.0);
     va_float64.fill((float64) 1.0);
@@ -895,7 +1192,7 @@ TEST(conduit_array, fill)
 }
 
 //-----------------------------------------------------------------------------
-TEST(conduit_array, compact_to_bytes)
+TEST(conduit_data_array, compact_to_bytes)
 {
     std::vector<int64> vals(8,0);
 
@@ -923,7 +1220,7 @@ TEST(conduit_array, compact_to_bytes)
 }
 
 //-----------------------------------------------------------------------------
-TEST(conduit_array, summary_stats)
+TEST(conduit_data_array, summary_stats)
 {
     std::vector<int64>    v_int64(3,-64);
     std::vector<uint64>   v_uint64(3,64);
@@ -959,7 +1256,7 @@ TEST(conduit_array, summary_stats)
 
 
 //-----------------------------------------------------------------------------
-TEST(conduit_array, summary_print)
+TEST(conduit_data_array, summary_print)
 {
     std::vector<int64> v_int64(5,-64);
     int64_array   va_int64(&v_int64[0],DataType::int64(5));
@@ -1031,7 +1328,7 @@ TEST(conduit_array, summary_print)
 
 
 //-----------------------------------------------------------------------------
-TEST(conduit_array, cxx_11_init_lists)
+TEST(conduit_data_array, cxx_11_init_lists)
 {
     std::vector<int8>  v_int8(3,-8);
     std::vector<int16> v_int16(3,-16);

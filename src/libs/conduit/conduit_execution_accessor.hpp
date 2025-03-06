@@ -4,12 +4,12 @@
 
 //-----------------------------------------------------------------------------
 ///
-/// file: conduit_data_accessor.hpp
+/// file: conduit_execution_accessor.hpp
 ///
 //-----------------------------------------------------------------------------
 
-#ifndef CONDUIT_DATA_ACCESSOR_HPP
-#define CONDUIT_DATA_ACCESSOR_HPP
+#ifndef CONDUIT_EXECUTION_ACCESSOR_HPP
+#define CONDUIT_EXECUTION_ACCESSOR_HPP
 
 
 //-----------------------------------------------------------------------------
@@ -18,6 +18,7 @@
 #include "conduit_core.hpp"
 #include "conduit_data_type.hpp"
 #include "conduit_utils.hpp"
+#include "conduit_execution.hpp"
 
 
 //-----------------------------------------------------------------------------
@@ -27,47 +28,55 @@ namespace conduit
 {
 
 //-----------------------------------------------------------------------------
-// -- forward declarations required for conduit::DataAccessor --
+// -- forward declarations required for conduit::ExecutionAccessor --
 //-----------------------------------------------------------------------------
+class Node;
 template <typename T>
 class DataArray;
 template <typename T>
-class ExecutionArray;
+class DataAccessor;
 template <typename T>
-class ExecutionAccessor;
+class ExecutionArray;
 
 //-----------------------------------------------------------------------------
-// -- begin conduit::DataArray --
+// -- begin conduit::ExecutionAccessor --
 //-----------------------------------------------------------------------------
 ///
-/// class: conduit::DataAccessor
+/// class: conduit::ExecutionAccessor
 ///
 /// description:
-///  Helps consume array data as desired type with on the fly conversion.
+///  Helps consume Node data as desired type with on the fly conversion and 
+///  supports memory movement between host and device.
 ///
 //-----------------------------------------------------------------------------
 template <typename T> 
-class CONDUIT_API DataAccessor
+class CONDUIT_API ExecutionAccessor
 {
-public: 
+public:
+
 //-----------------------------------------------------------------------------
 //
-// -- conduit::DataAccessor public methods --
+// -- conduit::ExecutionAccessor public methods --
 //
 //-----------------------------------------------------------------------------
 
 //-----------------------------------------------------------------------------
 // Construction and Destruction
 //-----------------------------------------------------------------------------
-        /// Default constructor
-        DataAccessor();
-        /// Copy constructor
-        DataAccessor(const DataAccessor<T> &accessor);
-        /// Access a pointer to raw data according to dtype description.
-        DataAccessor(void *data, const DataType &dtype);
-        /// Access a const pointer to raw data according to dtype description.
-        DataAccessor(const void *data, const DataType &dtype);
-        ~DataAccessor();
+    /// Default constructor
+    ExecutionAccessor();
+    /// Copy constructor
+    ExecutionAccessor(const ExecutionAccessor<T> &accessor);
+    /// Access a pointer to node data according to node dtype description.
+    ExecutionAccessor(Node &node);
+    // /// Access a const pointer to node data according to node dtype description.
+    ExecutionAccessor(const Node &node);
+    /// Access a pointer to node data according to node dtype description.
+    ExecutionAccessor(Node *node);
+    /// Access a const pointer to node data according to node dtype description.
+    ExecutionAccessor(const Node *node);
+    /// Destructor.
+    ~ExecutionAccessor();
 
     ///
     /// Summary Stats Helpers
@@ -81,7 +90,7 @@ public:
     index_t         count(T value) const;
 
     /// Assignment operator
-    DataAccessor<T>   &operator=(const DataAccessor<T> &accessor);
+    ExecutionAccessor<T>   &operator=(const ExecutionAccessor<T> &accessor);
 
 //-----------------------------------------------------------------------------
 // Data and Info Access
@@ -93,23 +102,39 @@ public:
 
     void           set(index_t idx, T value);
 
-    void            fill(T value);
+    void           fill(T value);
 
     const void     *element_ptr(index_t idx) const
                     {
-                         return static_cast<const char*>(m_data) +
-                                  m_dtype.element_index(idx);
+                        return static_cast<const char*>(m_data) +
+                               dtype().element_index(idx);
                     }
 
     index_t         number_of_elements() const 
-                        {return m_dtype.number_of_elements();}
+                    {return dtype().number_of_elements();}
 
-    const DataType &dtype()    const 
-                        { return m_dtype;}
+    const DataType &dtype() const;
+
+    const DataType &orig_dtype() const;
+
+    const DataType &other_dtype() const;
+
+//-----------------------------------------------------------------------------
+// Data movement
+//-----------------------------------------------------------------------------
+    void                                use_with(conduit::execution::ExecutionPolicy policy);
+
+    void                                sync();
+
+    void                                assume();
+
+    conduit::execution::ExecutionPolicy active_space();
 
 //-----------------------------------------------------------------------------
 // Setters
 //-----------------------------------------------------------------------------
+    // TODO I think we want the entire menu of setters (and tests for them)
+
     /// signed integer arrays via DataArray
     void            set(const DataArray<int8>    &values);
     void            set(const DataArray<int16>   &values);
@@ -210,81 +235,89 @@ private:
 
 //-----------------------------------------------------------------------------
 //
-// -- conduit::DataAccessor private data members --
+// -- conduit::ExecutionAccessor private data members --
 //
 //-----------------------------------------------------------------------------
-    /// holds data (always external, never allocated)
-    void           *m_data;
+    Node           *m_node_ptr;
+
+    /// holds data
+    void           *m_other_ptr;
     /// holds data description
-    DataType        m_dtype;
+    DataType        m_other_dtype;
     
+    bool            m_do_i_own_it;
+
+    void           *m_data;
+    index_t         m_offset;
+    index_t         m_stride;
 };
+
 //-----------------------------------------------------------------------------
-// -- end conduit::DataAccessor --
+// -- end conduit::ExecutionAccessor --
 //-----------------------------------------------------------------------------
 
 //-----------------------------------------------------------------------------
 //
-// -- conduit::DataAccessor typedefs for supported types --
+// -- conduit::ExecutionAccessor typedefs for supported types --
 //
 //-----------------------------------------------------------------------------
 
 /// Note: these are also the types we explicitly instantiate.
 
 /// signed integer arrays
-typedef DataAccessor<int8>     int8_accessor;
-typedef DataAccessor<int16>    int16_accessor;
-typedef DataAccessor<int32>    int32_accessor;
-typedef DataAccessor<int64>    int64_accessor;
+typedef ExecutionAccessor<int8>     int8_exec_accessor;
+typedef ExecutionAccessor<int16>    int16_exec_accessor;
+typedef ExecutionAccessor<int32>    int32_exec_accessor;
+typedef ExecutionAccessor<int64>    int64_exec_accessor;
 
 /// unsigned integer arrays
-typedef DataAccessor<uint8>    uint8_accessor;
-typedef DataAccessor<uint16>   uint16_accessor;
-typedef DataAccessor<uint32>   uint32_accessor;
-typedef DataAccessor<uint64>   uint64_accessor;
+typedef ExecutionAccessor<uint8>    uint8_exec_accessor;
+typedef ExecutionAccessor<uint16>   uint16_exec_accessor;
+typedef ExecutionAccessor<uint32>   uint32_exec_accessor;
+typedef ExecutionAccessor<uint64>   uint64_exec_accessor;
 
 /// floating point arrays
-typedef DataAccessor<float32>  float32_accessor;
-typedef DataAccessor<float64>  float64_accessor;
+typedef ExecutionAccessor<float32>  float32_exec_accessor;
+typedef ExecutionAccessor<float64>  float64_exec_accessor;
 
 /// index type arrays
-typedef DataAccessor<index_t>  index_t_accessor;
+typedef ExecutionAccessor<index_t>  index_t_exec_accessor;
 
 /// native c types arrays
-typedef DataAccessor<char>       char_accessor;
-typedef DataAccessor<short>      short_accessor;
-typedef DataAccessor<int>        int_accessor;
-typedef DataAccessor<long>       long_accessor;
+typedef ExecutionAccessor<char>       char_exec_accessor;
+typedef ExecutionAccessor<short>      short_exec_accessor;
+typedef ExecutionAccessor<int>        int_exec_accessor;
+typedef ExecutionAccessor<long>       long_exec_accessor;
 #ifdef CONDUIT_HAS_LONG_LONG
-typedef DataAccessor<long long>  long_long_accessor;
+typedef ExecutionAccessor<long long>  long_long_exec_accessor;
 #endif
 
 
 /// signed integer arrays
-typedef DataAccessor<signed char>       signed_char_accessor;
-typedef DataAccessor<signed short>      signed_short_accessor;
-typedef DataAccessor<signed int>        signed_int_accessor;
-typedef DataAccessor<signed long>       signed_long_accessor;
+typedef ExecutionAccessor<signed char>       signed_char_exec_accessor;
+typedef ExecutionAccessor<signed short>      signed_short_exec_accessor;
+typedef ExecutionAccessor<signed int>        signed_int_exec_accessor;
+typedef ExecutionAccessor<signed long>       signed_long_exec_accessor;
 #ifdef CONDUIT_HAS_LONG_LONG
-typedef DataAccessor<signed long long>  signed_long_long_accessor;
+typedef ExecutionAccessor<signed long long>  signed_long_long_exec_accessor;
 #endif
 
 
 /// unsigned integer arrays
-typedef DataAccessor<unsigned char>   unsigned_char_accessor;
-typedef DataAccessor<unsigned short>  unsigned_short_accessor;
-typedef DataAccessor<unsigned int>    unsigned_int_accessor;
-typedef DataAccessor<unsigned long>   unsigned_long_accessor;
+typedef ExecutionAccessor<unsigned char>   unsigned_char_exec_accessor;
+typedef ExecutionAccessor<unsigned short>  unsigned_short_exec_accessor;
+typedef ExecutionAccessor<unsigned int>    unsigned_int_exec_accessor;
+typedef ExecutionAccessor<unsigned long>   unsigned_long_exec_accessor;
 #ifdef CONDUIT_HAS_LONG_LONG
-typedef DataAccessor<unsigned long long>  unsigned_long_long_accessor;
+typedef ExecutionAccessor<unsigned long long>  unsigned_long_long_exec_accessor;
 #endif
 
 
 /// floating point arrays
-typedef DataAccessor<float>   float_accessor;
-typedef DataAccessor<double>  double_accessor;
+typedef ExecutionAccessor<float>   float_exec_accessor;
+typedef ExecutionAccessor<double>  double_exec_accessor;
 #ifdef CONDUIT_USE_LONG_DOUBLE
-typedef DataAccessor<long double>  long_double_accessor;
+typedef ExecutionAccessor<long double>  long_double_exec_accessor;
 #endif
 
 }
