@@ -3402,6 +3402,62 @@ public:
                 operator long_double_accessor() const;
             #endif
 
+            // -- as exec_array -- //
+            operator char_exec_array()  const;
+
+            // as signed exec_array
+            operator signed_char_exec_array()  const;
+            operator signed_short_exec_array() const;
+            operator signed_int_exec_array()   const;
+            operator signed_long_exec_array()  const;
+            #ifdef CONDUIT_HAS_LONG_LONG
+                operator signed_long_long_exec_array() const;
+            #endif
+
+            // as unsigned exec_array
+            operator unsigned_char_exec_array()  const;
+            operator unsigned_short_exec_array() const;
+            operator unsigned_int_exec_array()   const;
+            operator unsigned_long_exec_array()  const;
+            #ifdef CONDUIT_HAS_LONG_LONG
+                operator unsigned_long_long_exec_array() const;
+            #endif
+
+            // as floating point exec_array
+            operator float_exec_array()  const;
+            operator double_exec_array() const;
+            #ifdef CONDUIT_USE_LONG_DOUBLE
+                operator long_double_exec_array() const;
+            #endif
+
+            /// native c types exec_accessors
+            operator char_exec_accessor() const;
+
+            /// signed integer exec_accessors
+            operator signed_char_exec_accessor()  const;
+            operator signed_short_exec_accessor() const;
+            operator signed_int_exec_accessor()   const;
+            operator signed_long_exec_accessor()  const;
+            #ifdef CONDUIT_HAS_LONG_LONG
+                operator  signed_long_long_exec_accessor() const;
+            #endif
+
+            /// unsigned integer exec_accessors
+            operator unsigned_char_exec_accessor()  const;
+            operator unsigned_short_exec_accessor() const;
+            operator unsigned_int_exec_accessor()   const;
+            operator unsigned_long_exec_accessor()  const;
+            #ifdef CONDUIT_HAS_LONG_LONG
+                operator  unsigned_long_long_exec_accessor() const;
+            #endif
+
+            /// floating point exec_accessors
+            operator float_exec_accessor() const;
+            operator double_exec_accessor() const;
+            #ifdef CONDUIT_USE_LONG_DOUBLE
+                operator long_double_exec_accessor() const;
+            #endif
+
 
         private:
             // This is private we only want conduit::Node to create a
